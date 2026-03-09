@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Eye, Briefcase } from "lucide-react";
-//import { authService } from "../services";
+import { authService } from "../services";
 
 /* ---------------- Floating Background Cards ---------------- */
 
@@ -63,42 +63,42 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // const handleLogin = async () => {
-  //   setError("");
-  //   setLoading(true);
+  const handleLogin = async () => {
+    setError("");
+    setLoading(true);
 
-  //   try {
-  //     const response = await authService.login(email, password);
+    try {
+      const response = await authService.login(email, password);
 
-  //     if (response.success) {
-  //       navigate("/");
-  //     } else {
-  //       setError(response.message || "Invalid Email or Password");
-  //     }
-  //   } catch (err) {
-  //     setError(err.message || "Login failed");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-const handleLogin = () => {
-  setError("");
-  setLoading(true);
-
-  setTimeout(() => {
-    if (email === "admin@gmail.com" && password === "12345678") {
-
-      localStorage.setItem("auth", "true");
-
-      navigate("/dashboard");
-
-    } else {
-      setError("Invalid Email or Password");
+      if (response.success) {
+        navigate("/");
+      } else {
+        setError(response.message || "Invalid Email or Password");
+      }
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
+  };
+// const handleLogin = () => {
+//   setError("");
+//   setLoading(true);
 
-    setLoading(false);
-  }, 500);
-};
+//   setTimeout(() => {
+//     if (email === "admin@gmail.com" && password === "12345678") {
+
+//       localStorage.setItem("auth", "true");
+
+//       navigate("/dashboard");
+
+//     } else {
+//       setError("Invalid Email or Password");
+//     }
+
+//     setLoading(false);
+//   }, 500);
+// };
   return (
     <div className="min-h-screen bg-gray-200 flex items-center justify-center relative overflow-hidden p-4">
 

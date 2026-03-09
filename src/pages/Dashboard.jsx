@@ -1,12 +1,91 @@
 import { useState, useEffect } from "react";
-//import { Card, Row, Col, Table, Tag, Spin, message } from "antd";
-import { UserOutlined, ShoppingOutlined, DollarOutlined, RiseOutlined } from "@ant-design/icons";
-import { dashboardService } from "../services";
 import { motion } from "framer-motion";
-import { Card, Row, Col, Table, Tag, Spin, message, Avatar, Progress, Typography } from "antd";
+
+import { 
+  Card, Row, Col, Table, Tag, Spin, message, 
+  Avatar, Progress, Typography, Grid 
+} from "antd";
+
+import { 
+  UserOutlined, 
+  ShoppingOutlined, 
+  DollarOutlined, 
+  RiseOutlined,
+  RightOutlined
+} from "@ant-design/icons";
+
+import { dashboardService } from "../services";
 //import { RightOutlined } from "@ant-design/icons";
 const { Text } = Typography;
+const cardAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
+
+const iconAnimation = {
+  animate: {
+    rotate: [0, 10, -10, 0],
+    transition: {
+      duration: 2,
+      repeat: Infinity
+    }
+  }
+};
+// Temporary icons (replace later with real images)
+const callIcon = "";
+const leadIcon = "";
+const revenueIcon = "";
+const conversionIcon = "";
+const styles = {
+  statGridCardWrap: {
+    borderRadius: 12
+  },
+
+  statInner: {
+    padding: 20,
+    borderRadius: 12,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    color: "#fff"
+  },
+
+  statLeft: {
+    display: "flex",
+    flexDirection: "column"
+  },
+
+  statTitle: {
+    fontSize: 14
+  },
+
+  statValue: {
+    fontSize: 24,
+    fontWeight: "bold"
+  },
+
+  statMeta: {
+    fontSize: 12,
+    opacity: 0.8
+  },
+
+  statIconCircle: {
+    background: "rgba(255,255,255,0.2)",
+    borderRadius: "50%",
+    padding: 10
+  },
+
+  statChevron: {
+    marginTop: 6
+  },
+
+  roundedCard: {
+    borderRadius: 12
+  }
+};
 export default function Dashboard() {
+  const { useBreakpoint } = Grid;
+const screens = useBreakpoint();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -111,7 +190,7 @@ export default function Dashboard() {
       color: "#f5222d"
     }
   ];
-
+const data = stats?.recent?.deals || [];
   return (
     <div style={{ padding: 24, background: "#f0f2f5", minHeight: "100vh" }}>
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>Dashboard</h1>
