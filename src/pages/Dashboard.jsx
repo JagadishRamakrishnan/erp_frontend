@@ -180,7 +180,7 @@ const screens = useBreakpoint();
       color: "#1890ff"
     },
     {
-      title: "Total Leads",
+      title: "Pending Task",
       value: stats.overview?.totalLeads || 0,
       icon: <ShoppingOutlined style={{ fontSize: 24, color: "#52c41a" }} />,
       color: "#52c41a"
@@ -192,7 +192,7 @@ const screens = useBreakpoint();
       color: "#faad14"
     },
     {
-      title: "Total Revenue",
+      title: "Open Tickets",
       value: `₹${(stats.revenue?.totalRevenue || 0).toLocaleString('en-IN')}`,
       icon: <DollarOutlined style={{ fontSize: 24, color: "#f5222d" }} />,
       color: "#f5222d"
@@ -709,7 +709,7 @@ const data = stats?.recent?.deals || [];
       </Row>
 
       {/* Additional Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
             <p style={{ margin: 0, color: "#8c8c8c", fontSize: 14 }}>Pending Tasks</p>
@@ -734,15 +734,15 @@ const data = stats?.recent?.deals || [];
             </h2>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+         <Col xs={24} sm={12} lg={6}>
           <Card style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
             <p style={{ margin: 0, color: "#8c8c8c", fontSize: 14 }}>Conversion Rate</p>
             <h2 style={{ margin: "8px 0 0 0", fontSize: 28, fontWeight: "bold", color: "#52c41a" }}>
               {stats.deals?.conversionRate || 0}%
             </h2>
           </Card>
-        </Col>
-      </Row>
+        </Col> 
+      </Row> */}
 
       {/* Recent Deals Table */}
       <Card
