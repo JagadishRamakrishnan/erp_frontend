@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-
+import callIcon from "../assets/icons/d1.gif";
+import leadIcon from "../assets/icons/d2.gif";
+import revenueIcon from "../assets/icons/d3.gif";
+import conversionIcon from "../assets/icons/d4.gif";
 import { 
   Card, Row, Col, Table, Tag, Spin, message, 
   Avatar, Progress, Typography, Grid 
@@ -32,10 +35,10 @@ const iconAnimation = {
   }
 };
 // Temporary icons (replace later with real images)
-const callIcon = "";
-const leadIcon = "";
-const revenueIcon = "";
-const conversionIcon = "";
+// const callIcon = "";
+// const leadIcon = "";
+// const revenueIcon = "";
+// const conversionIcon = "";
 const styles = {
   statGridCardWrap: {
     borderRadius: 12
@@ -69,11 +72,10 @@ const styles = {
     opacity: 0.8
   },
 
-  statIconCircle: {
-    background: "rgba(255,255,255,0.2)",
-    borderRadius: "50%",
-    padding: 10
-  },
+ statIconCircle: {
+  borderRadius: "50%",
+  padding: 10
+},
 
   statChevron: {
     marginTop: 6
