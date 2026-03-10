@@ -54,7 +54,7 @@ export default function Deals() {
     const statusMatch = activeTab === "All" || deal.stage === activeTab;
     const searchMatch =
       deal.deal_name?.toLowerCase().includes(search.toLowerCase()) ||
-      deal.Customer?.name?.toLowerCase().includes(search.toLowerCase());
+      deal.customer?.name?.toLowerCase().includes(search.toLowerCase());
     return statusMatch && searchMatch;
   });
 
@@ -160,10 +160,10 @@ export default function Deals() {
                   </h3>
 
                   <p className="text-[#6b7280] text-[13px] mt-1 font-medium">
-                    <span className="text-[#4b5563]">{deal.Customer?.name || 'No Customer'}</span> 
-                    {deal.User && (
+                    <span className="text-[#4b5563]">{deal.customer?.name || 'No Customer'}</span> 
+                    {deal.assignedTo && (
                       <>
-                        <span className="mx-1">•</span> {deal.User.name}
+                        <span className="mx-1">•</span> {deal.assignedTo.name}
                       </>
                     )}
                   </p>
