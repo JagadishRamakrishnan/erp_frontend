@@ -123,18 +123,18 @@ export default function Deals() {
                       : deals.filter((d) => d.stage === tab).length;
 
                   return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
-                      ${
-                        activeTab === tab
-                          ? "bg-blue-500 text-white shadow"
-                          : "text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {tab} ({count})
-                    </button>
+                   <button
+  key={tab}
+  onClick={() => setActiveTab(tab)}
+  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
+  ${
+    activeTab === tab
+      ? "bg-[#1677ff] text-white shadow"
+      : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
+  }`}
+>
+  {tab} ({count})
+</button>
                   );
                 })}
               </div>

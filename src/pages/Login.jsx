@@ -162,8 +162,7 @@ export default function Login() {
               placeholder="admin@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+              className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"            />
 
             <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
           </div>

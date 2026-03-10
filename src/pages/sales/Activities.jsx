@@ -33,12 +33,13 @@ import { Typography } from "antd";
 import { Modal, Form, DatePicker } from "antd";
 import { activityService, leadService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
-
+import { useNavigate } from "react-router-dom";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 export default function Activities() {
+  const navigate = useNavigate();
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const [searchText, setSearchText] = useState("");
@@ -336,26 +337,38 @@ const handleView = (activity) => {
         <>
           {/* ================= HEADER ================= */}
           <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-            <Col>
-              <Title level={2} style={{ margin: 0 }}>
-                Activities
-              </Title>
-              <Text type="secondary">
-                Track and manage your daily tasks and meetings
-              </Text>
-            </Col>
-            <Col>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                style={styles.primaryBtn}
-                onClick={handleAddNew}
-              >
-                Add Activity
-              </Button>
-            </Col>
-          </Row>
+  <Col style={{ display: "flex", alignItems: "center", gap: 12 }}>
+{/*     
+    <Button
+      type="default"
+      onClick={() => navigate("/dashboard")}
+      style={{ borderRadius: 8 }}
+    >
+      ← Back
+    </Button> */}
 
+    <div>
+      <Title level={2} style={{ margin: 0 }}>
+        Activities
+      </Title>
+      <Text type="secondary">
+        Track and manage your daily tasks and meetings
+      </Text>
+    </div>
+
+  </Col>
+
+  <Col>
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      style={styles.primaryBtn}
+      onClick={handleAddNew}
+    >
+      Add Activity
+    </Button>
+  </Col>
+</Row>
           {/* ================= SUMMARY CARDS (Animated) ================= */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             {[

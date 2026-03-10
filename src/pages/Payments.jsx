@@ -216,10 +216,16 @@ export default function Payments() {
     })
   };
 
-  const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const cashPayments = payments.filter(p => p.payment_method === 'Cash').reduce((sum, p) => sum + (p.amount || 0), 0);
-  const upiPayments = payments.filter(p => p.payment_method === 'UPI').reduce((sum, p) => sum + (p.amount || 0), 0);
+ const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
+const cashPayments = payments
+  .filter(p => p.payment_method === "Cash")
+  .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+const upiPayments = payments
+  .filter(p => p.payment_method === "UPI")
+  .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  
   return (
     <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8" }}>
       {loading && !payments.length ? (
