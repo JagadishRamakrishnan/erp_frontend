@@ -26,8 +26,8 @@ export default function CreateQuoteModal({ closeModal }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
 
-      <div className="bg-white w-full sm:w-[500px] md:w-[650px] lg:w-[700px] max-w-[95%] rounded-xl shadow-xl p-6">
-        <h2 className="text-2xl font-bold mb-6">
+<div className="bg-white w-[95%] max-w-[1000px] rounded-xl shadow-xl p-6">
+          <h2 className="text-2xl font-bold mb-6">
           Create New Quote
         </h2>
 

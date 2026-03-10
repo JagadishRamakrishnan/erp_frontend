@@ -3,10 +3,11 @@ import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, 
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService } from "../services";
-
+import { useNavigate } from "react-router-dom";
 const { Option } = Select;
 
 export default function Leads() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -361,7 +362,7 @@ const [selectedLead, setSelectedLead] = useState(null);
         }}
         footer={null}
         centered
-        width={600}
+        width={750}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item 
@@ -467,16 +468,84 @@ const [selectedLead, setSelectedLead] = useState(null);
   centered
 >
   {selectedLead && (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p><b>Name:</b> {selectedLead.name}</p>
-      <p><b>Email:</b> {selectedLead.email || "N/A"}</p>
-      <p><b>Phone:</b> {selectedLead.phone || "N/A"}</p>
-      <p><b>Company:</b> {selectedLead.company || "N/A"}</p>
-      <p><b>Source:</b> {selectedLead.source || "N/A"}</p>
-      <p><b>Status:</b> {selectedLead.status}</p>
-      <p><b>Assigned To:</b> {selectedLead.assignedTo?.name || "Unassigned"}</p>
+  <div style={{ padding: "10px 5px" }}>
+    
+    {/* Profile Header */}
+    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+      
+      <Avatar
+        size={70}
+        style={{ backgroundColor: "#ff8a00", fontSize: 26 }}
+        icon={<UserOutlined />}
+      >
+        {selectedLead.name?.charAt(0)}
+      </Avatar>
+
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 700 }}>
+          {selectedLead.name}
+        </div>
+
+        <Tag color="blue">{selectedLead.status}</Tag>
+
+        <div style={{ color: "#6b7280", marginTop: 4 }}>
+          {selectedLead.company || "No Company"}
+        </div>
+      </div>
+
     </div>
-  )}
+
+    {/* Contact Info */}
+    <Card size="small" style={{ marginBottom: 15 }}>
+      <Row gutter={[16, 10]}>
+
+        <Col span={12}>
+          <b>Email</b>
+          <div style={{ color: "#4b5563" }}>
+            <MailOutlined /> {selectedLead.email || "N/A"}
+          </div>
+        </Col>
+
+        <Col span={12}>
+          <b>Phone</b>
+          <div style={{ color: "#4b5563" }}>
+            <PhoneOutlined /> {selectedLead.phone || "N/A"}
+          </div>
+        </Col>
+
+        <Col span={12}>
+          <b>Company</b>
+          <div style={{ color: "#4b5563" }}>
+            {selectedLead.company || "N/A"}
+          </div>
+        </Col>
+
+        <Col span={12}>
+          <b>Source</b>
+          <div style={{ color: "#4b5563" }}>
+            {selectedLead.source || "N/A"}
+          </div>
+        </Col>
+
+        <Col span={12}>
+          <b>Lead Code</b>
+          <div style={{ color: "#4b5563" }}>
+            {selectedLead.lead_code}
+          </div>
+        </Col>
+
+        <Col span={12}>
+          <b>Assigned To</b>
+          <div style={{ color: "#4b5563" }}>
+            {selectedLead.assignedTo?.name || "Unassigned"}
+          </div>
+        </Col>
+
+      </Row>
+    </Card>
+
+  </div>
+)}
 </Modal>
     </div>
   );
