@@ -115,7 +115,7 @@ export default function Deals() {
               </div>
 
               {/* STATUS TABS */}
-              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl w-full overflow-x-auto">
+              <div className="flex flex-wrap items-center gap-2 bg-gray-100 p-1 rounded-xl ml-auto">
                 {tabs.map((tab) => {
                   const count =
                     tab === "All"

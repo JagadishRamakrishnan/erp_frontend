@@ -310,11 +310,11 @@ const handleView = (quote) => {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filterStatus === status
-                      ? "bg-blue-500 text-white shadow"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+  filterStatus === status
+    ? "bg-[#1677ff] text-white shadow"
+    : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
+}`}
                 >
                   {status}
                 </button>

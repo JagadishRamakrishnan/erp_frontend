@@ -340,7 +340,7 @@ const pending = invoices
             </div>
 
             {/* STATUS TABS */}
-           <div className="flex items-center gap-2">
+           <div className="flex flex-wrap items-center gap-2 bg-gray-100 p-1 rounded-xl ml-auto">
   {["All", "Paid", "Pending", "Partial"].map((status) => {
     const count =
       status === "All"
@@ -351,10 +351,11 @@ const pending = invoices
       <button
         key={status}
         onClick={() => setFilter(status)}
-        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
+        ${
           filter === status
-            ? "bg-blue-500 text-white shadow"
-            : "text-gray-600 hover:bg-gray-100"
+            ? "bg-[#1677ff] text-white shadow"
+    : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
         }`}
       >
         {status} ({count})
