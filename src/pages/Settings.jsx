@@ -8,7 +8,7 @@ export default function Settings() {
   const styles = {
     page: { 
       padding: window.innerWidth < 768 ? "16px" : "24px", 
-      background: "#f8fafc", 
+       background: "#f5f6f8", 
       minHeight: "100vh",
       fontFamily: '"Inter", sans-serif' 
     },

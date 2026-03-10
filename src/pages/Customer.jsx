@@ -91,8 +91,12 @@ export default function Customer() {
   );
   // Dutch specific styles mapping 
   const styles = {
-    page: { padding: "8px 24px", minHeight: "100vh", width: "100%", background: "#f8fafc", fontFamily: '"Inter", sans-serif' },
-    roundedCard: { borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)", border: "none" },
+page: { 
+  padding: "8px 24px",
+  minHeight: "100vh",
+  width: "100%",
+  background: "#f5f6f8"
+},    roundedCard: { borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)", border: "none" },
     filterCard: { borderRadius: 12, border: "1px solid #e5e7eb", background: "#ffffff", padding: "16px 20px" },
     kpiCard: { 
       borderRadius: 14, 

@@ -166,7 +166,7 @@ export default function Users() {
   ];
 
   return (
-    <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8"}}>
       {loading && !users.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />

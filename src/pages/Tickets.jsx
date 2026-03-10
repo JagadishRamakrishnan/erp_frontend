@@ -229,7 +229,7 @@ export default function Tickets() {
   };
 
   return (
-    <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8" }}>
       {loading && !tickets.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />

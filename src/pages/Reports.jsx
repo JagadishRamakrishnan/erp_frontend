@@ -60,7 +60,8 @@ const { Title, Text } = Typography;
   }
 
   return (
-    <div className="p-4 md:p-6 bg-[#f8fafc] min-h-screen" style={fontInter}>
+        <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
+
 
       {/* ================= HEADER ================= */}
       

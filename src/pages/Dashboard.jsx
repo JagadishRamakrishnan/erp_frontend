@@ -8,7 +8,8 @@ import {
   Card, Row, Col, Table, Tag, Spin, message, 
   Avatar, Progress, Typography, Grid 
 } from "antd";
-
+import { Phone, Users, IndianRupee, Percent } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { 
   UserOutlined, 
   ShoppingOutlined, 
@@ -73,8 +74,12 @@ const styles = {
   },
 
  statIconCircle: {
-  borderRadius: "50%",
-  padding: 10
+  width: 48,
+  height: 48,
+  borderRadius: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center"
 },
 
   statChevron: {
@@ -86,6 +91,7 @@ const styles = {
   }
 };
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { useBreakpoint } = Grid;
 const screens = useBreakpoint();
   const [stats, setStats] = useState(null);
@@ -194,7 +200,7 @@ const screens = useBreakpoint();
   ];
 const data = stats?.recent?.deals || [];
   return (
-    <div style={{ padding: 24, background: "#f0f2f5", minHeight: "100vh" }}>
+    <div style={{ padding: "24px 32px", background: "#f5f6f8", minHeight: "100vh" }}>
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>Dashboard</h1>
 
 
@@ -207,6 +213,7 @@ const data = stats?.recent?.deals || [];
   animate="visible"
   whileHover={{ scale: 1.05 }}
   style={styles.statGridCardWrap}
+  onClick={() => navigate("/activities")}
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#7c3aed,#a78bfa)" }}>
               <div style={styles.statLeft}>
@@ -215,17 +222,23 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Total tracked activities</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-        <div style={styles.statIconCircle}>
+<div
+  style={{
+    ...styles.statIconCircle,
+    background: "transparent"
+  }}
+>
   <motion.div animate={iconAnimation.animate}>
-    <img
+    {/* <img
   src={callIcon}
   alt="activities"
   style={{
-    width: 28,
-    height: 28,
-    objectFit: "contain"
+    width: 26,
+    height: 26,
+    background: "transparent"
   }}
-/>
+/> */}
+<Phone size={28} color="blue" />
   </motion.div>
 </div>
                 <div style={styles.statChevron}>
@@ -237,12 +250,13 @@ const data = stats?.recent?.deals || [];
         </Col>
 
         <Col xs={24} sm={12} md={12} lg={6}>
-          <motion.div
+         <motion.div
   variants={cardAnimation}
   initial="hidden"
   animate="visible"
   whileHover={{ scale: 1.05 }}
   style={styles.statGridCardWrap}
+    onClick={() => navigate("/products")}
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#ff8a00,#ff5e3a)" }}>
               <div style={styles.statLeft}>
@@ -251,17 +265,21 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Total created</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-                <div style={styles.statIconCircle}>
-                 <div style={styles.statIconCircle}>
+               
+                <div style={{ ...styles.statIconCircle, background: "rgba(255,138,0,0.25)" }}>
   <motion.div animate={iconAnimation.animate}>
-   <img
+   {/* <img
   src={leadIcon}
-  alt="leads"
-  style={{ width: 28, height: 28 }}
-/>
+  alt="activities"
+  style={{
+    width: 26,
+    height: 26
+  }}
+/> */}
+<Users size={28} color="#fde68a" />
   </motion.div>
 </div>
-                </div>
+               
                 <div style={styles.statChevron}>
                   <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
                 </div>
@@ -271,12 +289,13 @@ const data = stats?.recent?.deals || [];
         </Col>
 
         <Col xs={24} sm={12} md={12} lg={6}>
-             <motion.div
+           <motion.div
   variants={cardAnimation}
   initial="hidden"
   animate="visible"
   whileHover={{ scale: 1.05 }}
   style={styles.statGridCardWrap}
+  onClick={() => navigate("/invoices")}
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#1e3a8a,#3b82f6)" }}>
               <div style={styles.statLeft}>
@@ -285,13 +304,22 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Closed deals amount</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-                <div style={styles.statIconCircle}>
-  <motion.div animate={iconAnimation.animate}>
-    <img
+<div
+  style={{
+    ...styles.statIconCircle,
+    background: "transparent"
+  }}
+>
+    <motion.div animate={iconAnimation.animate}>
+    {/* <img
   src={revenueIcon}
-  alt="revenue"
-  style={{ width: 28, height: 28 }}
-/>
+  alt="activities"
+  style={{
+    width: 26,
+    height: 26
+  }}
+/> */}
+<IndianRupee size={28} color="#bfdbfe" />
   </motion.div>
 </div>
                 <div style={styles.statChevron}>
@@ -309,6 +337,7 @@ const data = stats?.recent?.deals || [];
   animate="visible"
   whileHover={{ scale: 1.05 }}
   style={styles.statGridCardWrap}
+ onClick={() => navigate("/reports")}
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#059669,#34d399)" }}>
               <div style={styles.statLeft}>
@@ -317,13 +346,22 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Deal conversion</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-             <div style={styles.statIconCircle}>
+            <div
+  style={{
+    ...styles.statIconCircle,
+    background: "transparent"
+  }}
+>
   <motion.div animate={iconAnimation.animate}>
-    <img
+   {/* <img
   src={conversionIcon}
-  alt="conversion"
-  style={{ width: 28, height: 28 }}
-/>
+  alt="activities"
+  style={{
+    width: 26,
+    height: 26
+  }}
+/> */}
+<Percent size={28} color="#bbf7d0" />
   </motion.div>
 </div>
                 <div style={styles.statChevron}>
@@ -336,7 +374,7 @@ const data = stats?.recent?.deals || [];
       </Row>
 
       {/* SECOND ROW */}
-      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+      {/* <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={14}>
   <motion.div
     variants={cardAnimation}
@@ -354,7 +392,7 @@ const data = stats?.recent?.deals || [];
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
-            {/* DESKTOP TABLE */}
+          
             {!screens.xs && !screens.sm && (
               <Table 
                 columns={columns} 
@@ -364,7 +402,7 @@ const data = stats?.recent?.deals || [];
               />
             )}
 
-            {/* MOBILE CARD VIEW */}
+            
             {(screens.xs || screens.sm) && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {data.map((item) => (
@@ -416,7 +454,7 @@ const data = stats?.recent?.deals || [];
           </Card>
         </motion.div>
 </Col>
-      </Row>
+      </Row> */}
 
       {/* THIRD ROW */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

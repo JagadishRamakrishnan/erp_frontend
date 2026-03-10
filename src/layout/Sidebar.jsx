@@ -98,11 +98,11 @@ const sidebarBgColor = "#ffffff";
           icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
           label: "Leads",
         },
-        {
-          key: "opportunities",
-          icon: <DollarOutlined style={{ fontSize: 18 }} />,
-          label: "Opportunities",
-        },
+        // {
+        //   key: "opportunities",
+        //   icon: <DollarOutlined style={{ fontSize: 18 }} />,
+        //   label: "Opportunities",
+        // },
         {
           key: "quotes",
           icon: <FileText size={18} />,

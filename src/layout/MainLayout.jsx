@@ -24,7 +24,7 @@ const screens = useBreakpoint();
     marginLeft: screens.xs ? 0 : collapsed ? 80 : 240, // 👈 IMPORTANT
     transition: "all 0.2s",
     minHeight: "100vh",
-    background: "#f5f6f8",
+    background: "#ffffff",
   }}
 >
 
@@ -32,14 +32,13 @@ const screens = useBreakpoint();
         <AppHeader collapsed={collapsed} setCollapsed={setCollapsed} />
 
         {/* CONTENT */}
-        <Content
+      <Content
   className="hide-scrollbar"
   style={{
-    margin: "24px 16px 24px 16px",
-    background: "#ffffff",
+    margin: 0,
+    background: "#f5f6f8",
     padding: 24,
-    borderRadius: 12,
-    height: "calc(100vh - 64px)",
+    minHeight: "calc(100vh - 64px)",
     overflowY: "auto",
   }}
 >

@@ -25,6 +25,8 @@ export default function Quotes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [form] = Form.useForm();
+const [viewModalOpen, setViewModalOpen] = useState(false);
+const [selectedQuote, setSelectedQuote] = useState(null);
 
   useEffect(() => {
     fetchQuotations();
@@ -97,7 +99,10 @@ export default function Quotes() {
     });
     setModalOpen(true);
   };
-
+const handleView = (quote) => {
+  setSelectedQuote(quote);
+  setViewModalOpen(true);
+};
   const handleDelete = async (id) => {
     try {
       const response = await quotationService.delete(id);
@@ -182,14 +187,22 @@ export default function Quotes() {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+  <div style={{ display: 'flex', gap: 8 }}>
+    <Button
+      type="link"
+      icon={<EyeOutlined />}
+      onClick={() => handleView(record)}
+    >
+      View
+    </Button>
+
+    <Button
+      type="link"
+      icon={<EditOutlined />}
+      onClick={() => handleEdit(record)}
+    >
+      Edit
+    </Button>
           <Popconfirm
             title="Delete quotation"
             description="Are you sure you want to delete this quotation?"
@@ -222,7 +235,7 @@ export default function Quotes() {
   const pendingCount = quotations.filter(q => q.status === 'Sent').length;
 
   return (
-    <div className="p-4 md:p-6 bg-[#f8fafc] min-h-screen" style={fontInter}>
+    <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
       {loading && !quotations.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -427,6 +440,26 @@ export default function Quotes() {
           </Row>
         </Form>
       </Modal>
+      <Modal
+  title="Quotation Details"
+  open={viewModalOpen}
+  footer={null}
+  onCancel={() => setViewModalOpen(false)}
+  centered
+>
+  {selectedQuote && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <p><b>Quote ID:</b> {selectedQuote.quotation_number}</p>
+      <p><b>Customer:</b> {selectedQuote.customer?.name || "N/A"}</p>
+      <p><b>Email:</b> {selectedQuote.customer?.email || "N/A"}</p>
+      <p><b>Deal:</b> {selectedQuote.deal?.deal_name || "N/A"}</p>
+      <p><b>Total Amount:</b> ₹{selectedQuote.total_amount?.toLocaleString("en-IN")}</p>
+      <p><b>Tax Amount:</b> ₹{selectedQuote.tax_amount?.toLocaleString("en-IN")}</p>
+      <p><b>Status:</b> {selectedQuote.status}</p>
+      <p><b>Created:</b> {selectedQuote.created_at ? dayjs(selectedQuote.created_at).format("MMM DD, YYYY") : "N/A"}</p>
+    </div>
+  )}
+</Modal>
     </div>
   );
 }

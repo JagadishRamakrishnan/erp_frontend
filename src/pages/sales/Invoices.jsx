@@ -5,7 +5,7 @@ import {
 } from "antd";
 import { 
   SearchOutlined, DownloadOutlined, SendOutlined, EyeOutlined, 
-  PlusOutlined, FileTextOutlined, EditOutlined, DeleteOutlined 
+  PlusOutlined, FileTextOutlined, EditOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
@@ -26,7 +26,8 @@ export default function Invoices() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [form] = Form.useForm();
-
+const [viewOpen, setViewOpen] = useState(false);
+const [selectedInvoice, setSelectedInvoice] = useState(null);
   useEffect(() => {
     fetchInvoices();
     fetchCustomers();
@@ -111,7 +112,10 @@ export default function Invoices() {
     });
     setModalOpen(true);
   };
-
+const handleView = (invoice) => {
+  setSelectedInvoice(invoice);
+  setViewOpen(true);
+};
   const handleDelete = async (id) => {
     try {
       const response = await invoiceService.delete(id);
@@ -216,6 +220,13 @@ export default function Invoices() {
       render: (_, record) => (
         <div style={{ display: 'flex', gap: 8 }}>
           <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => handleView(record)}
+              >
+                View
+              </Button>
+          <Button
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
@@ -248,12 +259,15 @@ export default function Invoices() {
 
   const fontInter = { fontFamily: '"Inter", sans-serif' };
 
-  const total = invoices.reduce((a, b) => a + (b.total_amount || 0), 0);
-  const paid = invoices.reduce((a, b) => a + (b.paid_amount || 0), 0);
-  const pending = invoices.filter(i => i.status === "Pending").reduce((a, b) => a + (b.total_amount || 0), 0);
+ const total = invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
 
+const paid = invoices.reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0);
+
+const pending = invoices
+  .filter(inv => inv.status === "Pending")
+  .reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
   return (
-    <div className="p-4 md:p-6 bg-[#f8fafc] min-h-screen" style={fontInter}>
+    <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
       {loading && !invoices.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -326,29 +340,28 @@ export default function Invoices() {
             </div>
 
             {/* STATUS TABS */}
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-              {["All", "Paid", "Pending", "Partial"].map((tab) => {
-                const count =
-                  tab === "All"
-                    ? invoices.length
-                    : invoices.filter((i) => i.status === tab).length;
+           <div className="flex items-center gap-2">
+  {["All", "Paid", "Pending", "Partial"].map((status) => {
+    const count =
+      status === "All"
+        ? invoices.length
+        : invoices.filter((i) => i.status === status).length;
 
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setFilter(tab)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-                    ${
-                      filter === tab
-                        ? "bg-blue-500 text-white shadow"
-                        : "text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {tab} ({count})
-                  </button>
-                );
-              })}
-            </div>
+    return (
+      <button
+        key={status}
+        onClick={() => setFilter(status)}
+        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          filter === status
+            ? "bg-blue-500 text-white shadow"
+            : "text-gray-600 hover:bg-gray-100"
+        }`}
+      >
+        {status} ({count})
+      </button>
+    );
+  })}
+</div>
           </motion.div>
 
           {/* ================= INVOICES TABLE ================= */}
@@ -483,6 +496,53 @@ export default function Invoices() {
           </Row>
         </Form>
       </Modal>
+      <Modal
+  title="Invoice Details"
+  open={viewOpen}
+  footer={null}
+  onCancel={() => setViewOpen(false)}
+  centered
+>
+  {selectedInvoice && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      <p>
+        <b>Invoice ID:</b> {selectedInvoice.invoice_number}
+      </p>
+
+      <p>
+        <b>Customer:</b> {selectedInvoice.customer?.name || "N/A"}
+      </p>
+
+      <p>
+        <b>Total Amount:</b> ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
+      </p>
+
+      <p>
+        <b>Paid Amount:</b> ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
+      </p>
+
+      <p>
+        <b>Due Amount:</b> ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
+      </p>
+
+      <p>
+        <b>Status:</b>{" "}
+        <Tag color={getStatusColor(selectedInvoice.status)}>
+          {selectedInvoice.status}
+        </Tag>
+      </p>
+
+      <p>
+        <b>Created Date:</b>{" "}
+        {selectedInvoice.created_at
+          ? dayjs(selectedInvoice.created_at).format("MMM DD, YYYY")
+          : "N/A"}
+      </p>
+
+    </div>
+  )}
+</Modal>
     </div>
   );
 }

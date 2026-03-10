@@ -25,7 +25,7 @@ import {
   DownOutlined,
   EditOutlined,
   DeleteOutlined,
-  WhatsAppOutlined
+  WhatsAppOutlined,  EyeOutlined
 } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -52,7 +52,9 @@ export default function Activities() {
   const [leads, setLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [deals, setDeals] = useState([]);
-  
+  const [viewOpen, setViewOpen] = useState(false);
+const [selectedActivity, setSelectedActivity] = useState(null);
+
   useEffect(() => {
     fetchActivities();
     fetchLeads();
@@ -142,7 +144,10 @@ export default function Activities() {
     });
     setOpen(true);
   };
-
+const handleView = (activity) => {
+  setSelectedActivity(activity);
+  setViewOpen(true);
+};
   const handleDelete = async (id) => {
     try {
       const response = await activityService.delete(id);
@@ -191,7 +196,7 @@ export default function Activities() {
 
   // Dutch specific styles mapping 
   const styles = {
-    page: { padding: "8px 24px", minHeight: "100vh", width: "100%", background: "#f8fafc" },
+    page: { padding: "8px 24px", minHeight: "100vh", width: "100%", background: "#f5f6f8" },
     roundedCard: { borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)", border: "none" },
     filterCard: { borderRadius: 12, border: "1px solid #e5e7eb", background: "#ffffff", padding: "16px 20px", marginBottom: 20 },
     primaryBtn: { borderRadius: 8, fontWeight: 500, height: 40, fontFamily: '"Inter", sans-serif' },
@@ -288,15 +293,23 @@ export default function Activities() {
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+       render: (_, record) => (
+  <div style={{ display: 'flex', gap: 8 }}>
+    <Button
+      type="link"
+      icon={<EyeOutlined />}
+      onClick={() => handleView(record)}
+    >
+      View
+    </Button>
+
+    <Button
+      type="link"
+      icon={<EditOutlined />}
+      onClick={() => handleEdit(record)}
+    >
+      Edit
+    </Button>
           <Popconfirm
             title="Delete activity"
             description="Are you sure you want to delete this activity?"
@@ -566,6 +579,37 @@ export default function Activities() {
           </Row>
         </Form>
       </Modal>
+      <Modal
+  title="Activity Details"
+  open={viewOpen}
+  footer={null}
+  onCancel={() => setViewOpen(false)}
+  centered
+>
+  {selectedActivity && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      
+      <p><b>Type:</b> {selectedActivity.type}</p>
+
+      <p><b>Notes:</b> {selectedActivity.notes || "N/A"}</p>
+
+      <p>
+        <b>Related To:</b>{" "}
+        {selectedActivity.related_type
+          ? `${selectedActivity.related_type} #${selectedActivity.related_id}`
+          : "N/A"}
+      </p>
+
+      <p>
+        <b>Date:</b>{" "}
+        {selectedActivity.activity_date
+          ? dayjs(selectedActivity.activity_date).format("MMM DD, YYYY HH:mm")
+          : "N/A"}
+      </p>
+
+    </div>
+  )}
+</Modal>
     </div>
   );
 }

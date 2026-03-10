@@ -70,7 +70,7 @@ export default function Deals() {
   const fontInter = { fontFamily: '"Inter", sans-serif' };
 
   return (
-    <div className="p-4 md:p-6 bg-[#f8fafc] min-h-screen" style={fontInter}>
+<div className="p-4 md:p-6 min-h-screen" style={fontInter}>
       {loading && !deals.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />

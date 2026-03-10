@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin } from "antd";
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined } from "@ant-design/icons";
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService } from "../services";
 
@@ -14,7 +14,8 @@ export default function Leads() {
   const [searchText, setSearchText] = useState("");
   const [users, setUsers] = useState([]);
   const [form] = Form.useForm();
-
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+const [selectedLead, setSelectedLead] = useState(null);
   useEffect(() => {
     fetchLeads();
     fetchUsers();
@@ -76,7 +77,10 @@ export default function Leads() {
     });
     setModalOpen(true);
   };
-
+ const handleView = (lead) => {
+  setSelectedLead(lead);
+  setViewModalOpen(true);
+};
   const handleDelete = async (id) => {
     try {
       const response = await leadService.delete(id);
@@ -221,12 +225,20 @@ export default function Leads() {
             </Button>
           )}
           <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+  type="link"
+  icon={<EyeOutlined />}
+  onClick={() => handleView(record)}
+>
+  View
+</Button>
+
+<Button
+  type="link"
+  icon={<EditOutlined />}
+  onClick={() => handleEdit(record)}
+>
+  Edit
+</Button>
           <Popconfirm
             title="Delete lead"
             description="Are you sure you want to delete this lead?"
@@ -253,7 +265,7 @@ export default function Leads() {
   };
 
   return (
-    <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8"}}>
       {loading && !leads.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -447,6 +459,25 @@ export default function Leads() {
           </Row>
         </Form>
       </Modal>
+      <Modal
+  title="Lead Details"
+  open={viewModalOpen}
+  footer={null}
+  onCancel={() => setViewModalOpen(false)}
+  centered
+>
+  {selectedLead && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <p><b>Name:</b> {selectedLead.name}</p>
+      <p><b>Email:</b> {selectedLead.email || "N/A"}</p>
+      <p><b>Phone:</b> {selectedLead.phone || "N/A"}</p>
+      <p><b>Company:</b> {selectedLead.company || "N/A"}</p>
+      <p><b>Source:</b> {selectedLead.source || "N/A"}</p>
+      <p><b>Status:</b> {selectedLead.status}</p>
+      <p><b>Assigned To:</b> {selectedLead.assignedTo?.name || "Unassigned"}</p>
+    </div>
+  )}
+</Modal>
     </div>
   );
 }
