@@ -8,6 +8,7 @@ import BulkUploadModal from "../components/BulkUploadModal";
 
 const { Option } = Select;
 
+
 export default function Leads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
