@@ -41,6 +41,26 @@ const leadService = {
       method: 'POST',
     });
   },
+
+  // Bulk Upload
+  bulkUpload: async (formData) => {
+    const token = localStorage.getItem('token');
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    
+    return await fetch(`${API_BASE_URL}/leads/bulk-upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    }).then(async response => {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Upload failed');
+      }
+      return data;
+    });
+  },
 };
 
 export default leadService;

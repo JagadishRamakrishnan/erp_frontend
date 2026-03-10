@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin } from "antd";
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined } from "@ant-design/icons";
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService } from "../services";
+import BulkUploadModal from "../components/BulkUploadModal";
 
 const { Option } = Select;
 
@@ -15,7 +16,8 @@ export default function Leads() {
   const [users, setUsers] = useState([]);
   const [form] = Form.useForm();
   const [viewModalOpen, setViewModalOpen] = useState(false);
-const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   useEffect(() => {
     fetchLeads();
     fetchUsers();
@@ -122,6 +124,45 @@ const [selectedLead, setSelectedLead] = useState(null);
     setEditingLead(null);
     form.resetFields();
     setModalOpen(true);
+  };
+
+  const handleBulkUpload = async (formData) => {
+    try {
+      const response = await leadService.bulkUpload(formData);
+      if (response.success) {
+        fetchLeads(); // Refresh the list
+      }
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/leads/template/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'leads_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download template');
+      }
+    } catch (error) {
+      throw error;
+    }
   };
 
   const filteredLeads = leads.filter(lead =>
@@ -281,14 +322,24 @@ const [selectedLead, setSelectedLead] = useState(null);
               </div>
             </Col>
             <Col>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                style={{ height: 40, borderRadius: 8 }}
-                onClick={handleAddNew}
-              >
-                Add Lead
-              </Button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  style={{ height: 40, borderRadius: 8 }}
+                  onClick={handleAddNew}
+                >
+                  Add Lead
+                </Button>
+                <Button
+                  type="default"
+                  icon={<UploadOutlined />}
+                  style={{ height: 40, borderRadius: 8 }}
+                  onClick={() => setShowBulkUpload(true)}
+                >
+                  Bulk Upload
+                </Button>
+              </div>
             </Col>
           </Row>
 
@@ -478,6 +529,15 @@ const [selectedLead, setSelectedLead] = useState(null);
     </div>
   )}
 </Modal>
+
+      <BulkUploadModal
+        open={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onUpload={handleBulkUpload}
+        onDownloadTemplate={handleDownloadTemplate}
+        moduleName="Leads"
+        templateFields={['name', 'email', 'phone', 'company', 'source', 'status', 'assigned_to']}
+      />
     </div>
   );
 }

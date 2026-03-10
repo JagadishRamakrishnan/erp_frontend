@@ -56,14 +56,7 @@ export default function AppHeader({ collapsed, setCollapsed }) {
 
       {/* RIGHT SIDE - Select & Profile Dropdown */}
       <div className="flex items-center gap-2 sm:gap-6">
-        <Select
-          defaultValue="all"
-          style={{ width: window.innerWidth < 768 ? 120 : 150 }}
-        >
-          <Option value="all">All Branches</Option>
-          <Option value="chennai">Chennai</Option>
-          <Option value="salem">Salem</Option>
-        </Select>
+        
 
         <Dropdown
           placement="bottomRight"

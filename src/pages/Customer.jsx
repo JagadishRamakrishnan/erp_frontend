@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, Row, Col, Table, Input, Select, Tag, Avatar, Grid, Button, Modal, Form, message, Spin, Popconfirm } from "antd";
-import { SearchOutlined, UserOutlined, TeamOutlined, LaptopOutlined, DownOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { SearchOutlined, UserOutlined, TeamOutlined, LaptopOutlined, DownOutlined, PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { customerService } from "../services";
+import BulkUploadModal from "../components/BulkUploadModal";
 const { Option } = Select;
 
 export default function Customer() {
@@ -14,6 +15,7 @@ export default function Customer() {
   const [loading, setLoading] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   
   useEffect(() => {
     fetchCustomers();
@@ -82,6 +84,45 @@ export default function Customer() {
     setEditingCustomer(null);
     form.resetFields();
     setOpen(true);
+  };
+
+  const handleBulkUpload = async (formData) => {
+    try {
+      const response = await customerService.bulkUpload(formData);
+      if (response.success) {
+        fetchCustomers(); // Refresh the list
+      }
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/customers/template/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'customers_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download template');
+      }
+    } catch (error) {
+      throw error;
+    }
   };
   
   const filteredCustomers = customers.filter(customer =>
@@ -210,14 +251,24 @@ page: {
   </Col>
 
   <Col>
-    <Button
-      type="primary"
-      icon={<PlusOutlined />}
-      style={{ height: 40, borderRadius: 8 }}
-      onClick={handleAddNew}
-    >
-      Add Customer
-    </Button>
+    <div style={{ display: 'flex', gap: 12 }}>
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        style={{ height: 40, borderRadius: 8 }}
+        onClick={handleAddNew}
+      >
+        Add Customer
+      </Button>
+      <Button
+        type="default"
+        icon={<UploadOutlined />}
+        style={{ height: 40, borderRadius: 8 }}
+        onClick={() => setShowBulkUpload(true)}
+      >
+        Bulk Upload
+      </Button>
+    </div>
   </Col>
 </Row>
       {/* ================= TOP STATS (Animated, Black Text) ================= */}
@@ -432,6 +483,15 @@ page: {
 
   </Form>
 </Modal>
+
+      <BulkUploadModal
+        open={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onUpload={handleBulkUpload}
+        onDownloadTemplate={handleDownloadTemplate}
+        moduleName="Customers"
+        templateFields={['name', 'email', 'phone', 'company', 'address', 'city', 'state', 'country', 'postal_code']}
+      />
     </div>
   );
 }

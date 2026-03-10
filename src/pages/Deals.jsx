@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, Plus } from "lucide-react";
+import { Search, Calendar, Plus, Upload } from "lucide-react";
 import AddDealModal from "../components/AddDealModal";
 import DealDetailsModal from "../components/DealDetailsModal";
+import BulkUploadModal from "../components/BulkUploadModal";
 import { motion } from "framer-motion";
 import { Typography, message, Spin } from "antd";
 import { dealService } from "../services";
@@ -18,6 +19,7 @@ export default function Deals() {
   const { Title, Text } = Typography;
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   useEffect(() => {
     fetchDeals();
@@ -47,6 +49,45 @@ export default function Deals() {
       }
     } catch (error) {
       message.error('Failed to create deal');
+    }
+  };
+
+  const handleBulkUpload = async (formData) => {
+    try {
+      const response = await dealService.bulkUpload(formData);
+      if (response.success) {
+        fetchDeals(); // Refresh the list
+      }
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/deals/template/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'deals_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download template');
+      }
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -88,13 +129,23 @@ export default function Deals() {
               </Text>
             </div>
 
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
-            >
-              <Plus size={18}/>
-              Add Deal
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
+              >
+                <Plus size={18}/>
+                Add Deal
+              </button>
+              
+              <button
+                onClick={() => setShowBulkUpload(true)}
+                className="flex items-center gap-2 bg-[#52c41a] hover:bg-[#389e0d] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
+              >
+                <Upload size={18}/>
+                Bulk Upload
+              </button>
+            </div>
           </div>
 
           {/* ================= SEARCH + FILTER AREA ================= */}
@@ -241,6 +292,15 @@ export default function Deals() {
         open={showDetails}
         deal={selectedDeal}
         onClose={() => setShowDetails(false)}
+      />
+
+      <BulkUploadModal
+        open={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onUpload={handleBulkUpload}
+        onDownloadTemplate={handleDownloadTemplate}
+        moduleName="Deals"
+        templateFields={['deal_name', 'customer_id', 'value', 'stage', 'probability', 'expected_close_date', 'assigned_to']}
       />
     </div>
   );
