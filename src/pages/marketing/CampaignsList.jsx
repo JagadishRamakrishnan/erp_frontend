@@ -26,7 +26,13 @@ const CampaignsList = () => {
         setCampaigns(response.data || []);
       }
     } catch (error) {
-      message.error('Failed to load campaigns');
+      // Meta account not connected is expected - show empty state
+      if (error.message && error.message.includes('not connected')) {
+        setCampaigns([]);
+      } else {
+        console.error('Failed to load campaigns:', error);
+        message.error('Failed to load campaigns');
+      }
     } finally {
       setLoading(false);
     }
@@ -59,7 +65,7 @@ const CampaignsList = () => {
             {text}
           </Text>
           <div style={{ fontSize: 12, color: "#6b7280" }}>
-            ID: {record.meta_campaign_id}
+            ID: {record.campaign_id}
           </div>
         </div>
       ),
@@ -84,7 +90,7 @@ const CampaignsList = () => {
               color: active ? "#389e0d" : paused ? "#d46b08" : "#cf1322"
             }}
           >
-            {status}
+            {status || 'UNKNOWN'}
           </Tag>
         );
       },
@@ -103,18 +109,29 @@ const CampaignsList = () => {
       key: "daily_budget",
       render: (budget) => (
         <Text>
-          {budget ? `₹${parseFloat(budget).toLocaleString('en-IN')}` : 'N/A'}
+          {budget ? `₹${parseFloat(budget).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
         </Text>
       ),
     },
 
     {
-      title: "Lifetime Budget",
-      dataIndex: "lifetime_budget",
-      key: "lifetime_budget",
-      render: (budget) => (
-        <Text strong style={{ color: "#111827" }}>
-          {budget ? `₹${parseFloat(budget).toLocaleString('en-IN')}` : 'N/A'}
+      title: "Start Date",
+      dataIndex: "start_date",
+      key: "start_date",
+      render: (date) => (
+        <Text style={{ color: "#6b7280" }}>
+          {date ? dayjs(date).format('MMM DD, YYYY') : 'N/A'}
+        </Text>
+      ),
+    },
+
+    {
+      title: "End Date",
+      dataIndex: "end_date",
+      key: "end_date",
+      render: (date) => (
+        <Text style={{ color: "#6b7280" }}>
+          {date ? dayjs(date).format('MMM DD, YYYY') : 'Ongoing'}
         </Text>
       ),
     },

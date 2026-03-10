@@ -208,16 +208,16 @@ const data = stats?.recent?.deals || [];
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#7c3aed,#a78bfa)" }}>
               <div style={styles.statLeft}>
-                <div style={styles.statTitle}>Inbound Calls</div>
-                <div style={styles.statValue}>1.2K</div>
-                <div style={styles.statMeta}>Total tracked calls</div>
+                <div style={styles.statTitle}>Total Activities</div>
+                <div style={styles.statValue}>{stats.overview?.totalActivities || 0}</div>
+                <div style={styles.statMeta}>Total tracked activities</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
         <div style={styles.statIconCircle}>
   <motion.div animate={iconAnimation.animate}>
     <img
   src={callIcon}
-  alt="calls"
+  alt="activities"
   style={{
     width: 28,
     height: 28,
@@ -244,13 +244,12 @@ const data = stats?.recent?.deals || [];
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#ff8a00,#ff5e3a)" }}>
               <div style={styles.statLeft}>
-                <div style={styles.statTitle}>Generated Leads</div>
-                <div style={styles.statValue}>427</div>
+                <div style={styles.statTitle}>Total Leads</div>
+                <div style={styles.statValue}>{stats.overview?.totalLeads || 0}</div>
                 <div style={styles.statMeta}>Total created</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
                 <div style={styles.statIconCircle}>
-                  {/* <img src={leadIcon} style={{ width: 26, height: 26 }} /> */}
                  <div style={styles.statIconCircle}>
   <motion.div animate={iconAnimation.animate}>
    <img
@@ -279,14 +278,11 @@ const data = stats?.recent?.deals || [];
 >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#1e3a8a,#3b82f6)" }}>
               <div style={styles.statLeft}>
-                <div style={styles.statTitle}>Revenue This Month</div>
-                <div style={styles.statValue}>₹4.8L</div>
+                <div style={styles.statTitle}>Total Revenue</div>
+                <div style={styles.statValue}>₹{((stats.revenue?.totalRevenue || 0) / 100000).toFixed(1)}L</div>
                 <div style={styles.statMeta}>Closed deals amount</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-                {/* <div style={styles.statIconCircle}>
-                  <img src={revenueIcon} style={{ width: 26, height: 26 }} />
-                </div> */}
                 <div style={styles.statIconCircle}>
   <motion.div animate={iconAnimation.animate}>
     <img
@@ -315,13 +311,10 @@ const data = stats?.recent?.deals || [];
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#059669,#34d399)" }}>
               <div style={styles.statLeft}>
                 <div style={styles.statTitle}>Conversion Rate</div>
-                <div style={styles.statValue}>68%</div>
-                <div style={styles.statMeta}>Lead to customer</div>
+                <div style={styles.statValue}>{stats.deals?.conversionRate || 0}%</div>
+                <div style={styles.statMeta}>Deal conversion</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-                {/* <div style={styles.statIconCircle}>
-                  <img src={conversionIcon} style={{ width: 26, height: 26 }} />
-                </div> */}
              <div style={styles.statIconCircle}>
   <motion.div animate={iconAnimation.animate}>
     <img
@@ -355,7 +348,7 @@ const data = stats?.recent?.deals || [];
                  <span style={{ fontSize: 16, fontWeight: 600 }}>Recent Deals</span>
               </div>
             }
-            bordered={false}
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
@@ -405,7 +398,7 @@ const data = stats?.recent?.deals || [];
   >
   <Card
              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Sales Performance</span>}
-            bordered={false}
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
@@ -434,32 +427,38 @@ const data = stats?.recent?.deals || [];
   >
   <Card
             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Top Sales Agents</span>}
-            bordered={false}
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
-            {/* Sales agents styling matching Dutch's mapping iterations */}
-            {[
-               { name: "Priya Sharma", val: "₹1.2L" },
-               { name: "Rahul Kumar", val: "₹98K" },
-               { name: "John Mathew", val: "₹75K" }
-            ].map((agent, idx) => (
-              <div key={idx} style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
-                alignItems: "center",
-                padding: "12px 0",
-                borderBottom: idx < 2 ? "1px solid #f0f0f0" : "none" 
-              }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                   <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
-                   <Text strong>{agent.name}</Text>
+            {stats.topSalesAgents && stats.topSalesAgents.length > 0 ? (
+              stats.topSalesAgents.map((agent, idx) => (
+                <div key={agent.userId} style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  padding: "12px 0",
+                  borderBottom: idx < stats.topSalesAgents.length - 1 ? "1px solid #f0f0f0" : "none" 
+                }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                     <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
+                     <div>
+                       <Text strong>{agent.name}</Text>
+                       <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+                         {agent.dealCount} {agent.dealCount === 1 ? 'deal' : 'deals'} closed
+                       </div>
+                     </div>
+                  </div>
+                  <Text strong>
+                    ₹{(agent.totalValue / 1000).toFixed(0)}K
+                  </Text>
                 </div>
-                <Text strong>
-                  {agent.val}
-                </Text>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
+                No sales data available
               </div>
-            ))}
+            )}
           </Card>
          </motion.div>
 </Col>
@@ -473,84 +472,59 @@ const data = stats?.recent?.deals || [];
   >
   <Card
              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
-            bordered={false}
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Activity Item 1 */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background: "#f9fafb",
-                  padding: "12px 16px",
-                  borderRadius: 12,
-                  border: "1px solid #f1f5f9",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      height: 36, width: 36, borderRadius: 10,
-                      background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                    }}
-                  >
-                    📞
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>Call with ABC Pvt Ltd</div>
-                    <div style={{ fontSize: 12, color: "gray" }}>10:00 AM</div>
-                  </div>
+              {stats.recent?.activities && stats.recent.activities.length > 0 ? (
+                stats.recent.activities.slice(0, 3).map((activity, index) => {
+                  const icons = ['📞', '📧', '🤝', '📝', '💼'];
+                  const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
+                  
+                  return (
+                    <div
+                      key={activity.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: "#f9fafb",
+                        padding: "12px 16px",
+                        borderRadius: 12,
+                        border: "1px solid #f1f5f9",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div
+                          style={{
+                            height: 36, width: 36, borderRadius: 10,
+                            background: backgrounds[index % backgrounds.length],
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                          }}
+                        >
+                          {icons[index % icons.length]}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
+                          <div style={{ fontSize: 12, color: "gray" }}>
+                            {new Date(activity.activity_date).toLocaleString('en-IN', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              day: 'numeric',
+                              month: 'short'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
+                  No recent activities
                 </div>
-              </div>
-
-              {/* Activity Item 2 */}
-              <div
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: "#f9fafb", padding: "12px 16px", borderRadius: 12, border: "1px solid #f1f5f9",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      height: 36, width: 36, borderRadius: 10,
-                      background: "#e0f2fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                    }}
-                  >
-                    📧
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>Send Proposal to Tech Solutions</div>
-                    <div style={{ fontSize: 12, color: "gray" }}>12:30 PM</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Activity Item 3 */}
-              <div
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: "#f9fafb", padding: "12px 16px", borderRadius: 12, border: "1px solid #f1f5f9",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      height: 36, width: 36, borderRadius: 10,
-                      background: "#fef9c3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                    }}
-                  >
-                    🤝
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>Client Meeting</div>
-                    <div style={{ fontSize: 12, color: "gray" }}>4:00 PM</div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </Card>
          </motion.div>
@@ -569,21 +543,31 @@ const data = stats?.recent?.deals || [];
   
           <Card 
             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Deal Stage Overview</span>} 
-            bordered={false} 
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
           >
-            <div style={{ marginBottom: 6 }}><Text strong>New Leads</Text></div>
-            <Progress percent={40} strokeColor="#3b82f6" />
-            
-            <div style={{ marginTop: 12, marginBottom: 6 }}><Text strong>Proposal Sent</Text></div>
-            <Progress percent={65} strokeColor="#8b5cf6" />
-            
-            <div style={{ marginTop: 12, marginBottom: 6 }}><Text strong>Negotiation</Text></div>
-            <Progress percent={55} strokeColor="#f97316" />
-            
-            <div style={{ marginTop: 12, marginBottom: 6 }}><Text strong>Closed Won</Text></div>
-            <Progress percent={72} strokeColor="#10b981" />
+            {stats.breakdown?.dealsByStage?.map((stage, index) => {
+              const colors = {
+                'Lead': '#3b82f6',
+                'Qualified': '#8b5cf6',
+                'Proposal': '#f97316',
+                'Negotiation': '#f59e0b',
+                'Won': '#10b981',
+                'Lost': '#ef4444'
+              };
+              const totalDeals = stats.overview?.totalDeals || 1;
+              const percent = Math.round((stage.count / totalDeals) * 100);
+              
+              return (
+                <div key={stage.stage}>
+                  <div style={{ marginTop: index > 0 ? 12 : 0, marginBottom: 6 }}>
+                    <Text strong>{stage.stage} ({stage.count})</Text>
+                  </div>
+                  <Progress percent={percent} strokeColor={colors[stage.stage] || '#3b82f6'} />
+                </div>
+              );
+            })}
           </Card>
         </motion.div>
 </Col>
@@ -597,7 +581,7 @@ const data = stats?.recent?.deals || [];
   >
   <Card
             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Lead Sources</span>}
-            bordered={false}
+            variant="borderless"
             style={styles.roundedCard}
             styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" }, body: { display: 'flex', flexDirection: 'column', justifyContent: 'center'} }}
           >
@@ -614,11 +598,10 @@ const data = stats?.recent?.deals || [];
               {/* Donut Chart */}
              <Progress
   type="circle"
-  percent={45}
+  percent={stats.breakdown?.leadsByStatus?.length > 0 ? 100 : 0}
   strokeWidth={12}
-  trailColor="#e5e7eb"
   strokeColor="#3b82f6"
-  format={() => ""}
+  format={() => stats.overview?.totalLeads || 0}
   size={160}
 />
               {/* Legend */}
@@ -631,10 +614,18 @@ const data = stats?.recent?.deals || [];
     justifyContent: "center"
   }}
 > 
-                <div><span style={{ color: "#3b82f6", marginRight: 8, fontSize: 18 }}>●</span> Website (45%)</div>
-                <div><span style={{ color: "#ec4899", marginRight: 8, fontSize: 18 }}>●</span> Social Media (30%)</div>
-                <div><span style={{ color: "#6366f1", marginRight: 8, fontSize: 18 }}>●</span> Referral (15%)</div>
-                <div><span style={{ color: "#f59e0b", marginRight: 8, fontSize: 18 }}>●</span> Email Campaign (10%)</div>
+                {stats.breakdown?.leadsByStatus?.map((lead, index) => {
+                  const colors = ['#3b82f6', '#ec4899', '#6366f1', '#f59e0b', '#10b981'];
+                  const totalLeads = stats.overview?.totalLeads || 1;
+                  const percent = Math.round((lead.count / totalLeads) * 100);
+                  
+                  return (
+                    <div key={lead.status}>
+                      <span style={{ color: colors[index % colors.length], marginRight: 8, fontSize: 18 }}>●</span> 
+                      {lead.status} ({percent}%)
+                    </div>
+                  );
+                })}
 </div>
 </div>
 </Card>
@@ -642,7 +633,7 @@ const data = stats?.recent?.deals || [];
 </Col>
 </Row>
       {/* Stats Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24, marginTop:44 }}>
         {cardData.map((card, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
             <Card

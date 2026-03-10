@@ -13,3 +13,4 @@ export { default as ticketService } from './ticketService';
 export { default as noteService } from './noteService';
 export { default as metaService } from './metaService';
 export { default as dashboardService } from './dashboardService';
+export { default as reportsService } from './reportsService';

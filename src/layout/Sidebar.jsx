@@ -137,12 +137,6 @@ const sidebarBgColor = "#ffffff";
       icon: <FileText size={18} />,
       label: "Tasks",
     },
-    // PRODUCTS
-    {
-      key: "products",
-      icon: <ShoppingCartOutlined style={{ fontSize: 18 }} />,
-      label: "Products",
-    },
     // REPORTS
     {
       key: "reports",
@@ -182,16 +176,6 @@ const sidebarBgColor = "#ffffff";
           key: "users",
           icon: <UserOutlined style={{ fontSize: 18 }} />,
           label: "Users",
-        },
-        {
-          key: "contact",
-          icon: <UserOutlined style={{ fontSize: 18 }} />,
-          label: "Contacts",
-        },
-        {
-          key: "roles",
-          icon: <PercentageOutlined style={{ fontSize: 18 }} />,
-          label: "Roles & Permissions",
         },
       ],
     },

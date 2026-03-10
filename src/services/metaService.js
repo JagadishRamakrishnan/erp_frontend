@@ -2,7 +2,7 @@ import apiCall from './api';
 
 const metaService = {
   // Connect Meta Account
-  connectMetaAccount: async (metaData) => {
+  connect: async (metaData) => {
     return await apiCall('/meta/connect', {
       method: 'POST',
       body: JSON.stringify(metaData),
@@ -55,12 +55,12 @@ const metaService = {
   },
 
   // Get Marketing Dashboard
-  getMarketingDashboard: async () => {
+  getDashboard: async () => {
     return await apiCall('/meta/dashboard');
   },
 
   // Get All Campaigns
-  getAllCampaigns: async () => {
+  getCampaigns: async () => {
     return await apiCall('/meta/campaigns');
   },
 };

@@ -1,29 +1,39 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from "recharts";
 import { Target, DollarSign, TrendingUp, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { Typography } from "antd";
-const revenueData = [
-  { name: "Jan", revenue: 45000 },
-  { name: "Feb", revenue: 52000 },
-  { name: "Mar", revenue: 48000 },
-  { name: "Apr", revenue: 61000 },
-  { name: "May", revenue: 55000 },
-  { name: "Jun", revenue: 68000 }
-];
-
-const dealData = [
-  { name: "Jan", deals: 12 },
-  { name: "Feb", deals: 15 },
-  { name: "Mar", deals: 13 },
-  { name: "Apr", deals: 18 },
-  { name: "May", deals: 16 },
-  { name: "Jun", deals: 21 }
-];
+import { Typography, Spin, message } from "antd";
+import { reportsService } from "../services";
 
 export default function Reports() {
+  const [loading, setLoading] = useState(false);
+  const [reportsData, setReportsData] = useState(null);
+
+  useEffect(() => {
+    fetchReportsData();
+  }, []);
+
+  const fetchReportsData = async () => {
+    setLoading(true);
+    try {
+      const response = await reportsService.getReports();
+      if (response.success) {
+        setReportsData(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load reports data:', error);
+      message.error('Failed to load reports data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const kpiMetrics = reportsData?.kpiMetrics || {};
+  const revenueData = reportsData?.revenueTrend || [];
+  const dealData = reportsData?.dealsTrend || [];
+  const topPerformers = reportsData?.topPerformers || [];
   
   const cardAnimation = {
     hidden: { opacity: 0, y: 30 },
@@ -40,6 +50,14 @@ const { Title, Text } = Typography;
   };
 
   const fontInter = { fontFamily: '"Inter", sans-serif' };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 bg-[#f8fafc] min-h-screen" style={fontInter}>
@@ -59,10 +77,10 @@ const { Title, Text } = Typography;
       {/* ================= KPI CARDS (Animated) ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         {[
-          { title: "Win Rate", value: "68%", growth: "+5%", growthColor: "text-[#10b981]", icon: <Target size={22} className="text-[#10b981]"/>, bg: "bg-[#d1fae5]" },
-          { title: "Avg Deal Size", value: "₹32.5K", growth: "+12%", growthColor: "text-[#10b981]", icon: <DollarSign size={22} className="text-[#7c3aed]"/>, bg: "bg-[#f3e8ff]" },
-          { title: "Sales Cycle", value: "28 days", growth: "-3 days", growthColor: "text-[#10b981]", icon: <TrendingUp size={22} className="text-[#3b82f6]"/>, bg: "bg-[#dbeafe]" },
-          { title: "Active Leads", value: "247", growth: "+18%", growthColor: "text-[#10b981]", icon: <Users size={22} className="text-[#f59e0b]"/>, bg: "bg-[#fef3c7]" }
+          { title: "Win Rate", value: kpiMetrics.winRate || "0%", growth: "+5%", growthColor: "text-[#10b981]", icon: <Target size={22} className="text-[#10b981]"/>, bg: "bg-[#d1fae5]" },
+          { title: "Avg Deal Size", value: kpiMetrics.avgDealSize || "₹0K", growth: "+12%", growthColor: "text-[#10b981]", icon: <DollarSign size={22} className="text-[#7c3aed]"/>, bg: "bg-[#f3e8ff]" },
+          { title: "Sales Cycle", value: kpiMetrics.salesCycle || "0 days", growth: "-3 days", growthColor: "text-[#10b981]", icon: <TrendingUp size={22} className="text-[#3b82f6]"/>, bg: "bg-[#dbeafe]" },
+          { title: "Active Leads", value: kpiMetrics.activeLeads || "0", growth: "+18%", growthColor: "text-[#10b981]", icon: <Users size={22} className="text-[#f59e0b]"/>, bg: "bg-[#fef3c7]" }
         ].map((item, i) => (
           <motion.div
             key={i}
@@ -163,37 +181,47 @@ const { Title, Text } = Typography;
         </div>
 
         <div className="px-2 pb-2">
-          {[
-            { rank: "#1", name: "Sarah Johnson", deals: "8 deals closed", price: "₹1,42,000", avatar: "SJ", bg: "bg-[#1677ff]", color: "text-[#1677ff]", rankBg: "bg-[#e6f4ff]" },
-            { rank: "#2", name: "Michael Chen", deals: "6 deals closed", price: "₹98,500", avatar: "MC", bg: "bg-[#7c3aed]", color: "text-[#7c3aed]", rankBg: "bg-[#f3e8ff]" },
-            { rank: "#3", name: "David Park", deals: "5 deals closed", price: "₹87,200", avatar: "DP", bg: "bg-[#10b981]", color: "text-[#10b981]", rankBg: "bg-[#d1fae5]" },
-          ].map((performer, idx) => (
-            <div 
-              key={idx} 
-              className={`flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors rounded-[12px] ${idx !== 2 ? "border-b border-gray-100" : ""}`}
-            >
-              <div className="flex items-center gap-4">
-                
-                <span className={`w-8 h-8 flex items-center justify-center rounded-[8px] text-[12px] font-bold ${performer.rankBg} ${performer.color}`}>
-                  {performer.rank}
+          {topPerformers.length > 0 ? topPerformers.map((performer, idx) => {
+            const initials = performer.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const colors = [
+              { bg: "bg-[#1677ff]", color: "text-[#1677ff]", rankBg: "bg-[#e6f4ff]" },
+              { bg: "bg-[#7c3aed]", color: "text-[#7c3aed]", rankBg: "bg-[#f3e8ff]" },
+              { bg: "bg-[#10b981]", color: "text-[#10b981]", rankBg: "bg-[#d1fae5]" }
+            ];
+            const colorScheme = colors[idx] || colors[0];
+            
+            return (
+              <div 
+                key={performer.id} 
+                className={`flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors rounded-[12px] ${idx !== topPerformers.length - 1 ? "border-b border-gray-100" : ""}`}
+              >
+                <div className="flex items-center gap-4">
+                  
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-[8px] text-[12px] font-bold ${colorScheme.rankBg} ${colorScheme.color}`}>
+                    #{idx + 1}
+                  </span>
+
+                  <div className={`w-10 h-10 ${colorScheme.bg} text-white rounded-full flex items-center justify-center font-bold text-[14px] shadow-sm`}>
+                    {initials}
+                  </div>
+
+                  <div>
+                    <p className="text-[15px] font-bold text-[#111827]">{performer.name}</p>
+                    <p className="text-[13px] text-[#6b7280] font-medium">{performer.dealsCount} deals closed</p>
+                  </div>
+
+                </div>
+
+                <span className="text-[16px] font-[800] text-[#111827]">
+                  ₹{(performer.totalValue / 1000).toFixed(1)}K
                 </span>
-
-                <div className={`w-10 h-10 ${performer.bg} text-white rounded-full flex items-center justify-center font-bold text-[14px] shadow-sm`}>
-                  {performer.avatar}
-                </div>
-
-                <div>
-                  <p className="text-[15px] font-bold text-[#111827]">{performer.name}</p>
-                  <p className="text-[13px] text-[#6b7280] font-medium">{performer.deals}</p>
-                </div>
-
               </div>
-
-              <span className="text-[16px] font-[800] text-[#111827]">
-                {performer.price}
-              </span>
+            );
+          }) : (
+            <div className="p-8 text-center">
+              <Text type="secondary">No top performers data available for this month</Text>
             </div>
-          ))}
+          )}
         </div>
       </motion.div>
 
