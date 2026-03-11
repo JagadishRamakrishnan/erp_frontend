@@ -12,7 +12,9 @@ import { Typography } from "antd";
 import { quotationService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
 import ResponsiveTable from "../../components/ResponsiveTable";
-
+import q2 from "../../assets/icons/q2.gif";
+import q3 from "../../assets/icons/q3.gif";
+import q4 from "../../assets/icons/q4.gif";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -286,11 +288,79 @@ const handleView = (quote) => {
           {/* ================= SUMMARY CARDS (Animated) ================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
-              { title: "Total Quotes", count: quotations.length, icon: <FileTextOutlined className="text-[#7c3aed]" />, bg: "bg-[#7c3aed]/10", color: "#111827" },
-              { title: "Quote Value", count: `₹${(totalValue / 100000).toFixed(1)}L`, icon: <FileTextOutlined className="text-[#10b981]" />, bg: "bg-[#10b981]/10", color: "#10b981" },
-              { title: "Pending", count: pendingCount, icon: <FileTextOutlined className="text-[#f59e0b]" />, bg: "bg-[#f59e0b]/10", color: "#f59e0b" },
-              { title: "Approved Value", count: `₹${(approvedValue / 100000).toFixed(1)}L`, icon: <FileTextOutlined className="text-[#3b82f6]" />, bg: "bg-[#3b82f6]/10", color: "#3b82f6" },
-            ].map((item, i) => (
+             {
+    title: "Total Quotes",
+    count: quotations.length,
+    icon: (
+  <img 
+    src={q2} 
+    alt="quotes" 
+    style={{ 
+      width: 28, 
+      height: 28,
+      mixBlendMode: "multiply",
+      background: "transparent"
+    }} 
+  />
+),
+    bg: "bg-[#7c3aed]/10",
+    color: "#111827"
+  },
+  {
+    title: "Quote Value",
+    count: `₹${(totalValue / 100000).toFixed(1)}L`,
+    icon: (
+  <img 
+    src={q3} 
+    alt="quotes" 
+    style={{ 
+      width: 28, 
+      height: 28,
+      mixBlendMode: "multiply",
+      background: "transparent"
+    }} 
+  />
+),
+    bg: "bg-[#10b981]/10",
+    color: "#10b981"
+  },
+  {
+    title: "Pending",
+    count: pendingCount,
+    icon: (
+  <img 
+    src={q4} 
+    alt="quotes" 
+    style={{ 
+      width: 28, 
+      height: 28,
+      mixBlendMode: "multiply",
+      background: "transparent"
+    }} 
+  />
+),
+    bg: "bg-[#f59e0b]/10",
+    color: "#f59e0b"
+  },
+  {
+    title: "Approved Value",
+    count: `₹${(approvedValue / 100000).toFixed(1)}L`,
+    icon: (
+  <img 
+    src={q2} 
+    alt="quotes" 
+    style={{ 
+      width: 28, 
+      height: 28,
+      mixBlendMode: "multiply",
+      background: "transparent"
+    }} 
+  />
+),
+    bg: "bg-[#3b82f6]/10",
+    color: "#3b82f6"
+  }
+ ].map((item, i) => (
               <motion.div
                 key={i}
                 custom={i}

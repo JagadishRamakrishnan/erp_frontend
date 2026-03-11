@@ -264,17 +264,18 @@ const data = stats?.recent?.deals || [];
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
                
                 <div style={{ ...styles.statIconCircle, background: "rgba(255,138,0,0.25)" }}>
-  <motion.div animate={iconAnimation.animate}>
-   {/* <img
-  src={leadIcon}
-  alt="activities"
-  style={{
-    width: 26,
-    height: 26
+  <motion.div
+  animate={{
+    scale: [1, 1.2, 1],
+    rotate: [0, 10, -10, 0]
   }}
-/> */}
-<Users size={28} color="#fde68a" />
-  </motion.div>
+  transition={{
+    duration: 2,
+    repeat: Infinity
+  }}
+>
+  <Users size={28} color="#fde68a" />
+</motion.div>
 </div>
                
                 <div style={styles.statChevron}>

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, Row, Col, Table, Input, Select, Tag, Avatar, Grid, Button, Modal, Form, message, Spin, Popconfirm } from "antd";
 import { SearchOutlined, UserOutlined, TeamOutlined, LaptopOutlined, DownOutlined, PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
+import c1 from "../assets/icons/c1.gif";
+import c2 from "../assets/icons/c2.gif";
+import c3 from "../assets/icons/c3.gif";
 import { customerService } from "../services";
 import BulkUploadModal from "../components/BulkUploadModal";
 const { Option } = Select;
@@ -291,10 +294,54 @@ page: {
       {/* ================= TOP STATS (Animated, Black Text) ================= */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {[
-          { title: "Total Customers", count: customers.length, icon: <UserOutlined />, change: "All customers", trendColor: "#10b981", iconBg: "#e0e7ff", iconColor: "#6366f1", borderTop: "#6366f1" },
-          { title: "With Email", count: customers.filter(c => c.email).length, icon: <TeamOutlined />, change: "Have email", trendColor: "#10b981", iconBg: "#fce7f3", iconColor: "#ec4899", borderTop: "#ec4899" },
-          { title: "With Phone", count: customers.filter(c => c.phone).length, icon: <LaptopOutlined />, change: "Have phone", trendColor: "#10b981", iconBg: "#d1fae5", iconColor: "#10b981", borderTop: "#10b981" },
-        ].map((item, index) => (
+           {
+    title: "Total Customers",
+    count: customers.length,
+    icon: (
+  <img
+    src={c1}
+    alt="customers"
+    style={{ width: 32, height: 32, mixBlendMode: "multiply" }}
+  />
+),
+    change: "All customers",
+    trendColor: "#10b981",
+    iconBg: "#e0e7ff",
+    iconColor: "#6366f1",
+    borderTop: "#6366f1"
+  },
+  {
+    title: "With Email",
+    count: customers.filter(c => c.email).length,
+    icon: (
+  <img
+    src={c2}
+    alt="customers"
+    style={{ width: 32, height: 32, mixBlendMode: "multiply" }}
+  />
+),
+    change: "Have email",
+    trendColor: "#10b981",
+    iconBg: "#fce7f3",
+    iconColor: "#ec4899",
+    borderTop: "#ec4899"
+  },
+  {
+    title: "With Phone",
+    count: customers.filter(c => c.phone).length,
+    icon: (
+  <img
+    src={c3}
+    alt="customers"
+    style={{ width: 32, height: 32, mixBlendMode: "multiply" }}
+  />
+),
+    change: "Have phone",
+    trendColor: "#10b981",
+    iconBg: "#d1fae5",
+    iconColor: "#10b981",
+    borderTop: "#10b981"
+  },  ].map((item, index) => (
           <Col xs={24} sm={12} lg={8} key={index}>
             <motion.div
               custom={index}
