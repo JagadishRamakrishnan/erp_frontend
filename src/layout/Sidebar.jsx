@@ -19,6 +19,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   RiseOutlined,
+   CalendarOutlined
 } from "@ant-design/icons";
 
 // Lucide Icons
@@ -110,7 +111,7 @@ const sidebarBgColor = "#ffffff";
         },
         {
           key: "activities",
-          icon: <PercentageOutlined style={{ fontSize: 18 }} />,
+          icon: <CalendarOutlined style={{ fontSize: 18 }} />,
           label: "Activities",
         },
         {
