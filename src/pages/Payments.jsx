@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Table, Input, Button, Modal, Form, Select, message, 
+  Card, Input, Button, Modal, Form, Select, message, 
   Popconfirm, Row, Col, Spin, Tag, DatePicker, InputNumber 
 } from "antd";
 import { 
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { paymentService, invoiceService } from "../services";
 import dayjs from "dayjs";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -315,13 +316,73 @@ const upiPayments = payments
                 Payment Records ({filteredPayments.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredPayments}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => {
+                const methodColors = {
+                  'Cash': 'success',
+                  'UPI': 'purple',
+                  'Card': 'processing',
+                  'Bank': 'warning'
+                };
+                
+                return (
+                  <div>
+                    {/* Payment Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                        {record.invoice?.invoice_number || `INV-${record.invoice_id}`}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {getMethodIcon(record.payment_method)}
+                        <Tag color={methodColors[record.payment_method] || 'default'}>
+                          {record.payment_method}
+                        </Tag>
+                      </div>
+                    </div>
+
+                    {/* Payment Details */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#10b981", marginBottom: 8 }}>
+                        ₹{record.amount?.toLocaleString("en-IN") || 0}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Reference:</strong> {record.reference_number || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Date:</strong> {record.payment_date ? dayjs(record.payment_date).format('MMM DD, YYYY') : 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete payment"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                );
+              }}
             />
           </Card>
         </>

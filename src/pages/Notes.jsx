@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Table, Input, Button, Modal, Form, Select, message, 
+  Card, Input, Button, Modal, Form, Select, message, 
   Popconfirm, Row, Col, Spin, Tag 
 } from "antd";
 import { 
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { noteService, leadService, customerService, dealService } from "../services";
 import dayjs from "dayjs";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -340,13 +341,74 @@ export default function Notes() {
                 Notes List ({filteredNotes.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredNotes}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => {
+                const typeColors = {
+                  'Lead': 'blue',
+                  'Customer': 'green',
+                  'Deal': 'orange'
+                };
+                
+                return (
+                  <div>
+                    {/* Note Header */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
+                      <FileTextOutlined style={{ color: "#1677ff", fontSize: 18, marginTop: 2 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, color: "#111827", lineHeight: 1.5 }}>
+                          {record.note}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Note Details */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      <div style={{ marginBottom: 6 }}>
+                        <Tag color={typeColors[record.related_type] || 'default'}>
+                          {record.related_type}
+                        </Tag>
+                        <span style={{ color: "#6b7280", marginLeft: 8 }}>
+                          #{record.related_id}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Created By:</strong> {record.creator?.name || 'Unknown'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY HH:mm') : 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete note"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                );
+              }}
             />
           </Card>
         </>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Table, Input, Button, Modal, Form, Select, message, 
+  Card, Input, Button, Modal, Form, Select, message, 
   Popconfirm, Row, Col, Spin, Tag, DatePicker 
 } from "antd";
 import { 
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { taskService, userService, leadService, customerService, dealService } from "../services";
 import dayjs from "dayjs";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -480,13 +481,87 @@ export default function Tasks() {
                 Task List ({filteredTasks.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredTasks}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => (
+                <div>
+                  {/* Task Header with Complete Button */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                    <Button
+                      type={record.status === 'Completed' ? 'default' : 'primary'}
+                      shape="circle"
+                      size="small"
+                      icon={record.status === 'Completed' ? <CheckCircleOutlined /> : null}
+                      onClick={() => handleToggleComplete(record)}
+                      style={{
+                        background: record.status === 'Completed' ? '#10b981' : '#fff',
+                        borderColor: record.status === 'Completed' ? '#10b981' : '#d9d9d9',
+                        color: record.status === 'Completed' ? '#fff' : '#666',
+                        flexShrink: 0
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontWeight: 600, 
+                        fontSize: 15,
+                        color: "#111827",
+                        textDecoration: record.status === 'Completed' ? 'line-through' : 'none',
+                        opacity: record.status === 'Completed' ? 0.6 : 1,
+                        marginBottom: 4
+                      }}>
+                        {record.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280" }}>
+                        {record.description || 'No description'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task Details */}
+                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <Tag color={getPriorityColor(record.priority)}>{record.priority}</Tag>
+                      <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                      <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                      <strong>Related:</strong> {record.related_type ? `${record.related_type} #${record.related_id}` : 'N/A'}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#4b5563" }}>
+                      <strong>Due:</strong> {record.due_date ? dayjs(record.due_date).format('MMM DD, YYYY') : 'N/A'}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEdit(record)}
+                    >
+                      Edit
+                    </Button>
+                    <Popconfirm
+                      title="Delete task"
+                      description="Are you sure?"
+                      onConfirm={() => handleDelete(record.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                </div>
+              )}
             />
           </Card>
         </>

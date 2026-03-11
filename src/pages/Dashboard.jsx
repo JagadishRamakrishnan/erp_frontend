@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import callIcon from "../assets/icons/d1.gif";
-import leadIcon from "../assets/icons/d2.gif";
-import revenueIcon from "../assets/icons/d3.gif";
-import conversionIcon from "../assets/icons/d4.gif";
 import { 
-  Card, Row, Col, Table, Tag, Spin, message, 
+  Card, Row, Col, Tag, Spin, message, 
   Avatar, Progress, Typography, Grid 
 } from "antd";
 import { Phone, Users, IndianRupee, Percent } from "lucide-react";
@@ -19,7 +15,8 @@ import {
 } from "@ant-design/icons";
 
 import { dashboardService } from "../services";
-//import { RightOutlined } from "@ant-design/icons";
+import ResponsiveTable from "../components/ResponsiveTable";
+
 const { Text } = Typography;
 const cardAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -749,11 +746,53 @@ const data = stats?.recent?.deals || [];
         title="Recent Deals"
         style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
       >
-        <Table
+        <ResponsiveTable
           dataSource={stats.recent?.deals || []}
           columns={columns}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          renderMobileCard={(record) => {
+            const colors = {
+              'Lead': 'blue',
+              'Qualified': 'cyan',
+              'Proposal': 'orange',
+              'Negotiation': 'purple',
+              'Won': 'green',
+              'Lost': 'red'
+            };
+            
+            return (
+              <div>
+                {/* Deal Name */}
+                <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
+                  {record.deal_name}
+                </div>
+
+                {/* Customer */}
+                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                  <strong>Customer:</strong> {record.customer?.name || 'N/A'}
+                </div>
+
+                {/* Value */}
+                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                  <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
+                </div>
+
+                {/* Stage */}
+                <div style={{ marginBottom: 4 }}>
+                  <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
+                  <Tag color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
+                    {record.stage}
+                  </Tag>
+                </div>
+
+                {/* Assigned To */}
+                <div style={{ fontSize: 13, color: "#4b5563" }}>
+                  <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
+                </div>
+              </div>
+            );
+          }}
         />
       </Card>
     </div>

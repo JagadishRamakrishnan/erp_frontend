@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { leadService, userService } from "../services";
 import { useNavigate } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
 
@@ -392,13 +393,106 @@ export default function Leads() {
                 Lead Directory ({filteredLeads.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredLeads}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => (
+                <div>
+                  {/* Header with Avatar and Name */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <Avatar 
+                      style={{ backgroundColor: "#ff8a00", color: "#fff" }} 
+                      icon={<UserOutlined />}
+                    >
+                      {record.name?.charAt(0)}
+                    </Avatar>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                        {record.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                        {record.lead_code}
+                      </div>
+                    </div>
+                    <Tag color={getStatusColor(record.status)}>
+                      {record.status}
+                    </Tag>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                    {record.email && (
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <MailOutlined style={{ marginRight: 6 }} />
+                        {record.email}
+                      </div>
+                    )}
+                    {record.phone && (
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <PhoneOutlined style={{ marginRight: 6 }} />
+                        {record.phone}
+                      </div>
+                    )}
+                    {record.company && (
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Company:</strong> {record.company}
+                      </div>
+                    )}
+                    {record.source && (
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Source:</strong> {record.source}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 13, color: "#4b5563" }}>
+                      <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                    {record.status !== 'Won' && (
+                      <Button
+                        type="primary"
+                        size="small"
+                        onClick={() => handleConvert(record)}
+                        style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                      >
+                        Convert
+                      </Button>
+                    )}
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      onClick={() => handleView(record)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEdit(record)}
+                    >
+                      Edit
+                    </Button>
+                    <Popconfirm
+                      title="Delete lead"
+                      description="Are you sure?"
+                      onConfirm={() => handleDelete(record.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                </div>
+              )}
             />
           </Card>
         </>

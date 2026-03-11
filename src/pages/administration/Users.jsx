@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin } from "antd";
+import { Card, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, SafetyOutlined } from "@ant-design/icons";
 import { userService } from "../../services";
+import ResponsiveTable from "../../components/ResponsiveTable";
 
 const { Option } = Select;
 
@@ -245,13 +246,80 @@ export default function Users() {
                 User Directory ({filteredUsers.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredUsers}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => (
+                <div>
+                  {/* User Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <Avatar 
+                      style={{ backgroundColor: "#6366f1", color: "#fff" }} 
+                      icon={<UserOutlined />}
+                    >
+                      {record.name?.charAt(0)}
+                    </Avatar>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                        {record.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                        <MailOutlined style={{ marginRight: 4 }} />
+                        {record.email}
+                      </div>
+                    </div>
+                    <Tag color={record.status ? 'success' : 'error'}>
+                      {record.status ? 'Active' : 'Inactive'}
+                    </Tag>
+                  </div>
+
+                  {/* User Details */}
+                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                      <strong>Phone:</strong> {record.phone || 'N/A'}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#4b5563" }}>
+                      <strong>Role:</strong>{' '}
+                      <Tag 
+                        icon={<SafetyOutlined />}
+                        color={
+                          record.role === 'Admin' ? 'red' :
+                          record.role === 'Manager' ? 'blue' :
+                          record.role === 'Executive' ? 'green' : 'default'
+                        }
+                      >
+                        {record.role}
+                      </Tag>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEdit(record)}
+                    >
+                      Edit
+                    </Button>
+                    <Popconfirm
+                      title="Delete user"
+                      description="Are you sure?"
+                      onConfirm={() => handleDelete(record.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                </div>
+              )}
             />
           </Card>
         </>

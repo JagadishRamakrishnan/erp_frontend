@@ -138,13 +138,6 @@ export default function Deals() {
                 Add Deal
               </button>
               
-              <button
-                onClick={() => setShowBulkUpload(true)}
-                className="flex items-center gap-2 bg-[#52c41a] hover:bg-[#389e0d] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
-              >
-                <Upload size={18}/>
-                Bulk Upload
-              </button>
             </div>
           </div>
 

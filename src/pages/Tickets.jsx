@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Table, Input, Button, Modal, Form, Select, message, 
+  Card, Input, Button, Modal, Form, Select, message, 
   Popconfirm, Row, Col, Spin, Tag 
 } from "antd";
 import { 
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { ticketService, customerService, userService } from "../services";
 import dayjs from "dayjs";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -317,13 +318,81 @@ export default function Tickets() {
                 Ticket List ({filteredTickets.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredTickets}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => {
+                const statusColors = {
+                  'Open': 'error',
+                  'In Progress': 'processing',
+                  'Closed': 'success'
+                };
+                
+                return (
+                  <div>
+                    {/* Ticket Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <CustomerServiceOutlined style={{ color: "#1677ff", fontSize: 18 }} />
+                        <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                          {record.ticket_number}
+                        </span>
+                      </div>
+                      <Tag color={statusColors[record.status] || 'default'}>
+                        {record.status}
+                      </Tag>
+                    </div>
+
+                    {/* Subject & Description */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      <div style={{ fontWeight: 600, color: "#111827", marginBottom: 4 }}>
+                        {record.subject}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        {record.description ? record.description.substring(0, 50) + '...' : 'No description'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Customer:</strong> {record.customer?.name || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                        {record.customer?.email || ''}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY') : 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete ticket"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                );
+              }}
             />
           </Card>
         </>

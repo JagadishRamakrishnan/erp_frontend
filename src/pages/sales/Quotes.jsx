@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Table, Input, Button, Modal, Form, Select, message, 
+  Card, Input, Button, Modal, Form, Select, message, 
   Popconfirm, Row, Col, Spin, Tag, InputNumber 
 } from "antd";
 import { 
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { quotationService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
+import ResponsiveTable from "../../components/ResponsiveTable";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -293,8 +294,8 @@ const handleView = (quote) => {
           </div>
 
           {/* ================= SEARCH & FILTERS ================= */}
-          <div className="bg-white p-4 lg:px-6 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 w-full sm:max-w-md bg-[#f9fafb] border border-[#e5e7eb] px-3 h-10 rounded-lg">
+          <div className="bg-white p-4 lg:px-6 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex flex-col gap-4">
+            <div className="flex items-center gap-3 w-full bg-[#f9fafb] border border-[#e5e7eb] px-3 h-10 rounded-lg">
               <SearchOutlined className="text-[#9ca3af]" />
               <input
                 placeholder="Search quotes or customers..."
@@ -305,7 +306,7 @@ const handleView = (quote) => {
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {["All", "Draft", "Sent", "Approved", "Rejected"].map((status) => (
                 <button
                   key={status}
@@ -329,13 +330,90 @@ const handleView = (quote) => {
                 Latest Quotations ({filteredQuotes.length})
               </span>
             </div>
-            <Table
+            <ResponsiveTable
               columns={columns}
               dataSource={filteredQuotes}
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
+              renderMobileCard={(record) => {
+                const statusColors = {
+                  'Draft': 'default',
+                  'Sent': 'processing',
+                  'Approved': 'success',
+                  'Rejected': 'error'
+                };
+                
+                return (
+                  <div>
+                    {/* Header with Quote ID and Status */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <FileTextOutlined style={{ color: "#1677ff", fontSize: 18 }} />
+                        <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                          {record.quotation_number}
+                        </span>
+                      </div>
+                      <Tag color={statusColors[record.status] || 'default'}>
+                        {record.status}
+                      </Tag>
+                    </div>
+
+                    {/* Customer Info */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      <div style={{ fontWeight: 600, color: "#111827", marginBottom: 4 }}>
+                        {record.customer?.name || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        {record.customer?.email || ''}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Amount:</strong>{' '}
+                        <span style={{ fontWeight: 700, color: "#10b981" }}>
+                          ₹{record.total_amount?.toLocaleString("en-IN") || 0}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Tax:</strong> ₹{record.tax_amount?.toLocaleString("en-IN") || 0}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY') : 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete quotation"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                );
+              }}
             />
           </Card>
         </>

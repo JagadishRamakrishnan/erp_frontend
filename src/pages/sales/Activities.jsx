@@ -11,7 +11,6 @@ import {
   message,
   Spin,
   Popconfirm,
-  Table,
   Tag
 } from "antd";
 import {
@@ -34,6 +33,7 @@ import { Modal, Form, DatePicker } from "antd";
 import { activityService, leadService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import ResponsiveTable from "../../components/ResponsiveTable";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -459,13 +459,78 @@ const handleView = (activity) => {
               }}>
                 Activity Timeline ({filteredActivities.length})
               </div>
-              <Table
+              <ResponsiveTable
                 columns={columns}
                 dataSource={filteredActivities}
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
-                scroll={{ x: true }}
+                renderMobileCard={(record) => (
+                  <div>
+                    {/* Type with Icon */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                      <Avatar
+                        size={40}
+                        style={{
+                          background: bgMap[record.type],
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                        icon={iconMap[record.type]}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                          {record.type}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          {record.activity_date ? dayjs(record.activity_date).format('MMM DD, YYYY HH:mm') : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Notes:</strong> {record.notes || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Related To:</strong> {record.related_type ? `${record.related_type} #${record.related_id}` : 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete activity"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                )}
               />
             </Card>
           </motion.div>
