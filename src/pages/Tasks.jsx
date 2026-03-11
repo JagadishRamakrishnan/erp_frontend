@@ -285,104 +285,103 @@ export default function Tasks() {
   };
 
   const columns = [
-    {
-      title: "Task",
-      dataIndex: "title",
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button
-            type={record.status === 'Completed' ? 'default' : 'primary'}
-            shape="circle"
-            size="small"
-            icon={record.status === 'Completed' ? <CheckCircleOutlined /> : null}
-            onClick={() => handleToggleComplete(record)}
-            style={{
-              background: record.status === 'Completed' ? '#10b981' : '#fff',
-              borderColor: record.status === 'Completed' ? '#10b981' : '#d9d9d9',
-              color: record.status === 'Completed' ? '#fff' : '#666'
-            }}
-          />
-          <div>
-            <div style={{ 
-              fontWeight: 600, 
-              color: "#111827",
-              textDecoration: record.status === 'Completed' ? 'line-through' : 'none',
-              opacity: record.status === 'Completed' ? 0.6 : 1
-            }}>
-              {text}
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              {record.description || 'No description'}
-            </div>
+  {
+    title: "Task",
+    dataIndex: "title",
+    align: "left", // keep task left like customer avatar column
+    render: (text, record) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Button
+          type={record.status === "Completed" ? "default" : "primary"}
+          shape="circle"
+          size="small"
+          icon={record.status === "Completed" ? <CheckCircleOutlined /> : null}
+          onClick={() => handleToggleComplete(record)}
+        />
+        <div>
+          <div style={{ fontWeight: 600 }}>{text}</div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            {record.description || "No description"}
           </div>
         </div>
-      ),
-    },
-    {
-      title: "Priority",
-      dataIndex: "priority",
-      render: (priority) => <Tag color={getPriorityColor(priority)}>{priority}</Tag>,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (status) => <Tag color={getStatusColor(status)}>{status}</Tag>,
-    },
-    {
-      title: "Assigned To",
-      key: "assigned",
-      render: (_, record) => (
-        <span style={{ color: "#4b5563" }}>
-          {record.assignedTo?.name || 'Unassigned'}
-        </span>
-      ),
-    },
-    {
-      title: "Related To",
-      key: "related",
-      render: (_, record) => (
-        <span style={{ color: "#4b5563" }}>
-          {record.related_type ? `${record.related_type} #${record.related_id}` : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Due Date",
-      dataIndex: "due_date",
-      render: (date) => (
-        <span style={{ color: "#4b5563" }}>
-          {date ? dayjs(date).format('MMM DD, YYYY') : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete task"
-            description="Are you sure you want to delete this task?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
 
+  {
+    title: "Priority",
+    dataIndex: "priority",
+    align: "center",
+    render: (priority) => (
+      <Tag color={getPriorityColor(priority)}>{priority}</Tag>
+    ),
+  },
+
+  {
+    title: "Status",
+    dataIndex: "status",
+    align: "center",
+    render: (status) => (
+      <Tag color={getStatusColor(status)}>{status}</Tag>
+    ),
+  },
+
+  {
+    title: "Assigned To",
+    align: "center",
+    render: (_, record) => (
+      <span>{record.assignedTo?.name || "Unassigned"}</span>
+    ),
+  },
+
+  {
+    title: "Related To",
+    align: "center",
+    render: (_, record) => (
+      <span>
+        {record.related_type
+          ? `${record.related_type} #${record.related_id}`
+          : "N/A"}
+      </span>
+    ),
+  },
+
+  {
+    title: "Due Date",
+    dataIndex: "due_date",
+    align: "center",
+    render: (date) => (
+      <span>
+        {date ? dayjs(date).format("MMM DD, YYYY") : "N/A"}
+      </span>
+    ),
+  },
+
+  {
+    title: "Actions",
+    align: "center",
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete task"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
   const cardAnimation = {
     hidden: { opacity: 0, y: 30 },
     visible: (i) => ({

@@ -154,102 +154,117 @@ const handleView = (invoice) => {
   };
 
   const columns = [
-    {
-      title: "Invoice ID",
-      dataIndex: "invoice_number",
-      render: (text) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FileTextOutlined style={{ color: "#1677ff" }} />
-          <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
+  {
+    title: "Invoice ID",
+    dataIndex: "invoice_number",
+    align: "center",
+    render: (text) => (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
+        <FileTextOutlined style={{ color: "#1677ff" }} />
+        <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
+      </div>
+    )
+  },
+  {
+    title: "Customer",
+    key: "customer",
+    align: "center",
+    render: (_, record) => (
+      <div>
+        <div style={{ fontWeight: 600, color: "#111827" }}>
+          {record.customer?.name || "N/A"}
         </div>
-      )
-    },
-    {
-      title: "Customer",
-      key: "customer",
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>{record.customer?.name || 'N/A'}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>{record.customer?.email || ''}</div>
+        <div style={{ fontSize: 12, color: "#6b7280" }}>
+          {record.customer?.email || ""}
         </div>
-      ),
-    },
-    {
-      title: "Total Amount",
-      dataIndex: "total_amount",
-      render: (amount) => (
-        <span style={{ fontWeight: 700, color: "#111827" }}>
-          ₹{amount?.toLocaleString("en-IN") || 0}
-        </span>
-      ),
-    },
-    {
-      title: "Paid",
-      dataIndex: "paid_amount",
-      render: (paid) => (
-        <span style={{ color: "#10b981", fontWeight: 600 }}>
-          ₹{paid?.toLocaleString("en-IN") || 0}
-        </span>
-      ),
-    },
-    {
-      title: "Due",
-      dataIndex: "due_amount",
-      render: (due) => (
-        <span style={{ color: "#ef4444", fontWeight: 600 }}>
-          ₹{due?.toLocaleString("en-IN") || 0}
-        </span>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (status) => <Tag color={getStatusColor(status)}>{status}</Tag>,
-    },
-    {
-      title: "Created",
-      dataIndex: "created_at",
-      render: (date) => (
-        <span style={{ color: "#4b5563" }}>
-          {date ? dayjs(date).format('MMM DD, YYYY') : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-                type="link"
-                icon={<EyeOutlined />}
-                onClick={() => handleView(record)}
-              >
-                View
-              </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete invoice"
-            description="Are you sure you want to delete this invoice?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
+  {
+    title: "Total Amount",
+    dataIndex: "total_amount",
+    align: "center",
+    render: (amount) => (
+      <span style={{ fontWeight: 700 }}>
+        ₹{amount?.toLocaleString("en-IN") || 0}
+      </span>
+    ),
+  },
+  {
+    title: "Paid",
+    dataIndex: "paid_amount",
+    align: "center",
+    render: (paid) => (
+      <span style={{ color: "#10b981", fontWeight: 600 }}>
+        ₹{paid?.toLocaleString("en-IN") || 0}
+      </span>
+    ),
+  },
+  {
+    title: "Due",
+    dataIndex: "due_amount",
+    align: "center",
+    render: (due) => (
+      <span style={{ color: "#ef4444", fontWeight: 600 }}>
+        ₹{due?.toLocaleString("en-IN") || 0}
+      </span>
+    ),
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    align: "center",
+    render: (status) => (
+      <Tag color={getStatusColor(status)}>
+        {status}
+      </Tag>
+    ),
+  },
+  {
+    title: "Created",
+    dataIndex: "created_at",
+    align: "center",
+    render: (date) => (
+      <span style={{ color: "#4b5563" }}>
+        {date ? dayjs(date).format("MMM DD, YYYY") : "N/A"}
+      </span>
+    ),
+  },
+  {
+    title: "Actions",
+    key: "actions",
+    align: "center",
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleView(record)}
+        >
+          View
+        </Button>
 
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete invoice"
+          description="Are you sure you want to delete this invoice?"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
   const cardAnimation = {
     hidden: { opacity: 0, y: 30 },
     visible: (i) => ({

@@ -249,84 +249,99 @@ const handleView = (activity) => {
   });
 
   const columns = [
-    {
-      title: "Type",
-      dataIndex: "type",
-      render: (type) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar
-            size={40}
-            style={{
-              background: bgMap[type],
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-            icon={iconMap[type]}
-          />
-          <span style={{ fontWeight: 600, color: "#111827" }}>{type}</span>
-        </div>
-      ),
-    },
-    {
-      title: "Notes",
-      dataIndex: "notes",
-      render: (text) => <span style={{ color: "#4b5563" }}>{text || 'N/A'}</span>
-    },
-    {
-      title: "Related To",
-      key: "related",
-      render: (_, record) => (
-        <span style={{ color: "#4b5563" }}>
-          {record.related_type ? `${record.related_type} #${record.related_id}` : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Date",
-      dataIndex: "activity_date",
-      render: (date) => (
-        <span style={{ color: "#4b5563" }}>
-          {date ? dayjs(date).format('MMM DD, YYYY HH:mm') : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-       render: (_, record) => (
-  <div style={{ display: 'flex', gap: 8 }}>
-    <Button
-      type="link"
-      icon={<EyeOutlined />}
-      onClick={() => handleView(record)}
-    >
-      View
-    </Button>
+  {
+    title: "Type",
+    dataIndex: "type",
+    align: "center",
+    render: (type) => (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        <Avatar
+          size={40}
+          style={{
+            background: bgMap[type],
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+          icon={iconMap[type]}
+        />
+        <span style={{ fontWeight: 600, color: "#111827" }}>{type}</span>
+      </div>
+    ),
+  },
 
-    <Button
-      type="link"
-      icon={<EditOutlined />}
-      onClick={() => handleEdit(record)}
-    >
-      Edit
-    </Button>
-          <Popconfirm
-            title="Delete activity"
-            description="Are you sure you want to delete this activity?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+  {
+    title: "Notes",
+    dataIndex: "notes",
+    align: "center",
+    render: (text) => (
+      <span style={{ color: "#4b5563" }}>
+        {text || "N/A"}
+      </span>
+    ),
+  },
 
+  {
+    title: "Related To",
+    key: "related",
+    align: "center",
+    render: (_, record) => (
+      <span style={{ color: "#4b5563" }}>
+        {record.related_type
+          ? `${record.related_type} #${record.related_id}`
+          : "N/A"}
+      </span>
+    ),
+  },
+
+  {
+    title: "Date",
+    dataIndex: "activity_date",
+    align: "center",
+    render: (date) => (
+      <span style={{ color: "#4b5563" }}>
+        {date
+          ? dayjs(date).format("MMM DD, YYYY HH:mm")
+          : "N/A"}
+      </span>
+    ),
+  },
+
+  {
+    title: "Actions",
+    key: "actions",
+    align: "center",
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleView(record)}
+        >
+          View
+        </Button>
+
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete activity"
+          description="Are you sure you want to delete this activity?"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
   return (
     <div style={styles.page}>
       {loading && !activities.length ? (

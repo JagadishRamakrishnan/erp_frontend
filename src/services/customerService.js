@@ -37,7 +37,7 @@ const customerService = {
   // Bulk Upload
   bulkUpload: async (formData) => {
     const token = localStorage.getItem('token');
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://crm-be-giqy.onrender.com/api';
     
     return await fetch(`${API_BASE_URL}/customers/bulk-upload`, {
       method: 'POST',

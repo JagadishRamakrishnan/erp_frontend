@@ -141,84 +141,104 @@ const handleView = (quote) => {
   };
 
   const columns = [
-    {
-      title: "Quote ID",
-      dataIndex: "quotation_number",
-      render: (text) => <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
-    },
-    {
-      title: "Customer",
-      key: "customer",
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>{record.customer?.name || 'N/A'}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>{record.customer?.email || ''}</div>
+  {
+    title: "Quote ID",
+    dataIndex: "quotation_number",
+    align: "center",
+    render: (text) => (
+      <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
+    )
+  },
+  {
+    title: "Customer",
+    key: "customer",
+    align: "center",
+    render: (_, record) => (
+      <div>
+        <div style={{ fontWeight: 600, color: "#111827" }}>
+          {record.customer?.name || "N/A"}
         </div>
-      ),
-    },
-    {
-      title: "Amount",
-      dataIndex: "total_amount",
-      render: (amount) => (
-        <span style={{ fontWeight: 700, color: "#10b981" }}>
-          ₹{amount?.toLocaleString("en-IN") || 0}
-        </span>
-      ),
-    },
-    {
-      title: "Tax",
-      dataIndex: "tax_amount",
-      render: (tax) => <span style={{ color: "#4b5563" }}>₹{tax?.toLocaleString("en-IN") || 0}</span>
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (status) => <Tag color={getStatusColor(status)}>{status}</Tag>,
-    },
-    {
-      title: "Created",
-      dataIndex: "created_at",
-      render: (date) => (
-        <span style={{ color: "#4b5563" }}>
-          {date ? dayjs(date).format('MMM DD, YYYY') : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-  <div style={{ display: 'flex', gap: 8 }}>
-    <Button
-      type="link"
-      icon={<EyeOutlined />}
-      onClick={() => handleView(record)}
-    >
-      View
-    </Button>
+        <div style={{ fontSize: 12, color: "#6b7280" }}>
+          {record.customer?.email || ""}
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Amount",
+    dataIndex: "total_amount",
+    align: "center",
+    render: (amount) => (
+      <span style={{ fontWeight: 700, color: "#10b981" }}>
+        ₹{amount?.toLocaleString("en-IN") || 0}
+      </span>
+    ),
+  },
+  {
+    title: "Tax",
+    dataIndex: "tax_amount",
+    align: "center",
+    render: (tax) => (
+      <span style={{ color: "#4b5563" }}>
+        ₹{tax?.toLocaleString("en-IN") || 0}
+      </span>
+    )
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    align: "center",
+    render: (status) => (
+      <Tag color={getStatusColor(status)}>{status}</Tag>
+    ),
+  },
+  {
+    title: "Created",
+    dataIndex: "created_at",
+    align: "center",
+    render: (date) => (
+      <span style={{ color: "#4b5563" }}>
+        {date ? dayjs(date).format("MMM DD, YYYY") : "N/A"}
+      </span>
+    ),
+  },
+  {
+    title: "Actions",
+    key: "actions",
+    align: "center",
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleView(record)}
+        >
+          View
+        </Button>
 
-    <Button
-      type="link"
-      icon={<EditOutlined />}
-      onClick={() => handleEdit(record)}
-    >
-      Edit
-    </Button>
-          <Popconfirm
-            title="Delete quotation"
-            description="Are you sure you want to delete this quotation?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete quotation"
+          description="Are you sure you want to delete this quotation?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
 
   const cardAnimation = {
     hidden: { opacity: 0, y: 40 },
