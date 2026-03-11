@@ -100,7 +100,7 @@ export default function Customer() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_BASE_URL = import.meta.env.VITE_API_URL ||'https://crm-be-giqy.onrender.com/api';
       const response = await fetch(`${API_BASE_URL}/customers/template/download`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -169,70 +169,87 @@ page: {
   };
 
   const columns = [
-    {
-      title: "Customer",
-      dataIndex: "name",
-      render: (text, record) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar 
-             style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }} 
-             icon={<UserOutlined />} 
-          />
-          <div>
-            <div style={{ fontWeight: 600, color: "#111827", fontFamily: '"Inter", sans-serif' }}>{text}</div>
-            <div style={{ fontSize: 12, color: "#9ca3af", fontFamily: '"Inter", sans-serif' }}>{record.customer_code}</div>
+  {
+    title: "Customer",
+    dataIndex: "name",
+    align: "left",
+    width: 280,
+    render: (text, record) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Avatar
+          style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}
+          icon={<UserOutlined />}
+        />
+        <div>
+          <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>
+            {record.customer_code}
           </div>
         </div>
-      ),
-    },
-    { 
-      title: "Company", 
-      dataIndex: "company",
-      render: (text) => <span style={{ color: "#4b5563", fontFamily: '"Inter", sans-serif' }}>{text || 'N/A'}</span> 
-    },
-    { 
-      title: "Phone", 
-      dataIndex: "phone",
-      render: (text) => <span style={{ color: "#4b5563", fontFamily: '"Inter", sans-serif' }}>{text || 'N/A'}</span>
-    },
-    { 
-      title: "Email", 
-      dataIndex: "email",
-      render: (text) => <span style={{ color: "#4b5563", fontFamily: '"Inter", sans-serif' }}>{text || 'N/A'}</span> 
-    },
-    { 
-      title: "City", 
-      dataIndex: "city",
-      render: (text) => <span style={{ color: "#4b5563", fontFamily: '"Inter", sans-serif' }}>{text || 'N/A'}</span> 
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete customer"
-            description="Are you sure you want to delete this customer?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
 
+  {
+    title: "Company",
+    dataIndex: "company",
+    align: "center",
+    width: 150,
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "Phone",
+    dataIndex: "phone",
+    align: "center",
+    width: 150,
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "Email",
+    dataIndex: "email",
+    align: "center",
+    width: 220,
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "City",
+    dataIndex: "city",
+    align: "center",
+    width: 150,
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "Actions",
+    key: "actions",
+    align: "center",
+    width: 160,
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete customer"
+          description="Are you sure you want to delete this customer?"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
   return (
     <div style={styles.page}>
       {loading && !customers.length ? (
@@ -353,14 +370,14 @@ page: {
           {/* DESKTOP + TABLET TABLE */}
           {!screens.xs && (
              <Table
-               columns={columns}
-               dataSource={filteredCustomers}
-               rowKey="id"
-               loading={loading}
-               pagination={{ pageSize: 10 }}
-               scroll={{ x: true }}
-               size="middle"
-             />
+  columns={columns}
+  dataSource={filteredCustomers}
+  rowKey="id"
+  loading={loading}
+  pagination={{ pageSize: 10 }}
+  size="middle"
+  scroll={{ x: 900 }}
+/>
           )}
 
           {/* MOBILE CARD VIEW */}

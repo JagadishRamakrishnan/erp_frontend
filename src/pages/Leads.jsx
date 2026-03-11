@@ -143,7 +143,7 @@ export default function Leads() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://crm-be-giqy.onrender.com/api';
       const response = await fetch(`${API_BASE_URL}/leads/template/download`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -187,117 +187,130 @@ export default function Leads() {
   };
 
   const columns = [
-    {
-      title: "Lead",
-      dataIndex: "name",
-      render: (text, record) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar 
-            style={{ backgroundColor: "#ff8a00", color: "#fff" }} 
-            icon={<UserOutlined />}
-          >
-            {text?.charAt(0)}
-          </Avatar>
-          <div>
-            <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.lead_code}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Contact",
-      key: "contact",
-      render: (_, record) => (
-        <div>
-          {record.email && (
-            <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-              <MailOutlined style={{ marginRight: 4 }} />
-              {record.email}
-            </div>
-          )}
-          {record.phone && (
-            <div style={{ fontSize: 13, color: "#4b5563" }}>
-              <PhoneOutlined style={{ marginRight: 4 }} />
-              {record.phone}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Company",
-      dataIndex: "company",
-      render: (text) => <span style={{ color: "#4b5563" }}>{text || 'N/A'}</span>
-    },
-    {
-      title: "Source",
-      dataIndex: "source",
-      render: (text) => <span style={{ color: "#4b5563" }}>{text || 'N/A'}</span>
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {status}
-        </Tag>
-      ),
-    },
-    {
-      title: "Assigned To",
-      dataIndex: "assigned_to",
-      render: (_, record) => (
-        <span style={{ color: "#4b5563" }}>
-          {record.assignedTo?.name || 'Unassigned'}
-        </span>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {record.status !== 'Won' && (
-            <Button
-              type="primary"
-              size="small"
-              onClick={() => handleConvert(record)}
-              style={{ background: '#52c41a', borderColor: '#52c41a' }}
-            >
-              Convert
-            </Button>
-          )}
-          <Button
-  type="link"
-  icon={<EyeOutlined />}
-  onClick={() => handleView(record)}
->
-  View
-</Button>
+  {
+    title: "Lead",
+    dataIndex: "name",
+    align: "left",   // keep left like customer avatar column
+    render: (text, record) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Avatar
+          style={{ backgroundColor: "#ff8a00", color: "#fff" }}
+          icon={<UserOutlined />}
+        >
+          {text?.charAt(0)}
+        </Avatar>
 
-<Button
-  type="link"
-  icon={<EditOutlined />}
-  onClick={() => handleEdit(record)}
->
-  Edit
-</Button>
-          <Popconfirm
-            title="Delete lead"
-            description="Are you sure you want to delete this lead?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
+        <div>
+          <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.lead_code}</div>
         </div>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
+
+  {
+    title: "Contact",
+    key: "contact",
+    align: "center",
+    render: (_, record) => (
+      <div>
+        {record.email && (
+          <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+            <MailOutlined style={{ marginRight: 4 }} />
+            {record.email}
+          </div>
+        )}
+        {record.phone && (
+          <div style={{ fontSize: 13, color: "#4b5563" }}>
+            <PhoneOutlined style={{ marginRight: 4 }} />
+            {record.phone}
+          </div>
+        )}
+      </div>
+    ),
+  },
+
+  {
+    title: "Company",
+    dataIndex: "company",
+    align: "center",
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "Source",
+    dataIndex: "source",
+    align: "center",
+    render: (text) => <span>{text || "N/A"}</span>,
+  },
+
+  {
+    title: "Status",
+    dataIndex: "status",
+    align: "center",
+    render: (status) => (
+      <Tag color={getStatusColor(status)}>
+        {status}
+      </Tag>
+    ),
+  },
+
+  {
+    title: "Assigned To",
+    dataIndex: "assigned_to",
+    align: "center",
+    render: (_, record) => (
+      <span>
+        {record.assignedTo?.name || "Unassigned"}
+      </span>
+    ),
+  },
+
+  {
+    title: "Actions",
+    key: "actions",
+    align: "center",
+    render: (_, record) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        {record.status !== "Won" && (
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => handleConvert(record)}
+            style={{ background: "#52c41a", borderColor: "#52c41a" }}
+          >
+            Convert
+          </Button>
+        )}
+
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleView(record)}
+        >
+          View
+        </Button>
+
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        >
+          Edit
+        </Button>
+
+        <Popconfirm
+          title="Delete lead"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            Delete
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];
 
   const cardAnimation = {
     hidden: { opacity: 0, y: 30 },
@@ -393,13 +406,14 @@ export default function Leads() {
               </span>
             </div>
             <Table
-              columns={columns}
-              dataSource={filteredLeads}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
-            />
+  columns={columns}
+  dataSource={filteredLeads}
+  rowKey="id"
+  loading={loading}
+  pagination={{ pageSize: 10 }}
+  size="middle"
+  scroll={{ x: 1000 }}
+/>
           </Card>
         </>
       )}
