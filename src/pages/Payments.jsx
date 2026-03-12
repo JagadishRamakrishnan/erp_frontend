@@ -36,7 +36,7 @@ export default function Payments() {
     try {
       const response = await paymentService.getAll();
       if (response.success) {
-        setPayments(response.data || []);
+        setPayments((response.data || []).reverse());
       }
     } catch (error) {
       message.error('Failed to load payments');

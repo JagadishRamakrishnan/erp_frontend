@@ -42,7 +42,7 @@ const [selectedQuote, setSelectedQuote] = useState(null);
     try {
       const response = await quotationService.getAll();
       if (response.success) {
-        setQuotations(response.data || []);
+        setQuotations((response.data || []).reverse());
       }
     } catch (error) {
       message.error('Failed to load quotations');
@@ -384,9 +384,9 @@ const handleView = (quote) => {
           </div>
 
           {/* ================= SEARCH & FILTERS ================= */}
-          <div className="bg-white p-4 lg:px-6 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3 w-full bg-[#f9fafb] border border-[#e5e7eb] px-3 h-10 rounded-lg">
-              <SearchOutlined className="text-[#9ca3af]" />
+<div className="bg-white p-4 lg:px-6 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex items-center justify-between gap-4 flex-wrap">           
+<div className="flex items-center gap-3 w-[350px] bg-[#f9fafb] border border-[#e5e7eb] px-3 h-10 rounded-lg">
+                <SearchOutlined className="text-[#9ca3af]" />
               <input
                 placeholder="Search quotes or customers..."
                 value={searchTerm}
@@ -550,17 +550,23 @@ const handleView = (quote) => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item 
-                label="Total Amount" 
-                name="total_amount" 
-                rules={[{ required: true, message: 'Please enter amount' }]}
-              >
-                <InputNumber 
-                  style={{ width: '100%' }} 
-                  placeholder="Enter amount" 
-                  min={0}
-                  prefix="₹"
-                />
-              </Form.Item>
+  label="Total Amount" 
+  name="total_amount" 
+  rules={[{ required: true, message: 'Please enter amount' }]}
+>
+  <InputNumber
+    style={{ width: "100%" }}
+    placeholder="Enter amount"
+    min={0}
+    prefix="₹"
+    onChange={(value) => {
+      const tax = value ? (value * 0.18).toFixed(2) : 0;
+      form.setFieldsValue({
+        tax_amount: Number(tax)
+      });
+    }}
+  />
+</Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Tax Amount" name="tax_amount">

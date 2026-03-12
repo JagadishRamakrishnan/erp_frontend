@@ -463,7 +463,61 @@ const data = stats?.recent?.deals || [];
     animate="visible"
     whileHover={{ y: -6 }}
   >
-  <Card
+    {/* Recent Deals Table */}
+      <Card
+        title="Recent Deals"
+        style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+      >
+        <ResponsiveTable
+          dataSource={stats.recent?.deals || []}
+          columns={columns}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          renderMobileCard={(record) => {
+            const colors = {
+              'Lead': 'blue',
+              'Qualified': 'cyan',
+              'Proposal': 'orange',
+              'Negotiation': 'purple',
+              'Won': 'green',
+              'Lost': 'red'
+            };
+            
+            return (
+              <div>
+                {/* Deal Name */}
+                <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
+                  {record.deal_name}
+                </div>
+
+                {/* Customer */}
+                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                  <strong>Customer:</strong> {record.customer?.name || 'N/A'}
+                </div>
+
+                {/* Value */}
+                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                  <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
+                </div>
+
+                {/* Stage */}
+                <div style={{ marginBottom: 4 }}>
+                  <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
+                  <Tag color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
+                    {record.stage}
+                  </Tag>
+                </div>
+
+                {/* Assigned To */}
+                <div style={{ fontSize: 13, color: "#4b5563" }}>
+                  <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
+                </div>
+              </div>
+            );
+          }}
+        />
+      </Card>
+  {/* <Card
             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Top Sales Agents</span>}
             variant="borderless"
             style={styles.roundedCard}
@@ -497,7 +551,7 @@ const data = stats?.recent?.deals || [];
                 No sales data available
               </div>
             )}
-          </Card>
+          </Card> */}
          </motion.div>
 </Col>
 
@@ -743,7 +797,7 @@ const data = stats?.recent?.deals || [];
       </Row> */}
 
       {/* Recent Deals Table */}
-      <Card
+      {/* <Card
         title="Recent Deals"
         style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
       >
@@ -764,22 +818,22 @@ const data = stats?.recent?.deals || [];
             
             return (
               <div>
-                {/* Deal Name */}
+                
                 <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
                   {record.deal_name}
                 </div>
 
-                {/* Customer */}
+                
                 <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
                   <strong>Customer:</strong> {record.customer?.name || 'N/A'}
                 </div>
 
-                {/* Value */}
+                
                 <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
                   <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
                 </div>
 
-                {/* Stage */}
+                
                 <div style={{ marginBottom: 4 }}>
                   <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
                   <Tag color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
@@ -787,7 +841,7 @@ const data = stats?.recent?.deals || [];
                   </Tag>
                 </div>
 
-                {/* Assigned To */}
+               
                 <div style={{ fontSize: 13, color: "#4b5563" }}>
                   <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
                 </div>
@@ -795,7 +849,7 @@ const data = stats?.recent?.deals || [];
             );
           }}
         />
-      </Card>
+      </Card> */}
     </div>
   );
 }

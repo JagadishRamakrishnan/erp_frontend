@@ -19,19 +19,21 @@ export default function Users() {
   }, []);
 
   const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await userService.getAll();
-      if (response.success) {
-        setUsers(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load users');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await userService.getAll();
+    if (response.success) {
+      const sortedUsers = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setUsers(sortedUsers);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load users");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleSubmit = async (values) => {
     try {
       const response = editingUser

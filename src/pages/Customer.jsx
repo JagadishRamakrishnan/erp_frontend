@@ -25,19 +25,21 @@ export default function Customer() {
   }, []);
   
   const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const response = await customerService.getAll();
-      if (response.success) {
-        setCustomers(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load customers');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await customerService.getAll();
+    if (response.success) {
+      const sortedCustomers = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setCustomers(sortedCustomers);
     }
-  };
-  
+  } catch (error) {
+    message.error("Failed to load customers");
+  } finally {
+    setLoading(false);
+  }
+};  
   const handleSubmit = async (values) => {
     try {
       const response = editingCustomer

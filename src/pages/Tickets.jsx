@@ -35,19 +35,21 @@ export default function Tickets() {
   }, []);
 
   const fetchTickets = async () => {
-    setLoading(true);
-    try {
-      const response = await ticketService.getAll();
-      if (response.success) {
-        setTickets(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load tickets');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await ticketService.getAll();
+    if (response.success) {
+      const sortedTickets = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setTickets(sortedTickets);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load tickets");
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchCustomers = async () => {
     try {
       const response = await customerService.getAll();

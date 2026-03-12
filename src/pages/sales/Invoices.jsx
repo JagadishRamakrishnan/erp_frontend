@@ -37,19 +37,21 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
   }, []);
 
   const fetchInvoices = async () => {
-    setLoading(true);
-    try {
-      const response = await invoiceService.getAll();
-      if (response.success) {
-        setInvoices(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load invoices');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await invoiceService.getAll();
+    if (response.success) {
+      const sorted = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setInvoices(sorted);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load invoices");
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchCustomers = async () => {
     try {
       const response = await customerService.getAll();
@@ -342,10 +344,9 @@ const pending = invoices
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="bg-white p-4 lg:px-5 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex flex-col gap-4"
-          >
-            <div className="flex items-center gap-3 w-full bg-[#f9fafb] border border-[#d1d5db] px-3 h-10 rounded-lg">
-              <SearchOutlined className="text-[#9ca3af]" />
+           className="bg-white p-4 lg:px-5 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div className="flex items-center gap-3 min-w-[300px] bg-[#f9fafb] border border-[#d1d5db] px-3 h-10 rounded-lg">
+                <SearchOutlined className="text-[#9ca3af]" />
               <input
                 placeholder="Search invoices, customer, status..."
                 value={search}
@@ -356,8 +357,8 @@ const pending = invoices
             </div>
 
             {/* STATUS TABS */}
-           <div className="flex flex-wrap items-center gap-2">
-  {["All", "Paid", "Pending", "Partial"].map((status) => {
+<div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+    {["All", "Paid", "Pending", "Partial"].map((status) => {
     const count =
       status === "All"
         ? invoices.length

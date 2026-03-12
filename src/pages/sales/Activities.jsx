@@ -64,19 +64,21 @@ const [selectedActivity, setSelectedActivity] = useState(null);
   }, []);
 
   const fetchActivities = async () => {
-    setLoading(true);
-    try {
-      const response = await activityService.getAll();
-      if (response.success) {
-        setActivities(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load activities');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await activityService.getAll();
+    if (response.success) {
+      const sorted = (response.data || []).sort(
+        (a, b) => new Date(b.activity_date) - new Date(a.activity_date)
+      );
+      setActivities(sorted);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load activities");
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchLeads = async () => {
     try {
       const response = await leadService.getAll();
@@ -227,12 +229,12 @@ const handleView = (activity) => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } }
   };
 
-  const iconMap = {
-    Call: <PhoneOutlined style={{ fontSize: 18, color: "#10b981" }} />,
-    Email: <MailOutlined style={{ fontSize: 18, color: "#3b82f6" }} />,
-    Meeting: <CalendarOutlined style={{ fontSize: 18, color: "#6366f1" }} />,
-    WhatsApp: <WhatsAppOutlined style={{ fontSize: 18, color: "#25d366" }} />
-  };
+ const iconMap = {
+  Call: <PhoneOutlined />,
+  Email: <MailOutlined />,
+  Meeting: <CalendarOutlined />,
+  WhatsApp: <WhatsAppOutlined />
+};
 
   const bgMap = {
     Call: "#d1fae5",
@@ -249,27 +251,62 @@ const handleView = (activity) => {
   });
 
   const columns = [
-  {
-    title: "Type",
-    dataIndex: "type",
-    align: "center",
-    render: (type) => (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-        <Avatar
-          size={40}
-          style={{
-            background: bgMap[type],
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-          icon={iconMap[type]}
-        />
-        <span style={{ fontWeight: 600, color: "#111827" }}>{type}</span>
-      </div>
-    ),
-  },
+ {
+  title: "Type",
+  dataIndex: "type",
+  align: "center",
+  render: (type) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        height: "100%"
+      }}
+    >
+  <Avatar
+  size={36}
+  style={{
+    backgroundColor: bgMap[type],
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }}
+>
+  <span
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color:
+        type === "Call"
+          ? "#10b981"
+          : type === "Email"
+          ? "#3b82f6"
+          : type === "Meeting"
+          ? "#f59e0b"
+          : "#25d366",
+      fontSize: 18,
+      lineHeight: 1
+    }}
+  >
+    {iconMap[type]}
+  </span>
+</Avatar>
 
+      <span
+        style={{
+          fontWeight: 600,
+          color: "#111827",
+          lineHeight: "36px"
+        }}
+      >
+        {type}
+      </span>
+    </div>
+  )
+},
   {
     title: "Notes",
     dataIndex: "notes",
@@ -387,10 +424,10 @@ const handleView = (activity) => {
           {/* ================= SUMMARY CARDS (Animated) ================= */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             {[
-              { title: "Total", count: activities.length, color: "#1677ff", bg: "#1677ff" },
+              { title: "Total", count: activities.length, color:  "#8B4513", bg: "#8B4513"  },
               { title: "Calls", count: activities.filter(a => a.type === 'Call').length, color: "#10b981", bg: "#10b981" },
               { title: "Emails", count: activities.filter(a => a.type === 'Email').length, color: "#3b82f6", bg: "#3b82f6" },
-              { title: "Meetings", count: activities.filter(a => a.type === 'Meeting').length, color: "#8b5cf6", bg: "#8b5cf6" },
+              { title: "Meetings", count: activities.filter(a => a.type === 'Meeting').length, color: "#f59e0b", bg: "#f59e0b" },
             ].map((item, index) => (
               <Col xs={24} sm={12} md={6} key={index}>
                 <motion.div

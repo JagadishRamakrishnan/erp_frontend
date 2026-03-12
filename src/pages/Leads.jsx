@@ -32,7 +32,7 @@ export default function Leads() {
     try {
       const response = await leadService.getAll();
       if (response.success) {
-        setLeads(response.data || []);
+        setLeads((response.data || []).reverse());
       }
     } catch (error) {
       message.error('Failed to load leads');

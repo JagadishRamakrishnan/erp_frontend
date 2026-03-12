@@ -43,19 +43,21 @@ export default function Tasks() {
   }, []);
 
   const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const response = await taskService.getAll();
-      if (response.success) {
-        setTasks(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load tasks');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await taskService.getAll();
+    if (response.success) {
+      const sortedTasks = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setTasks(sortedTasks);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load tasks");
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchUsers = async () => {
     try {
       const response = await userService.getAll();
@@ -447,31 +449,49 @@ export default function Tasks() {
 
           {/* FILTERS */}
           <Card style={{ borderRadius: 12, marginBottom: 20 }}>
-            <Row gutter={[12, 12]} align="middle">
-              <Col xs={24} sm={12}>
-                <Input
-                  placeholder="Search tasks..."
-                  prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
-                  style={{ height: 40, borderRadius: 8 }}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {["All", "Pending", "Completed"].map((status) => (
-                    <Button
-                      key={status}
-                      type={filterStatus === status ? "primary" : "default"}
-                      onClick={() => setFilterStatus(status)}
-                    >
-                      {status}
-                    </Button>
-                  ))}
-                </div>
-              </Col>
-            </Row>
-          </Card>
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      flexWrap: "wrap"
+    }}
+  >
+    
+    {/* SEARCH */}
+    <Input
+      placeholder="Search tasks..."
+      prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
+      style={{
+        height: 40,
+        borderRadius: 8,
+        width: 320
+      }}
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+    />
+
+    {/* STATUS TABS */}
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        marginLeft: "auto"
+      }}
+    >
+      {["All", "Pending", "Completed"].map((status) => (
+        <Button
+          key={status}
+          type={filterStatus === status ? "primary" : "default"}
+          onClick={() => setFilterStatus(status)}
+        >
+          {status}
+        </Button>
+      ))}
+    </div>
+
+  </div>
+</Card>
 
           {/* TASKS TABLE */}
           <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>

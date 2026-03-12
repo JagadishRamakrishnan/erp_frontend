@@ -26,19 +26,21 @@ export default function Deals() {
   }, []);
 
   const fetchDeals = async () => {
-    setLoading(true);
-    try {
-      const response = await dealService.getAll();
-      if (response.success) {
-        setDeals(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load deals');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await dealService.getAll();
+    if (response.success) {
+      const sortedDeals = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setDeals(sortedDeals);
     }
-  };
-
+  } catch (error) {
+    message.error("Failed to load deals");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleAddDeal = async (newDeal) => {
     try {
       const response = await dealService.create(newDeal);
@@ -159,8 +161,8 @@ export default function Deals() {
               </div>
 
               {/* STATUS TABS */}
-              <div className="flex flex-wrap items-center gap-2 bg-gray-100 p-1 rounded-xl ml-auto">
-                {tabs.map((tab) => {
+<div className="flex items-center gap-2 ml-auto overflow-x-auto whitespace-nowrap">
+                    {tabs.map((tab) => {
                   const count =
                     tab === "All"
                       ? deals.length

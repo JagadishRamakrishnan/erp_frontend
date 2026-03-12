@@ -38,18 +38,21 @@ export default function Notes() {
   }, []);
 
   const fetchNotes = async () => {
-    setLoading(true);
-    try {
-      const response = await noteService.getAll();
-      if (response.success) {
-        setNotes(response.data || []);
-      }
-    } catch (error) {
-      message.error('Failed to load notes');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await noteService.getAll();
+    if (response.success) {
+      const sortedNotes = (response.data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setNotes(sortedNotes);
     }
-  };
+  } catch (error) {
+    message.error("Failed to load notes");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchLeads = async () => {
     try {
