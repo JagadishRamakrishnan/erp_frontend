@@ -230,18 +230,17 @@ const handleView = (activity) => {
   };
 
  const iconMap = {
-  Call: <PhoneOutlined />,
-  Email: <MailOutlined />,
-  Meeting: <CalendarOutlined />,
-  WhatsApp: <WhatsAppOutlined />
+  Call: <PhoneOutlined style={{ fontSize: 16, color: "#10b981" }} />,
+  Email: <MailOutlined style={{ fontSize: 16, color: "#3b82f6" }} />,
+ Meeting: <CalendarOutlined style={{ fontSize: 16, color: "#f59e0b", marginTop: "-2px" }} />,
+  WhatsApp: <WhatsAppOutlined style={{ fontSize: 16, color: "#25d366" }} />
 };
-
-  const bgMap = {
-    Call: "#d1fae5",
-    Email: "#dbeafe",
-    Meeting: "#e0e7ff",
-    WhatsApp: "#d1fae5"
-  };
+ const bgMap = {
+  Call: "#ecfdf5",
+  Email: "#eff6ff",
+  Meeting: "#fffbeb",
+  WhatsApp: "#ecfdf5"
+};
 
   const filteredActivities = activities.filter((item) => {
     const matchSearch = item.notes?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -251,62 +250,34 @@ const handleView = (activity) => {
   });
 
   const columns = [
- {
+    {
   title: "Type",
   dataIndex: "type",
   align: "center",
-  render: (type) => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        height: "100%"
-      }}
-    >
-  <Avatar
-  size={36}
-  style={{
-    backgroundColor: bgMap[type],
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }}
->
-  <span
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color:
-        type === "Call"
-          ? "#10b981"
-          : type === "Email"
-          ? "#3b82f6"
-          : type === "Meeting"
-          ? "#f59e0b"
-          : "#25d366",
-      fontSize: 18,
-      lineHeight: 1
-    }}
-  >
-    {iconMap[type]}
-  </span>
-</Avatar>
+  render: (type) => {
+    let color = "default";
 
-      <span
+    if (type === "Call") color = "green";
+    if (type === "Meeting") color = "gold";
+    if (type === "Email") color = "blue";
+    if (type === "WhatsApp") color = "lime";
+
+    return (
+      <Tag
+        color={color}
         style={{
           fontWeight: 600,
-          color: "#111827",
-          lineHeight: "36px"
+          padding: "4px 12px",
+          borderRadius: 8,
+          fontSize: 13
         }}
       >
         {type}
-      </span>
-    </div>
-  )
+      </Tag>
+    );
+  }
 },
+ 
   {
     title: "Notes",
     dataIndex: "notes",
