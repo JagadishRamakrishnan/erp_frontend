@@ -1,8 +1,20 @@
 import { useState, useEffect } from "react";
 import { 
-  Card, Input, Button, Modal, Form, Select, message, 
-  Popconfirm, Row, Col, Spin, Tag, InputNumber 
-} from "antd";
+  Card,
+  Input,
+  Button,
+  Modal,
+  Form,
+  Select,
+  message,
+  Popconfirm,
+  Row,
+  Col,
+  Spin,
+  Tag,
+  InputNumber,
+  Avatar
+} from "antd";  
 import { 
   SearchOutlined, DownloadOutlined, SendOutlined, EyeOutlined, 
   PlusOutlined, FileTextOutlined, EditOutlined, DeleteOutlined
@@ -102,7 +114,7 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
       message.error('Operation failed');
     }
   };
-
+    
   const handleEdit = (invoice) => {
     setEditingInvoice(invoice);
     form.setFieldsValue({
@@ -600,52 +612,126 @@ const pending = invoices
         </Form>
       </Modal>
       <Modal
-  title="Invoice Details"
-  open={viewOpen}
-  footer={null}
-  onCancel={() => setViewOpen(false)}
-  centered
+title="Invoice Details"
+open={viewOpen}
+footer={null}
+onCancel={() => setViewOpen(false)}
+centered
+width={750}
+
 >
-  {selectedInvoice && (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      <p>
-        <b>Invoice ID:</b> {selectedInvoice.invoice_number}
-      </p>
+{selectedInvoice && (
+<div style={{ padding: 20 }}>
 
-      <p>
-        <b>Customer:</b> {selectedInvoice.customer?.name || "N/A"}
-      </p>
+```
+  {/* HEADER */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 20
+    }}
+  >
+    <Avatar
+      size={70}
+      style={{
+        background: "#1677ff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
+    >
+      INV
+    </Avatar>
 
-      <p>
-        <b>Total Amount:</b> ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
-      </p>
+    <div>
+      <div style={{ fontSize: 22, fontWeight: 700 }}>
+        {selectedInvoice.invoice_number}
+      </div>
 
-      <p>
-        <b>Paid Amount:</b> ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
-      </p>
+      <Tag
+        color={
+          selectedInvoice.status === "Paid"
+            ? "green"
+            : selectedInvoice.status === "Pending"
+            ? "orange"
+            : "blue"
+        }
+      >
+        {selectedInvoice.status}
+      </Tag>
 
-      <p>
-        <b>Due Amount:</b> ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
-      </p>
-
-      <p>
-        <b>Status:</b>{" "}
-        <Tag color={getStatusColor(selectedInvoice.status)}>
-          {selectedInvoice.status}
-        </Tag>
-      </p>
-
-      <p>
-        <b>Created Date:</b>{" "}
-        {selectedInvoice.created_at
-          ? dayjs(selectedInvoice.created_at).format("MMM DD, YYYY")
-          : "N/A"}
-      </p>
-
+      <div style={{ color: "#6b7280", marginTop: 4 }}>
+        Invoice Record
+      </div>
     </div>
-  )}
-</Modal>
+  </div>
+
+  {/* CUSTOMER INFORMATION */}
+  <Card bordered style={{ borderRadius: 10, marginBottom: 16 }}>
+    <Row gutter={[20, 20]}>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Customer</div>
+        <div>{selectedInvoice.customer?.name || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Email</div>
+        <div>{selectedInvoice.customer?.email || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Invoice ID</div>
+        <div>{selectedInvoice.invoice_number}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Created Date</div>
+        <div>
+          {selectedInvoice.created_at
+            ? dayjs(selectedInvoice.created_at).format("MMM DD, YYYY")
+            : "N/A"}
+        </div>
+      </Col>
+
+    </Row>
+  </Card>
+
+  {/* PAYMENT DETAILS */}
+  <Card bordered style={{ borderRadius: 10 }}>
+    <Row gutter={[20, 20]}>
+
+      <Col span={8}>
+        <div style={{ fontWeight: 600 }}>Total Amount</div>
+        <div style={{ color: "#111827", fontWeight: 600 }}>
+          ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
+        </div>
+      </Col>
+
+      <Col span={8}>
+        <div style={{ fontWeight: 600 }}>Paid Amount</div>
+        <div style={{ color: "#10b981", fontWeight: 600 }}>
+          ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
+        </div>
+      </Col>
+
+      <Col span={8}>
+        <div style={{ fontWeight: 600 }}>Due Amount</div>
+        <div style={{ color: "#ef4444", fontWeight: 600 }}>
+          ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
+        </div>
+      </Col>
+
+    </Row>
+  </Card>
+
+</div>
+
+
+)} </Modal>
     </div>
   );
 }

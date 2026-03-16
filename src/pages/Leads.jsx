@@ -195,11 +195,16 @@ export default function Leads() {
     render: (text, record) => (
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Avatar
-          style={{ backgroundColor: "#ff8a00", color: "#fff" }}
-          icon={<UserOutlined />}
-        >
-          {text?.charAt(0)}
-        </Avatar>
+  src={
+    record.email
+      ? `https://logo.clearbit.com/${record.email.split("@")[1]}`
+      : null
+  }
+  style={{ backgroundColor: "#ff8a00", color: "#fff" }}
+  icon={<UserOutlined />}
+>
+  {!record.email && text?.charAt(0)}
+</Avatar>
 
         <div>
           <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
@@ -522,7 +527,7 @@ export default function Leads() {
         }}
         footer={null}
         centered
-        width={750}
+        width={800}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item 
@@ -620,93 +625,108 @@ export default function Leads() {
           </Row>
         </Form>
       </Modal>
-      <Modal
-  title="Lead Details"
-  open={viewModalOpen}
-  footer={null}
-  onCancel={() => setViewModalOpen(false)}
-  centered
+     <Modal
+title="Lead Details"
+open={viewModalOpen}
+footer={null}
+onCancel={() => setViewModalOpen(false)}
+centered
+width={800}
+
 >
-  {selectedLead && (
-  <div style={{ padding: "10px 5px" }}>
-    
-    {/* Profile Header */}
-    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-      
-      <Avatar
-        size={70}
-        style={{ backgroundColor: "#ff8a00", fontSize: 26 }}
-        icon={<UserOutlined />}
-      >
-        {selectedLead.name?.charAt(0)}
-      </Avatar>
 
-      <div>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>
-          {selectedLead.name}
-        </div>
+{selectedLead && (
+<div style={{ padding: 20 }}>
 
-        <Tag color="blue">{selectedLead.status}</Tag>
-
-        <div style={{ color: "#6b7280", marginTop: 4 }}>
-          {selectedLead.company || "No Company"}
-        </div>
+```
+  {/* HEADER */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 20
+    }}
+  >
+    <Avatar
+  size={70}
+  src={
+    selectedLead.email
+      ? `https://logo.clearbit.com/${selectedLead.email.split("@")[1]}`
+      : null
+  }
+  style={{ background: "#ff8a00" }}
+  icon={<UserOutlined />}
+>
+  {!selectedLead.email && selectedLead.name?.charAt(0)}
+</Avatar>
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: 22, fontWeight: 700 }}>
+        {selectedLead.name}
       </div>
 
+      <Tag color="blue">{selectedLead.status}</Tag>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+  <img
+  src={`https://logo.clearbit.com/${selectedLead.email?.split("@")[1]}`}
+  alt="logo"
+  style={{ width: 20, height: 20 }}
+  onError={(e) => {
+    e.target.src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+  }}
+/>
+  <span style={{ color: "#6b7280" }}>
+    {selectedLead.company || "No Company"}
+  </span>
+</div>
     </div>
-
-    {/* Contact Info */}
-    <Card size="small" style={{ marginBottom: 15 }}>
-      <Row gutter={[16, 10]}>
-
-        <Col span={12}>
-          <b>Email</b>
-          <div style={{ color: "#4b5563" }}>
-            <MailOutlined /> {selectedLead.email || "N/A"}
-          </div>
-        </Col>
-
-        <Col span={12}>
-          <b>Phone</b>
-          <div style={{ color: "#4b5563" }}>
-            <PhoneOutlined /> {selectedLead.phone || "N/A"}
-          </div>
-        </Col>
-
-        <Col span={12}>
-          <b>Company</b>
-          <div style={{ color: "#4b5563" }}>
-            {selectedLead.company || "N/A"}
-          </div>
-        </Col>
-
-        <Col span={12}>
-          <b>Source</b>
-          <div style={{ color: "#4b5563" }}>
-            {selectedLead.source || "N/A"}
-          </div>
-        </Col>
-
-        <Col span={12}>
-          <b>Lead Code</b>
-          <div style={{ color: "#4b5563" }}>
-            {selectedLead.lead_code}
-          </div>
-        </Col>
-
-        <Col span={12}>
-          <b>Assigned To</b>
-          <div style={{ color: "#4b5563" }}>
-            {selectedLead.assignedTo?.name || "Unassigned"}
-          </div>
-        </Col>
-
-      </Row>
-    </Card>
-
   </div>
-)}
-</Modal>
+
+  {/* DETAILS CARD */}
+  <Card bordered style={{ borderRadius: 10 }}>
+    <Row gutter={[20, 20]}>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Email</div>
+        <div>
+          <MailOutlined /> {selectedLead.email || "N/A"}
+        </div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Phone</div>
+        <div>
+          <PhoneOutlined /> {selectedLead.phone || "N/A"}
+        </div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Company</div>
+        <div>{selectedLead.company || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Source</div>
+        <div>{selectedLead.source || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Lead Code</div>
+        <div>{selectedLead.lead_code}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Assigned To</div>
+        <div>{selectedLead.assignedTo?.name || "Unassigned"}</div>
+      </Col>
+
+    </Row>
+  </Card>
+
+</div>
+
+)} </Modal>
 
       <BulkUploadModal
         open={showBulkUpload}

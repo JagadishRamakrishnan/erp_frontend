@@ -681,36 +681,114 @@ const handleView = (activity) => {
         </Form>
       </Modal>
       <Modal
-  title="Activity Details"
-  open={viewOpen}
-  footer={null}
-  onCancel={() => setViewOpen(false)}
-  centered
+title="Activity Details"
+open={viewOpen}
+footer={null}
+onCancel={() => setViewOpen(false)}
+centered
+width={750}
+
 >
-  {selectedActivity && (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      
-      <p><b>Type:</b> {selectedActivity.type}</p>
 
-      <p><b>Notes:</b> {selectedActivity.notes || "N/A"}</p>
+{selectedActivity && (
+<div style={{ padding: 20 }}>
 
-      <p>
-        <b>Related To:</b>{" "}
-        {selectedActivity.related_type
-          ? `${selectedActivity.related_type} #${selectedActivity.related_id}`
-          : "N/A"}
-      </p>
+```
+  {/* HEADER */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 20
+    }}
+  >
+    <Avatar
+      size={70}
+      style={{
+        background: bgMap[selectedActivity.type] || "#f3f4f6"
+      }}
+      icon={iconMap[selectedActivity.type]}
+    />
 
-      <p>
-        <b>Date:</b>{" "}
-        {selectedActivity.activity_date
-          ? dayjs(selectedActivity.activity_date).format("MMM DD, YYYY HH:mm")
-          : "N/A"}
-      </p>
+    <div>
+      <div style={{ fontSize: 22, fontWeight: 700 }}>
+        {selectedActivity.type}
+      </div>
 
+      <Tag
+        color={
+          selectedActivity.type === "Call"
+            ? "green"
+            : selectedActivity.type === "Email"
+            ? "blue"
+            : selectedActivity.type === "Meeting"
+            ? "gold"
+            : "lime"
+        }
+      >
+        {selectedActivity.type}
+      </Tag>
+
+      <div style={{ color: "#6b7280", marginTop: 4 }}>
+        Activity Timeline Record
+      </div>
     </div>
-  )}
-</Modal>
+  </div>
+
+  {/* ACTIVITY INFORMATION */}
+  <Card bordered style={{ borderRadius: 10, marginBottom: 16 }}>
+    <Row gutter={[20, 20]}>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Activity Type</div>
+        <div>{selectedActivity.type}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Activity Date</div>
+        <div>
+          {selectedActivity.activity_date
+            ? dayjs(selectedActivity.activity_date).format("MMM DD, YYYY HH:mm")
+            : "N/A"}
+        </div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Related Type</div>
+        <div>{selectedActivity.related_type || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Related Record</div>
+        <div>
+          {selectedActivity.related_type
+            ? `${selectedActivity.related_type} #${selectedActivity.related_id}`
+            : "N/A"}
+        </div>
+      </Col>
+
+    </Row>
+  </Card>
+
+  {/* NOTES SECTION */}
+  <Card bordered style={{ borderRadius: 10 }}>
+    <div style={{ fontWeight: 600, marginBottom: 10 }}>
+      Notes
+    </div>
+
+    <div style={{ color: "#4b5563" }}>
+      {selectedActivity.notes || "No notes available for this activity."}
+    </div>
+  </Card>
+
+</div>
+
+
+
+
+)} </Modal>
+
     </div>
   );
 }

@@ -614,26 +614,109 @@ const handleView = (quote) => {
           </Row>
         </Form>
       </Modal>
-      <Modal
-  title="Quotation Details"
-  open={viewModalOpen}
-  footer={null}
-  onCancel={() => setViewModalOpen(false)}
-  centered
+     <Modal
+title="Quotation Details"
+open={viewModalOpen}
+footer={null}
+onCancel={() => setViewModalOpen(false)}
+centered
+width={750}
+
 >
-  {selectedQuote && (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <p><b>Quote ID:</b> {selectedQuote.quotation_number}</p>
-      <p><b>Customer:</b> {selectedQuote.customer?.name || "N/A"}</p>
-      <p><b>Email:</b> {selectedQuote.customer?.email || "N/A"}</p>
-      <p><b>Deal:</b> {selectedQuote.deal?.deal_name || "N/A"}</p>
-      <p><b>Total Amount:</b> ₹{selectedQuote.total_amount?.toLocaleString("en-IN")}</p>
-      <p><b>Tax Amount:</b> ₹{selectedQuote.tax_amount?.toLocaleString("en-IN")}</p>
-      <p><b>Status:</b> {selectedQuote.status}</p>
-      <p><b>Created:</b> {selectedQuote.created_at ? dayjs(selectedQuote.created_at).format("MMM DD, YYYY") : "N/A"}</p>
+
+{selectedQuote && (
+<div style={{ padding: 20 }}>
+
+```
+  {/* HEADER */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 20
+    }}
+  >
+    <div
+      style={{
+        width: 70,
+        height: 70,
+        borderRadius: "50%",
+        background: "#1677ff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        fontSize: 28
+      }}
+    >
+      <FileTextOutlined />
     </div>
-  )}
-</Modal>
+
+    <div>
+      <div style={{ fontSize: 22, fontWeight: 700 }}>
+        {selectedQuote.quotation_number}
+      </div>
+
+      <Tag color={getStatusColor(selectedQuote.status)}>
+        {selectedQuote.status}
+      </Tag>
+
+      <div style={{ color: "#6b7280", marginTop: 4 }}>
+        {selectedQuote.customer?.name || "No Customer"}
+      </div>
+    </div>
+  </div>
+
+  {/* DETAILS CARD */}
+  <Card bordered style={{ borderRadius: 10 }}>
+    <Row gutter={[20, 20]}>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Customer</div>
+        <div>{selectedQuote.customer?.name || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Email</div>
+        <div>{selectedQuote.customer?.email || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Deal</div>
+        <div>{selectedQuote.deal?.deal_name || "N/A"}</div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Total Amount</div>
+        <div style={{ color: "#10b981", fontWeight: 600 }}>
+          ₹{selectedQuote.total_amount?.toLocaleString("en-IN")}
+        </div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Tax Amount</div>
+        <div>
+          ₹{selectedQuote.tax_amount?.toLocaleString("en-IN")}
+        </div>
+      </Col>
+
+      <Col span={12}>
+        <div style={{ fontWeight: 600 }}>Created</div>
+        <div>
+          {selectedQuote.created_at
+            ? dayjs(selectedQuote.created_at).format("MMM DD, YYYY")
+            : "N/A"}
+        </div>
+      </Col>
+
+    </Row>
+  </Card>
+
+</div>
+
+
+)} </Modal>
     </div>
   );
 }
