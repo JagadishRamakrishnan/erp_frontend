@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { paymentService, invoiceService } from "../services";
 import dayjs from "dayjs";
+import { Drawer } from "antd";
 import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
@@ -21,6 +22,7 @@ export default function Payments() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filterMethod, setFilterMethod] = useState("All");
@@ -246,7 +248,11 @@ const upiPayments = payments
                 type="primary"
                 icon={<PlusOutlined />}
                 style={{ height: 40, borderRadius: 8 }}
-                onClick={handleAddNew}
+                onClick={() => {
+  setEditingPayment(null);
+  form.resetFields();
+  setDrawerOpen(true);
+}}
               >
                 Record Payment
               </Button>
@@ -485,6 +491,121 @@ const upiPayments = payments
           </Row>
         </Form>
       </Modal>
+      <Drawer
+  title={editingPayment ? "Edit Payment" : "Record Payment"}
+  open={drawerOpen}
+  onClose={() => {
+    setDrawerOpen(false);
+    setEditingPayment(null);
+    form.resetFields();
+  }}
+  width={500}
+  styles={{
+    body: { padding: 20 }
+  }}
+>
+
+  <Form form={form} layout="vertical" onFinish={handleSubmit}>
+
+  {/* 🔷 INVOICE SELECTION */}
+  <Form.Item label="Invoice" name="invoice_id" rules={[{ required: true }]}>
+    <Select placeholder="Select invoice">
+      {invoices.map(invoice => (
+        <Option key={invoice.id} value={invoice.id}>
+          {invoice.invoice_number} - ₹{invoice.total_amount}
+        </Option>
+      ))}
+    </Select>
+  </Form.Item>
+
+  {/* 🔷 CUSTOMER PREVIEW */}
+  <Card size="small" style={{ marginBottom: 16, borderRadius: 10 }}>
+    <div style={{ fontWeight: 600 }}>Customer Details</div>
+    <div style={{ fontSize: 13, color: "#6b7280" }}>
+      Name: Auto from invoice  
+    </div>
+    <div style={{ fontSize: 13, color: "#6b7280" }}>
+      Email: Auto from invoice
+    </div>
+  </Card>
+
+  {/* 🔷 PAYMENT DETAILS */}
+  <Row gutter={12}>
+    <Col span={12}>
+      <Form.Item label="Amount" name="amount" rules={[{ required: true }]}>
+        <InputNumber style={{ width: "100%" }} prefix="₹" />
+      </Form.Item>
+    </Col>
+
+    <Col span={12}>
+      <Form.Item label="Payment Method" name="payment_method" rules={[{ required: true }]}>
+        <Select>
+          <Option value="Cash">Cash</Option>
+          <Option value="UPI">UPI</Option>
+          <Option value="Card">Card</Option>
+          <Option value="Bank">Bank Transfer</Option>
+        </Select>
+      </Form.Item>
+    </Col>
+  </Row>
+
+  {/* 🔷 DATE + REFERENCE */}
+  <Row gutter={12}>
+    <Col span={12}>
+      <Form.Item label="Payment Date" name="payment_date" rules={[{ required: true }]}>
+        <DatePicker style={{ width: "100%" }} />
+      </Form.Item>
+    </Col>
+
+    <Col span={12}>
+      <Form.Item label="Reference Number" name="reference_number">
+        <Input placeholder="Txn ID / UPI Ref / Bank Ref" />
+      </Form.Item>
+    </Col>
+  </Row>
+
+  {/* 🔷 EXTRA FIELDS */}
+  <Form.Item label="Notes / Description" name="notes">
+    <Input.TextArea rows={3} placeholder="Optional notes..." />
+  </Form.Item>
+
+  <Form.Item label="Payment Status" name="status">
+    <Select defaultValue="Completed">
+      <Option value="Completed">Completed</Option>
+      <Option value="Pending">Pending</Option>
+      <Option value="Failed">Failed</Option>
+    </Select>
+  </Form.Item>
+
+  {/* 🔷 SUMMARY CARD */}
+  <Card size="small" style={{ marginBottom: 16, borderRadius: 10, background: "#f9fafb" }}>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span>Total Invoice</span>
+      <span>₹ --</span>
+    </div>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span>Paid</span>
+      <span style={{ color: "#10b981" }}>₹ --</span>
+    </div>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span>Due</span>
+      <span style={{ color: "#ef4444" }}>₹ --</span>
+    </div>
+  </Card>
+
+  {/* 🔷 ACTION BUTTONS */}
+  <div style={{ display: "flex", gap: 10 }}>
+    <Button block onClick={() => setDrawerOpen(false)}>
+      Cancel
+    </Button>
+
+    <Button type="primary" htmlType="submit" block>
+      {editingPayment ? "Update Payment" : "Record Payment"}
+    </Button>
+  </div>
+
+</Form>
+</Drawer>
     </div>
   );
 }
