@@ -36,14 +36,8 @@ const MarketingDashboard = () => {
         setIsConnected(true);
       }
     } catch (error) {
-      // Meta account not connected is expected - not an error
-      if (error.message && error.message.includes('not connected')) {
-        setIsConnected(false);
-        setDashboardData(null);
-      } else {
-        console.error('Failed to load dashboard data:', error);
-        message.error('Failed to load dashboard data');
-      }
+      setIsConnected(false);
+      setDashboardData(null);
     } finally {
       setLoading(false);
     }
@@ -56,18 +50,23 @@ const MarketingDashboard = () => {
 
   const handleMetaConnect = async () => {
     try {
-      // In production, this would redirect to Meta OAuth
-      // For now, we'll simulate connection
       const response = await metaService.connect({
-        access_token: 'demo_token_' + Date.now(),
-        meta_user_id: 'demo_user_' + Date.now(),
-        token_expiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days from now
+        access_token: process.env.REACT_APP_META_ACCESS_TOKEN || 'env_token',
+        meta_user_id: 'env_user',
+        token_expiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
       });
       
       if (response.success) {
         message.success('Meta account connected successfully');
         setIsConnectModalVisible(false);
         setIsConnected(true);
+        // Auto-sync campaigns from Facebook
+        try {
+          await metaService.syncFromFacebook();
+          message.success('Campaigns synced from Facebook');
+        } catch (e) {
+          // sync errors are non-blocking
+        }
         fetchDashboardData();
       }
     } catch (error) {
@@ -202,7 +201,7 @@ const MarketingDashboard = () => {
                 border: "1px solid #f1f1f1",
                 boxShadow: "0 6px 18px rgba(0,0,0,0.04)"
               }}
-              bodyStyle={{ padding: 22 }}
+              styles={{ body: { padding: 22 } }}
             >
               <div
                 style={{
@@ -416,8 +415,7 @@ const MarketingDashboard = () => {
         centered
         width={500}
         getContainer={document.body}
-        maskStyle={{ backdropFilter: "blur(2px)" }}
-        bodyStyle={{ padding: "24px" }}
+        styles={{ mask: { backdropFilter: "blur(2px)" }, body: { padding: "24px" } }}
       >
         <div style={{ textAlign: "center", padding: 20 }}>
           <Title level={4}>

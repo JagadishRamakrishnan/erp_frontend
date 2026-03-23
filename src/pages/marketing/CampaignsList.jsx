@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Table, Tag, Typography, Button, Space, Input, message, Spin } from "antd";
 import { motion } from "framer-motion";
-import { Search, Filter, Facebook, Chrome } from "lucide-react";
+import { Search, Filter, Facebook, RefreshCw } from "lucide-react";
 import { metaService } from "../../services";
 import dayjs from "dayjs";
 
@@ -11,6 +11,7 @@ const CampaignsList = () => {
   const [searchText, setSearchText] = useState("");
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const CRM_PRIMARY = "#1C2244";
 
@@ -26,15 +27,28 @@ const CampaignsList = () => {
         setCampaigns(response.data || []);
       }
     } catch (error) {
-      // Meta account not connected is expected - show empty state
       if (error.message && error.message.includes('not connected')) {
         setCampaigns([]);
       } else {
-        console.error('Failed to load campaigns:', error);
         message.error('Failed to load campaigns');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await metaService.syncFromFacebook();
+      if (response.success) {
+        message.success(response.message || 'Campaigns synced from Facebook');
+        fetchCampaigns(); // Refresh list
+      }
+    } catch (error) {
+      message.error(error.message || 'Failed to sync from Facebook');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -175,24 +189,27 @@ const CampaignsList = () => {
         </div>
 
         <div style={{ display: "flex", gap: 12 }}>
+          <Button
+            type="primary"
+            icon={<RefreshCw size={16} />}
+            loading={syncing}
+            onClick={handleSync}
+            style={{ borderRadius: 10, height: 38, backgroundColor: '#1677ff' }}
+          >
+            {syncing ? 'Syncing...' : 'Sync from Facebook'}
+          </Button>
+
           <Input
             prefix={<Search size={16} color="#9CA3AF" />}
             placeholder="Search campaigns..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              width: 260,
-              borderRadius: 10,
-              height: 38,
-            }}
+            style={{ width: 260, borderRadius: 10, height: 38 }}
           />
 
           <Button
             icon={<Filter size={16} />}
-            style={{
-              borderRadius: 10,
-              height: 38,
-            }}
+            style={{ borderRadius: 10, height: 38 }}
           >
             Filters
           </Button>

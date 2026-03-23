@@ -430,7 +430,7 @@ const handleView = (activity) => {
           </Row>
 
           {/* ================= FILTER BAR ================= */}
-          <Card variant="borderless" style={styles.filterCard} bodyStyle={{ padding: 0 }}>
+          <Card variant="borderless" style={styles.filterCard} styles={{ body: { padding: 0 } }}>
             <Row gutter={[12, 12]} align="middle">
               <Col xs={24} sm={24} lg={16}>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>

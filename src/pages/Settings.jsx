@@ -58,7 +58,7 @@ export default function Settings() {
         {/* ================= PROFILE SETTINGS ================= */}
         <Col xs={24} sm={24} md={12} lg={12}>
           <motion.div custom={0} initial="hidden" animate="visible" variants={cardAnimation}>
-            <Card variant="borderless" style={styles.card} bodyStyle={{ padding: 24 }}>
+            <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
                 <div style={styles.iconWrap("#f0f5ff", "#1677ff")}>
                   <UserOutlined />
@@ -82,7 +82,7 @@ export default function Settings() {
         {/* ================= COMPANY SETTINGS ================= */}
         <Col xs={24} sm={24} md={12} lg={12}>
           <motion.div custom={1} initial="hidden" animate="visible" variants={cardAnimation}>
-            <Card variant="borderless" style={styles.card} bodyStyle={{ padding: 24 }}>
+            <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
                 <div style={styles.iconWrap("#f3e8ff", "#7c3aed")}>
                   <HomeOutlined />
@@ -106,7 +106,7 @@ export default function Settings() {
         {/* ================= NOTIFICATIONS ================= */}
         <Col xs={24} sm={24} md={12} lg={12}>
           <motion.div custom={2} initial="hidden" animate="visible" variants={cardAnimation}>
-            <Card variant="borderless" style={styles.card} bodyStyle={{ padding: 24 }}>
+            <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
                 <div style={styles.iconWrap("#d1fae5", "#059669")}>
                   <BellOutlined />
@@ -143,7 +143,7 @@ export default function Settings() {
         {/* ================= SECURITY ================= */}
         <Col xs={24} sm={24} md={12} lg={12}>
           <motion.div custom={3} initial="hidden" animate="visible" variants={cardAnimation}>
-            <Card variant="borderless" style={styles.card} bodyStyle={{ padding: 24 }}>
+            <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
                 <div style={styles.iconWrap("#fee2e2", "#dc2626")}>
                   <LockOutlined />
@@ -168,3 +168,4 @@ export default function Settings() {
     </div>
   );
 }
+

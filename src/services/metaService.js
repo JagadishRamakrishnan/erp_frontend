@@ -63,6 +63,21 @@ const metaService = {
   getCampaigns: async () => {
     return await apiCall('/meta/campaigns');
   },
+
+  // Create Campaign on Facebook
+  createCampaign: async (campaignData) => {
+    return await apiCall('/meta/campaigns/create', {
+      method: 'POST',
+      body: JSON.stringify(campaignData),
+    });
+  },
+
+  // Sync real data from Facebook
+  syncFromFacebook: async () => {
+    return await apiCall('/meta/sync', {
+      method: 'POST',
+    });
+  },
 };
 
 export default metaService;

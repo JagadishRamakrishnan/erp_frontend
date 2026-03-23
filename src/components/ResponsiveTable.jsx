@@ -28,7 +28,7 @@ const ResponsiveTable = ({
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                 border: '1px solid #f0f0f0'
               }}
-              bodyStyle={{ padding: 16 }}
+              styles={{ body: { padding: 16 } }}
             >
               {renderMobileCard(record)}
             </Card>

@@ -207,7 +207,7 @@ export default function Opportunities() {
       </Row>
 
       {/* ================= FILTERS ================= */}
-      <Card variant="borderless" style={styles.filterCard} bodyStyle={{ padding: "16px 20px" }}>
+      <Card variant="borderless" style={styles.filterCard} styles={{ body: { padding: "16px 20px" } }}>
         <Row gutter={[16, 16]}>
           <Col xs={24} md={10}>
              <Input
