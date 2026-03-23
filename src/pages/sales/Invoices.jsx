@@ -47,7 +47,22 @@ const [selectedInvoice, setSelectedInvoice] = useState(null);
     fetchDeals();
     fetchQuotations();
   }, []);
+const th = {
+  padding: 10,
+  textAlign: "left",
+  borderBottom: "1px solid #e5e7eb"
+};
 
+const td = {
+  padding: 10,
+  borderBottom: "1px solid #f3f4f6"
+};
+
+const row = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginBottom: 8
+};
   const fetchInvoices = async () => {
   setLoading(true);
   try {
@@ -612,126 +627,110 @@ const pending = invoices
         </Form>
       </Modal>
       <Modal
-title="Invoice Details"
-open={viewOpen}
-footer={null}
-onCancel={() => setViewOpen(false)}
-centered
-width={750}
-
+  open={viewOpen}
+  footer={null}
+  onCancel={() => setViewOpen(false)}
+  width={900}
+  centered
 >
+  {selectedInvoice && (
+    <div style={{ padding: 24, background: "#fff", borderRadius: 10 }}>
 
-{selectedInvoice && (
-<div style={{ padding: 20 }}>
-
-```
-  {/* HEADER */}
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 16,
-      marginBottom: 20
-    }}
-  >
-    <Avatar
-      size={70}
-      style={{
-        background: "#1677ff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-      }}
-    >
-      INV
-    </Avatar>
-
-    <div>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>
-        {selectedInvoice.invoice_number}
-      </div>
-
-      <Tag
-        color={
-          selectedInvoice.status === "Paid"
-            ? "green"
-            : selectedInvoice.status === "Pending"
-            ? "orange"
-            : "blue"
-        }
-      >
-        {selectedInvoice.status}
-      </Tag>
-
-      <div style={{ color: "#6b7280", marginTop: 4 }}>
-        Invoice Record
-      </div>
-    </div>
-  </div>
-
-  {/* CUSTOMER INFORMATION */}
-  <Card bordered style={{ borderRadius: 10, marginBottom: 16 }}>
-    <Row gutter={[20, 20]}>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Customer</div>
-        <div>{selectedInvoice.customer?.name || "N/A"}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Email</div>
-        <div>{selectedInvoice.customer?.email || "N/A"}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Invoice ID</div>
-        <div>{selectedInvoice.invoice_number}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Created Date</div>
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
-          {selectedInvoice.created_at
-            ? dayjs(selectedInvoice.created_at).format("MMM DD, YYYY")
-            : "N/A"}
+          <h2 style={{ margin: 0 }}>Atelier Creations</h2>
+          <p style={{ margin: 0, color: "#6b7280" }}>
+            CRM Billing System
+          </p>
         </div>
-      </Col>
 
-    </Row>
-  </Card>
-
-  {/* PAYMENT DETAILS */}
-  <Card bordered style={{ borderRadius: 10 }}>
-    <Row gutter={[20, 20]}>
-
-      <Col span={8}>
-        <div style={{ fontWeight: 600 }}>Total Amount</div>
-        <div style={{ color: "#111827", fontWeight: 600 }}>
-          ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
+        <div style={{ textAlign: "right" }}>
+          <h1 style={{ margin: 0, color: "#1677ff" }}>INVOICE</h1>
+          <p style={{ margin: 0 }}>#{selectedInvoice.invoice_number}</p>
+          <p style={{ margin: 0 }}>
+            {dayjs(selectedInvoice.created_at).format("DD MMM YYYY")}
+          </p>
         </div>
-      </Col>
+      </div>
 
-      <Col span={8}>
-        <div style={{ fontWeight: 600 }}>Paid Amount</div>
-        <div style={{ color: "#10b981", fontWeight: 600 }}>
-          ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
+      {/* CUSTOMER */}
+      <div style={{ marginBottom: 20 }}>
+        <h4 style={{ marginBottom: 4 }}>Bill To:</h4>
+        <p style={{ margin: 0 }}>{selectedInvoice.customer?.name}</p>
+        <p style={{ margin: 0, color: "#6b7280" }}>
+          {selectedInvoice.customer?.email}
+        </p>
+      </div>
+
+      {/* TABLE */}
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 20 }}>
+        <thead>
+          <tr style={{ background: "#f3f4f6" }}>
+            <th style={th}>Description</th>
+            <th style={th}>Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td style={td}>Service / Deal</td>
+            <td style={td}>
+              ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* TOTAL SECTION */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ width: 300 }}>
+
+          <div style={row}>
+            <span>Total</span>
+            <span>₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}</span>
+          </div>
+
+          <div style={row}>
+            <span>Paid</span>
+            <span style={{ color: "#10b981" }}>
+              ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
+            </span>
+          </div>
+
+          <div style={row}>
+            <span>Due</span>
+            <span style={{ color: "#ef4444" }}>
+              ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
+            </span>
+          </div>
+
+          <hr />
+
+          <div style={{ ...row, fontWeight: "bold", fontSize: 18 }}>
+            <span>Grand Total</span>
+            <span>
+              ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
+            </span>
+          </div>
+
         </div>
-      </Col>
+      </div>
 
-      <Col span={8}>
-        <div style={{ fontWeight: 600 }}>Due Amount</div>
-        <div style={{ color: "#ef4444", fontWeight: 600 }}>
-          ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
+      {/* FOOTER */}
+      <div style={{ marginTop: 40 }}>
+        <p style={{ color: "#6b7280" }}>Thank you for your business 🙏</p>
+
+        <div style={{ textAlign: "right", marginTop: 30 }}>
+          <p>Authorized Signature</p>
+          <div style={{ height: 40 }}></div>
+          <strong>Atelier Creations</strong>
         </div>
-      </Col>
+      </div>
 
-    </Row>
-  </Card>
-
-</div>
-
-
-)} </Modal>
+    </div>
+  )}
+</Modal>
     </div>
   );
 }
