@@ -15,6 +15,13 @@ import ResponsiveTable from "../../components/ResponsiveTable";
 import q2 from "../../assets/icons/q2.gif";
 import q3 from "../../assets/icons/q3.gif";
 import q4 from "../../assets/icons/q4.gif";
+import { UploadOutlined } from "@ant-design/icons";
+import {
+  WhatsAppOutlined,
+  FacebookOutlined,
+  InstagramOutlined
+} from "@ant-design/icons";
+import BulkUploadModal from "../../components/BulkUploadModal";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -30,6 +37,7 @@ export default function Quotes() {
   const [form] = Form.useForm();
 const [viewModalOpen, setViewModalOpen] = useState(false);
 const [selectedQuote, setSelectedQuote] = useState(null);
+const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   useEffect(() => {
     fetchQuotations();
@@ -152,20 +160,82 @@ const handleView = (quote) => {
     )
   },
   {
-    title: "Customer",
-    key: "customer",
-    align: "center",
-    render: (_, record) => (
-      <div>
-        <div style={{ fontWeight: 600, color: "#111827" }}>
-          {record.customer?.name || "N/A"}
-        </div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>
-          {record.customer?.email || ""}
-        </div>
+  title: "Customer",
+  key: "customer",
+  align: "center",
+  render: (_, record) => (
+    <div>
+      <div style={{ fontWeight: 600 }}>
+        {record.customer?.name || "N/A"}
       </div>
-    ),
-  },
+
+      <div style={{ fontSize: 12, color: "#6b7280" }}>
+        {record.customer?.email || ""}
+      </div>
+
+      {/* 🔥 SOCIAL ICONS */}
+      <div
+        style={{
+          marginTop: 8,
+          display: "flex",
+          justifyContent: "center",
+          gap: 10
+        }}
+      >
+        {/* WhatsApp */}
+        <a
+          href={`https://wa.me/${record.customer?.phone || ""}`}
+          target="_blank"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "#e6f7ee",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <WhatsAppOutlined style={{ color: "#25D366" }} />
+        </a>
+
+        {/* Facebook */}
+        <a
+          href={record.customer?.facebook_url || "#"}
+          target="_blank"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "#e7f0ff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <FacebookOutlined style={{ color: "#1877F2" }} />
+        </a>
+
+        {/* Instagram */}
+        <a
+          href={record.customer?.instagram_url || "#"}
+          target="_blank"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "#fce7f3",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <InstagramOutlined style={{ color: "#E1306C" }} />
+        </a>
+      </div>
+    </div>
+  ),
+},
   {
     title: "Amount",
     dataIndex: "total_amount",
@@ -256,7 +326,47 @@ const handleView = (quote) => {
   const totalValue = quotations.reduce((sum, q) => sum + (q.total_amount || 0), 0);
   const approvedValue = quotations.filter(q => q.status === 'Approved').reduce((sum, q) => sum + (q.total_amount || 0), 0);
   const pendingCount = quotations.filter(q => q.status === 'Sent').length;
+ const handleBulkUpload = async (formData) => {
+  try {
+    const response = await quotationService.bulkUpload(formData);
+    if (response.success) {
+      fetchQuotations();
+    }
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
+const handleDownloadTemplate = async () => {
+  try {
+   const API_BASE_URL = "http://localhost:3000/api";  // or your port
+
+    const response = await fetch(`${API_BASE_URL}/quotes/template/download`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    console.log("STATUS:", response.status); // 👈 ADD THIS
+
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quotes_template.csv";
+      a.click();
+      message.success("Template downloaded successfully");
+    } else {
+      const text = await response.text();
+      console.log("ERROR RESPONSE:", text); // 👈 ADD THIS
+      throw new Error("Download failed");
+    }
+  } catch (error) {
+    message.error("Template download failed");
+  }
+};
   return (
     <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
       {loading && !quotations.length ? (
@@ -276,13 +386,24 @@ const handleView = (quote) => {
               </Text>
             </div>
 
-            <button
-              onClick={handleAddNew}
-              className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
-            >
-              <PlusOutlined />
-              New Quote
-            </button>
+            <div className="flex gap-3">
+  <Button
+    type="primary"
+    icon={<PlusOutlined />}
+    onClick={handleAddNew}
+    style={{ height: 40, borderRadius: 8 }}
+  >
+    New Quote
+  </Button>
+
+  <Button
+    icon={<UploadOutlined />}
+    onClick={() => setShowBulkUpload(true)}
+    style={{ height: 40, borderRadius: 8 }}
+  >
+    Bulk Upload
+  </Button>
+</div>
           </div>
 
           {/* ================= SUMMARY CARDS (Animated) ================= */}
@@ -717,6 +838,20 @@ width={750}
 
 
 )} </Modal>
+<BulkUploadModal
+  open={showBulkUpload}
+  onClose={() => setShowBulkUpload(false)}
+  onUpload={handleBulkUpload}
+  onDownloadTemplate={handleDownloadTemplate}
+  moduleName="Quotes"
+  templateFields={[
+    "customer_id",
+    "deal_id",
+    "total_amount",
+    "tax_amount",
+    "status"
+  ]}
+/>
     </div>
   );
 }

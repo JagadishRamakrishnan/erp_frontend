@@ -41,6 +41,7 @@ export default function Invoices() {
   const [form] = Form.useForm();
 const [viewOpen, setViewOpen] = useState(false);
 const [selectedInvoice, setSelectedInvoice] = useState(null);
+const [bulkModalOpen, setBulkModalOpen] = useState(false);
   useEffect(() => {
     fetchInvoices();
     fetchCustomers();
@@ -172,6 +173,27 @@ const handleView = (invoice) => {
     const matchStatus = filter === "All" || inv.status === filter;
     return matchSearch && matchStatus;
   });
+  const handleDownloadTemplate = async () => {
+  try {
+    const response = await fetch("http://localhost:5000/api/quotation/template/download", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoice_template.csv";
+    a.click();
+
+    message.success("Template downloaded");
+  } catch (error) {
+    message.error("Download failed");
+  }
+};
 
   const getStatusColor = (status) => {
     const colors = {
@@ -330,13 +352,25 @@ const pending = invoices
               </Text>
             </div>
      
-            <button
-              onClick={handleAddNew}
-              className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
-            >
-              <PlusOutlined />
-              Create Invoice
-            </button>
+           <div style={{ display: "flex", gap: 10 }}>
+  
+  <button
+    onClick={handleAddNew}
+    className="flex items-center gap-2 bg-[#1677ff] text-white px-4 h-10 rounded-lg"
+  >
+    <PlusOutlined />
+    Create Invoice
+  </button>
+
+  <button
+    onClick={() => setBulkModalOpen(true)}
+    className="flex items-center gap-2 border px-4 h-10 rounded-lg"
+  >
+    <DownloadOutlined />
+    Bulk Upload
+  </button>
+
+</div>
           </div>
 
           {/* ================= SUMMARY CARDS (Animated) ================= */}
@@ -730,6 +764,67 @@ const pending = invoices
 
     </div>
   )}
+</Modal>
+<Modal
+  open={bulkModalOpen}
+  onCancel={() => setBulkModalOpen(false)}
+  footer={null}
+  width={900}
+  centered
+>
+  <h2 style={{ fontSize: 20, fontWeight: 600 }}>Bulk Upload Invoices</h2>
+
+{/* STEP 1 */}
+<div style={{ marginTop: 20 }}>
+  <h3>Step 1: Download Template</h3>
+  <p style={{ color: "#6b7280" }}>
+    Download the Excel template with correct format
+  </p>
+
+  <Button
+    icon={<DownloadOutlined />}
+    type="primary"
+    onClick={handleDownloadTemplate}
+  >
+    Download Invoice Template
+  </Button>
+
+  <div style={{
+    marginTop: 15,
+    padding: 15,
+    background: "#f9fafb",
+    borderRadius: 10
+  }}>
+    Required Fields:
+    <div style={{ marginTop: 8 }}>
+      <Tag>customer_id</Tag>
+      <Tag>deal_id</Tag>
+      <Tag>total_amount</Tag>
+      <Tag>paid_amount</Tag>
+      <Tag>status</Tag>
+    </div>
+  </div>
+</div>
+
+{/* STEP 2 */}
+<div style={{ marginTop: 25 }}>
+  <h3>Step 2: Upload Your File</h3>
+
+  <div style={{
+    border: "2px dashed #d1d5db",
+    borderRadius: 10,
+    padding: 40,
+    textAlign: "center",
+    background: "#fafafa"
+  }}>
+    <p>Click or drag file to upload</p>
+    <p style={{ color: "#6b7280" }}>
+      Support Excel (.xlsx, .xls) or CSV
+    </p>
+
+    <input type="file" style={{ marginTop: 10 }} />
+  </div>
+</div>
 </Modal>
     </div>
   );

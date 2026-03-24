@@ -5,6 +5,11 @@ import { motion } from "framer-motion";
 import c1 from "../assets/icons/c1.gif";
 import c2 from "../assets/icons/c2.gif";
 import c3 from "../assets/icons/c3.gif";
+import {
+  WhatsAppOutlined,
+  FacebookOutlined,
+  InstagramOutlined
+} from "@ant-design/icons";
 import { customerService } from "../services";
 import BulkUploadModal from "../components/BulkUploadModal";
 const { Option } = Select;
@@ -172,6 +177,16 @@ page: {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } }
   };
+  const circleStyle = (bg) => ({
+  width: 32,
+  height: 32,
+  borderRadius: "50%",
+  background: bg,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer"
+});
 
   const columns = [
   {
@@ -218,6 +233,47 @@ page: {
     width: 220,
     render: (text) => <span>{text || "N/A"}</span>,
   },
+  {
+  title: "Social",
+  key: "social",
+  align: "center",
+  width: 150,
+  render: (_, record) => (
+    <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+
+      {/* WhatsApp */}
+      <a
+        href={record.phone ? `https://wa.me/${record.phone}` : "#"}
+        target="_blank"
+      >
+        <div style={circleStyle("#e6f7ee")}>
+          <WhatsAppOutlined style={{ color: "#25D366" }} />
+        </div>
+      </a>
+
+      {/* Facebook */}
+      <a
+        href={record.facebook_url || "#"}
+        target="_blank"
+      >
+        <div style={circleStyle("#e7f0ff")}>
+          <FacebookOutlined style={{ color: "#1877F2" }} />
+        </div>
+      </a>
+
+      {/* Instagram */}
+      <a
+        href={record.instagram_url || "#"}
+        target="_blank"
+      >
+        <div style={circleStyle("#fce7f3")}>
+          <InstagramOutlined style={{ color: "#E1306C" }} />
+        </div>
+      </a>
+
+    </div>
+  ),
+},
 
   {
     title: "City",
