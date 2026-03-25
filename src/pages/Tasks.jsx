@@ -49,6 +49,7 @@ export default function Tasks() {
   setLoading(true);
   try {
     const response = await taskService.getAll();
+    console.log(response)
     if (response.success) {
       const sortedTasks = (response.data || []).sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)

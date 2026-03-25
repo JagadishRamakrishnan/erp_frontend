@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography } from "antd";
+import { useState, useEffect, useMemo } from "react";
+import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService, noteService, taskService } from "../services";
@@ -15,6 +15,7 @@ import {
   FacebookOutlined,
   InstagramOutlined
 } from "@ant-design/icons";
+import { CheckCircle, FileText, Phone, Trophy, XCircle } from "lucide-react";
 const { Option } = Select;
 
 
@@ -22,6 +23,7 @@ export default function Leads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [viewTransitioning, setViewTransitioning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [searchText, setSearchText] = useState("");
@@ -30,13 +32,24 @@ export default function Leads() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [viewType, setViewType] = useState("kanban");
+  const [viewType, setViewType] = useState("list");
   const tabs = ["All", "New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
   const [activeTab, setActiveTab] = useState("All");
   const currentUser = authService.getCurrentUser();
   const [stageChangeModalOpen, setStageChangeModalOpen] = useState(false);
   const [pendingStageChange, setPendingStageChange] = useState(null);
+  const [pendingLeadValues, setPendingLeadValues] = useState(null);
+  const [isConverting, setIsConverting] = useState(false);
   const [stageForm] = Form.useForm();
+
+  const handleViewTypeChange = (type) => {
+    setViewTransitioning(true);
+    setViewType(type);
+    if (type === "kanban") setActiveTab("All");
+    setTimeout(() => setViewTransitioning(false), 300); // Small delay to let React render
+  };
+
+
   useEffect(() => {
     fetchLeads();
     fetchUsers();
@@ -69,6 +82,14 @@ export default function Leads() {
 
   const handleSubmit = async (values) => {
     try {
+      if (editingLead && values.status !== editingLead.status) {
+        // If status changed, we need the stage change note modal
+        setPendingLeadValues(values);
+        handleLeadDrop(editingLead, values.status);
+        setModalOpen(false);
+        return;
+      }
+
       const response = editingLead
         ? await leadService.update(editingLead.id, values)
         : await leadService.create(values);
@@ -143,14 +164,29 @@ export default function Leads() {
     const { lead, newStage } = pendingStageChange;
 
     try {
-      // 1. Update Lead Status
-      await leadService.update(lead.id, { status: newStage });
+      const finalStage = isConverting ? values.selectedStatus : newStage;
+      
+      if (isConverting) {
+        // Convert Lead to Customer first
+        const convertRes = await leadService.convertToCustomer(lead.id);
+        if (convertRes.success && convertRes.data.alreadyConverted) {
+          message.warning('This lead is already a customer');
+        }
+      }
+
+      if (pendingLeadValues) {
+        // Full update from Edit Modal
+        await leadService.update(lead.id, { ...pendingLeadValues, status: finalStage });
+      } else {
+        // Single status update or Conversion update
+        await leadService.update(lead.id, { status: finalStage });
+      }
 
       // 2. Create Note
       await noteService.create({
         related_type: 'Lead',
         related_id: lead.id,
-        note: `Moved to ${newStage}. Notes: ${values.note}`
+        note: `Moved to ${finalStage} during ${isConverting ? 'conversion' : 'stage change'}. Notes: ${values.note}`
       });
 
       // 3. Create Follow-up Task if required
@@ -167,9 +203,12 @@ export default function Leads() {
         });
       }
 
-      message.success(`Lead moved to ${newStage} successfully`);
+      message.success(isConverting ? 'Lead successfully converted to customer!' : (pendingLeadValues ? 'Lead and stage updated' : `Lead moved to ${finalStage}`));
       setStageChangeModalOpen(false);
       setPendingStageChange(null);
+      setPendingLeadValues(null);
+      setIsConverting(false);
+      setEditingLead(null);
       stageForm.resetFields();
       fetchLeads();
     } catch (error) {
@@ -189,29 +228,11 @@ export default function Leads() {
     }
   };
 
-  const handleConvert = async (lead) => {
-    Modal.confirm({
-      title: 'Convert Lead to Customer',
-      content: `Are you sure you want to convert "${lead.name}" to a customer? This will create a new customer record and mark the lead as Won.`,
-      okText: 'Yes, Convert',
-      okType: 'primary',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          const response = await leadService.convertToCustomer(lead.id);
-          if (response.success) {
-            if (response.data.alreadyConverted) {
-              message.warning('This lead has already been converted to a customer');
-            } else {
-              message.success(`Lead converted successfully! Customer "${response.data.customer.name}" has been created.`);
-            }
-            fetchLeads();
-          }
-        } catch (error) {
-          message.error('Failed to convert lead');
-        }
-      }
-    });
+  const handleConvert = (lead) => {
+    setPendingStageChange({ lead, newStage: 'Won' }); // Default target for conversion
+    setIsConverting(true);
+    stageForm.setFieldsValue({ selectedStatus: 'Won' });
+    setStageChangeModalOpen(true);
   };
 
   const handleAddNew = () => {
@@ -259,13 +280,25 @@ export default function Leads() {
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
-    const searchMatch = lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
-      lead.company?.toLowerCase().includes(searchText.toLowerCase());
-    const tabMatch = activeTab === "All" || lead.status === activeTab;
-    return searchMatch && tabMatch;
-  });
+  const filteredLeads = useMemo(() => {
+    return leads
+      .filter(lead => {
+        const searchMatch = (lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+          lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+          lead.company?.toLowerCase().includes(searchText.toLowerCase()));
+        const tabMatch = activeTab === "All" || lead.status === activeTab;
+        return searchMatch && tabMatch;
+      })
+      .sort((a, b) => {
+        // Unassigned first (null/undefined)
+        const aVal = a.assigned_to ? 1 : 0;
+        const bVal = b.assigned_to ? 1 : 0;
+        if (aVal !== bVal) return aVal - bVal;
+        
+        // Secondary sort by date (newest first)
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+  }, [leads, searchText, activeTab]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -418,7 +451,7 @@ export default function Leads() {
       dataIndex: "status",
       align: "center",
       render: (status) => (
-        <Tag color={getStatusColor(status)}>
+        <Tag variant="filled" color={getStatusColor(status)}>
           {status}
         </Tag>
       ),
@@ -524,56 +557,58 @@ export default function Leads() {
             </Col>
           </Row>
 
-          {/* STATS */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            {[
-              { title: "Total Leads", count: leads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
-              { title: "New Leads", count: leads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
-              { title: "Qualified", count: leads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
-              { title: "Deals Won", count: leads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
-            ].map((item, index) => (
-              <Col xs={24} sm={12} lg={6} key={index}>
-                <motion.div
-                  custom={index}
-                  initial="hidden"
-                  animate="visible"
-                  variants={cardAnimation}
-                >
-                  <Card bordered={false} style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.03)", overflow: 'hidden' }}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: '0.5px' }}>
-                          {item.title}
+          {/* STATS - ONLY SHOW IN LIST VIEW */}
+          {viewType === "list" && (
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              {[
+                { title: "Total Leads", count: leads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
+                { title: "New Leads", count: leads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
+                { title: "Qualified", count: leads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
+                { title: "Deals Won", count: leads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
+              ].map((item, index) => (
+                <Col xs={24} sm={12} lg={6} key={index}>
+                  <motion.div
+                    custom={index}
+                    initial="hidden"
+                    animate="visible"
+                    variants={cardAnimation}
+                  >
+                    <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.03)", overflow: 'hidden' }}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: '0.5px' }}>
+                            {item.title}
+                          </div>
+                          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, color: "#111827" }}>
+                            {item.count}
+                          </div>
+                          <div className="flex items-center mt-3 text-[11px] font-medium">
+                            <span className={`flex items-center gap-0.5 ${item.isUp ? 'text-green-500' : 'text-red-500'}`}>
+                              {item.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                              {item.trend}
+                            </span>
+                            <span className="text-gray-400 ml-1.5">vs last 30 days</span>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, color: "#111827" }}>
-                          {item.count}
-                        </div>
-                        <div className="flex items-center mt-3 text-[11px] font-medium">
-                          <span className={`flex items-center gap-0.5 ${item.isUp ? 'text-green-500' : 'text-red-500'}`}>
-                            {item.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                            {item.trend}
-                          </span>
-                          <span className="text-gray-400 ml-1.5">vs last 30 days</span>
+                        <div style={{ 
+                          width: 44, 
+                          height: 44, 
+                          borderRadius: 12, 
+                          backgroundColor: `${item.color}15`, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          color: item.color
+                        }}>
+                          {item.icon}
                         </div>
                       </div>
-                      <div style={{ 
-                        width: 44, 
-                        height: 44, 
-                        borderRadius: 12, 
-                        backgroundColor: `${item.color}15`, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        color: item.color
-                      }}>
-                        {item.icon}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              </Col>
-            ))}
-          </Row>
+                    </Card>
+                  </motion.div>
+                </Col>
+              ))}
+            </Row>
+          )}
 
           {/* SEARCH & TOGGLES */}
           <Card style={{ borderRadius: 12, marginBottom: 20 }}>
@@ -590,13 +625,13 @@ export default function Leads() {
                 {/* VIEW TOGGLE */}
                 <div className="flex bg-[#f3f4f6] p-1 rounded-lg">
                   <button
-                    onClick={() => { setViewType("kanban"); setActiveTab("All"); }}
+                    onClick={() => handleViewTypeChange("kanban")}
                     className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "kanban" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
                   >
                     <LayoutGrid size={16} /> Kanban
                   </button>
                   <button
-                    onClick={() => setViewType("list")}
+                    onClick={() => handleViewTypeChange("list")}
                     className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "list" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
                   >
                     <List size={16} /> Table
@@ -625,8 +660,11 @@ export default function Leads() {
             )}
           </Card>
 
-          {/* LEADS RENDER ZONE */}
-          {viewType === "kanban" ? (
+          {viewTransitioning ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px', background: '#fff', borderRadius: 16 }}>
+              <Spin size="large" tip="Switching view..." />
+            </div>
+          ) : viewType === "kanban" ? (
             <LeadKanbanBoard
               leads={filteredLeads}
               onLeadDrop={handleLeadDrop}
@@ -648,7 +686,8 @@ export default function Leads() {
                 pagination={{ 
                   defaultPageSize: 10,
                   showSizeChanger: true, 
-                  pageSizeOptions: ['10', '20', '50', '100'] 
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total) => `Total ${total} leads`
                 }}
                 renderMobileCard={(record) => (
                   <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -862,18 +901,68 @@ export default function Leads() {
 
       {/* STAGE CHANGE MODAL */}
       <Modal
-        title={`Move to ${pendingStageChange?.newStage}`}
+        title={isConverting ? "Convert Lead to Customer" : `Move to ${pendingStageChange?.newStage}`}
         open={stageChangeModalOpen}
         onCancel={() => {
           setStageChangeModalOpen(false);
           setPendingStageChange(null);
+          setPendingLeadValues(null);
+          setEditingLead(null);
+          setIsConverting(false);
           stageForm.resetFields();
         }}
         footer={null}
         centered
         width={500}
       >
-        <Form form={stageForm} layout="vertical" onFinish={handleStageChangeSubmit} initialValues={{ requiresFollowUp: false }}>
+        <Form form={stageForm} layout="vertical" onFinish={handleStageChangeSubmit} initialValues={{ requiresFollowUp: false, selectedStatus: 'Won' }}>
+          {isConverting && (
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) => prevValues.selectedStatus !== currentValues.selectedStatus}
+            >
+              {() => (
+                <Form.Item 
+                  label="Select final stage for this conversion" 
+                  name="selectedStatus" 
+                  rules={[{ required: true }]}
+                >
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {[
+                      { value: 'Contacted', color: '#0ea5e9', icon: <Phone size={14} /> },
+                      { value: 'Qualified', color: '#f59e0b', icon: <CheckCircle size={14} /> },
+                      { value: 'Proposal', color: '#6366f1', icon: <FileText size={14} /> },
+                      { value: 'Won', color: '#10b981', icon: <Trophy size={14} /> },
+                      { value: 'Lost', color: '#ef4444', icon: <XCircle size={14} /> },
+                    ].map((s) => {
+                      const isSelected = stageForm.getFieldValue('selectedStatus') === s.value;
+                      return (
+                        <button
+                          key={s.value}
+                          type="button"
+                          onClick={() => {
+                            stageForm.setFieldsValue({ selectedStatus: s.value });
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all font-semibold text-[13px] 
+                            ${isSelected ? 'scale-105 shadow-md' : 'opacity-60 hover:opacity-90 hover:scale-102'}`}
+                          style={{
+                            borderColor: s.color,
+                            backgroundColor: isSelected ? s.color : `${s.color}15`,
+                            color: isSelected ? '#fff' : s.color,
+                            boxShadow: isSelected ? `0 4px 12px ${s.color}40` : 'none',
+                            borderWidth: '2px'
+                          }}
+                        >
+                          {s.icon} {s.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Form.Item>
+              )}
+            </Form.Item>
+          )}
+
           <Form.Item
             label="What did the customer say?"
             name="note"
@@ -905,6 +994,9 @@ export default function Leads() {
             <Button onClick={() => {
               setStageChangeModalOpen(false);
               setPendingStageChange(null);
+              setPendingLeadValues(null);
+              setEditingLead(null);
+              setIsConverting(false);
               stageForm.resetFields();
             }}>
               Cancel

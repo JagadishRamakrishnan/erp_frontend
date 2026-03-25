@@ -1,12 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, ClipboardCopy, Mail, Phone } from "lucide-react";
-import { Typography } from "antd";
+import { Typography, message, Tooltip } from "antd";
+
+// Lightweight Copy Button Component to replace heavy Typography.Text
+const CopyButton = ({ text, tooltip }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    message.success(`${tooltip} copied!`, 1);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!text) return null;
+
+  return (
+    <Tooltip title={tooltip}>
+      <button 
+        onClick={handleCopy}
+        className="p-1 hover:bg-gray-100 rounded transition-colors"
+      >
+        {copied ? (
+          <CheckCircle2 size={13} className="text-green-500" />
+        ) : (
+          <ClipboardCopy size={13} className="text-gray-400 hover:text-blue-500" />
+        )}
+      </button>
+    </Tooltip>
+  );
+};
 
 export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, currentUser }) {
   const [draggedLead, setDraggedLead] = useState(null);
 
-  // Lead Statuses
   const columns = [
     { title: "New", value: "New", color: "#f0ceeeff", textColor: "#634b63ff" },
     { title: "Contacted", value: "Contacted", color: "#e0f2fe", textColor: "#0369a1" },
@@ -15,6 +44,18 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
     { title: "Won", value: "Won", color: "#d1fae5", textColor: "#059669" },
     { title: "Lost", value: "Lost", color: "#fee2e2", textColor: "#dc2626" },
   ];
+
+  // Group leads by status once per leads change
+  const leadsByStatus = useMemo(() => {
+    const groups = {};
+    columns.forEach(col => groups[col.value] = []);
+    leads.forEach(lead => {
+      if (groups[lead.status]) {
+        groups[lead.status].push(lead);
+      }
+    });
+    return groups;
+  }, [leads]);
 
   const handleDragStart = (e, lead) => {
     // Cannot drag if it's assigned to someone else
@@ -40,9 +81,9 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-1 pb-4 h-[calc(100vh-50px)] w-full overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-2 pb-2 h-[calc(100vh-170px)] w-full overflow-hidden">
       {columns.map((col) => {
-        const columnLeads = leads.filter((l) => l.status === col.value);
+        const columnLeads = leadsByStatus[col.value] || [];
 
         return (
           <div
@@ -68,9 +109,8 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
                 const isAssignedToOther = lead.assigned_to && lead.assigned_to !== currentUser?.id;
 
                 return (
-                  <motion.div
+                  <div
                     key={lead.id}
-                    layoutId={lead.id.toString()}
                     draggable={!isAssignedToOther}
                     onDragStart={(e) => handleDragStart(e, lead)}
                     onClick={() => onLeadClick(lead)}
@@ -88,41 +128,21 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
                     <div className="text-[12px] font-medium text-gray-600 mb-2 flex flex-col gap-1.5">
                       {lead.company && <div className="font-semibold text-gray-800 truncate">{lead.company}</div>}
                       {lead.email && (
-                        <div className="flex items-center text-gray-500 w-full">
+                        <div className="flex items-center text-gray-500 w-full group/item">
                           <Mail size={12} className="mr-1.5 flex-shrink-0 opacity-70" />
                           <div className="flex-1 min-w-0" title={lead.email}>
-                            <Typography.Text
-                              className="text-gray-500 text-xs"
-                              style={{ width: '100%' }}
-                              ellipsis={{ tooltip: lead.email }}
-                              copyable={{
-                                text: lead.email,
-                                icon: [<ClipboardCopy size={13} className="text-gray-400 hover:text-blue-500 ml-1 flex-shrink-0" key="copy" />, <CheckCircle2 size={13} className="text-green-500 ml-1 flex-shrink-0" key="copied" />],
-                                tooltips: ['Copy', 'Copied!']
-                              }}
-                            >
-                              {lead.email}
-                            </Typography.Text>
+                            <span className="text-gray-500 text-xs truncate block">{lead.email}</span>
                           </div>
+                          <CopyButton text={lead.email} tooltip="Email" />
                         </div>
                       )}
                       {lead.phone && (
-                        <div className="flex items-center text-gray-500 w-full">
+                        <div className="flex items-center text-gray-500 w-full group/item">
                           <Phone size={12} className="mr-1.5 flex-shrink-0 opacity-70" />
                           <div className="flex-1 min-w-0" title={lead.phone}>
-                            <Typography.Text
-                              className="text-gray-500 text-xs"
-                              style={{ width: '100%' }}
-                              ellipsis={{ tooltip: lead.phone }}
-                              copyable={{
-                                text: lead.phone,
-                                icon: [<ClipboardCopy size={13} className="text-gray-400 hover:text-blue-500 ml-1 flex-shrink-0" key="copy" />, <CheckCircle2 size={13} className="text-green-500 ml-1 flex-shrink-0" key="copied" />],
-                                tooltips: ['Copy', 'Copied!']
-                              }}
-                            >
-                              {lead.phone}
-                            </Typography.Text>
+                             <span className="text-gray-500 text-xs truncate block">{lead.phone}</span>
                           </div>
+                          <CopyButton text={lead.phone} tooltip="Phone" />
                         </div>
                       )}
                     </div>
@@ -135,7 +155,7 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
                         {lead.assignedTo?.name || "Unassigned"}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>

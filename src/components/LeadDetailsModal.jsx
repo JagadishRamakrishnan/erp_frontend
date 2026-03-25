@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin } from "antd";
 import { noteService, taskService } from "../services";
 import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined } from "@ant-design/icons";
-import { Briefcase, Info, CheckCircle2 } from "lucide-react";
+import { Briefcase, Info, CheckCircle2, X } from "lucide-react";
 
 const { Step } = Steps;
 const { TabPane } = Tabs;
@@ -55,7 +55,11 @@ export default function LeadDetailsModal({ open, lead, onClose }) {
       centered
       width={1000}
       bodyStyle={{ padding: 0, overflow: 'hidden', borderRadius: '12px' }}
-      closeIcon={<span className="text-gray-400 hover:text-gray-700 bg-gray-100 rounded-full p-2 absolute right-4 top-4 z-50">✕</span>}
+      closeIcon={
+        <div className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded-full transition-all">
+          <X size={18} />
+        </div>
+      }
     >
       <div className="flex flex-col md:flex-row min-h-[600px] bg-white rounded-xl overflow-hidden">
         
@@ -146,7 +150,14 @@ export default function LeadDetailsModal({ open, lead, onClose }) {
                     <Timeline className="mt-4">
                       {timelineItems.map((item, index) => (
                         <Timeline.Item key={index} color={item.type === 'note' ? 'blue' : 'green'}>
-                          <p className="text-xs text-gray-500 mb-1">{item.date.toLocaleString()}</p>
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="text-xs text-gray-500 m-0">{item.date.toLocaleString()}</p>
+                            {item.data.creator && (
+                              <span className="text-[10px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                {item.data.creator.name}
+                              </span>
+                            )}
+                          </div>
                           {item.type === 'note' ? (
                             <div className="text-gray-800 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50 shadow-sm text-[13px] leading-relaxed">
                               {item.data.note}
