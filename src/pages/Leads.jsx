@@ -6,7 +6,11 @@ import { leadService, userService } from "../services";
 import { useNavigate } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
 import ResponsiveTable from "../components/ResponsiveTable";
-
+import {
+  WhatsAppOutlined,
+  FacebookOutlined,
+  InstagramOutlined
+} from "@ant-design/icons";
 const { Option } = Select;
 
 
@@ -215,26 +219,81 @@ export default function Leads() {
   },
 
   {
-    title: "Contact",
-    key: "contact",
-    align: "center",
-    render: (_, record) => (
-      <div>
-        {record.email && (
-          <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-            <MailOutlined style={{ marginRight: 4 }} />
-            {record.email}
-          </div>
-        )}
-        {record.phone && (
-          <div style={{ fontSize: 13, color: "#4b5563" }}>
-            <PhoneOutlined style={{ marginRight: 4 }} />
-            {record.phone}
-          </div>
-        )}
-      </div>
-    ),
-  },
+  title: "Contact",
+  key: "contact",
+  align: "center",
+  render: (_, record) => (
+    <div>
+      {record.email && (
+        <div style={{ fontSize: 13 }}>
+          <MailOutlined /> {record.email}
+        </div>
+      )}
+
+      {record.phone && (
+        <div style={{ fontSize: 13 }}>
+          <PhoneOutlined /> {record.phone}
+        </div>
+      )}
+
+      {/* ✅ SOCIAL LINKS ADD HERE */}
+      <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 10 }}>
+
+  {/* WhatsApp */}
+  <a
+    href={`https://wa.me/${record.phone}`}
+    target="_blank"
+    style={{
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: "#e6f7ee",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}
+  >
+    <WhatsAppOutlined style={{ color: "#25D366", fontSize: 16 }} />
+  </a>
+
+  {/* Facebook */}
+  <a
+    href={record.facebook_url || "#"}
+    target="_blank"
+    style={{
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: "#e7f0ff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}
+  >
+    <FacebookOutlined style={{ color: "#1877F2", fontSize: 16 }} />
+  </a>
+
+  {/* Instagram */}
+  <a
+    href={record.instagram_url || "#"}
+    target="_blank"
+    style={{
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: "#fce7f3",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}
+  >
+    <InstagramOutlined style={{ color: "#E1306C", fontSize: 16 }} />
+  </a>
+
+</div>
+    </div>
+  ),
+},
 
   {
     title: "Company",

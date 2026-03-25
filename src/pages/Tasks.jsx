@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { taskService, userService, leadService, customerService, dealService } from "../services";
 import dayjs from "dayjs";
+import { UploadOutlined } from "@ant-design/icons";
+import { Upload } from "antd";
 import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
@@ -33,6 +35,7 @@ export default function Tasks() {
   const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
   const [followUpForm] = Form.useForm();
   const [completingTask, setCompletingTask] = useState(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -286,7 +289,42 @@ export default function Tasks() {
     };
     return colors[status] || 'default';
   };
+const downloadTemplate = async () => {
+  const response = await fetch("/api/v1/tasks/template/download", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tasks_template.csv";
+  a.click();
+};
+
+const handleUpload = async (file) => {
+  const text = await file.text();
+
+  const rows = text.split("\n").slice(1);
+  const data = rows.map(row => {
+    const [title, description, priority, status, assigned_to, due_date] = row.split(",");
+    return { title, description, priority, status, assigned_to, due_date };
+  });
+
+  await fetch("/api/v1/tasks/bulk-upload", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  message.success("Tasks uploaded");
+};
   const columns = [
   {
     title: "Task",
@@ -409,15 +447,29 @@ export default function Tasks() {
               <Text type="secondary">Manage and track all tasks</Text>
             </Col>
             <Col>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                style={{ height: 40, borderRadius: 8 }}
-                onClick={handleAddNew}
-              >
-                Add Task
-              </Button>
-            </Col>
+  <div style={{ display: "flex", gap: 10 }}>
+    
+    {/* Add Task */}
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      style={{ height: 40, borderRadius: 8 }}
+      onClick={handleAddNew}
+    >
+      Add Task
+    </Button>
+
+    {/* Bulk Upload (LIKE LEADS PAGE) */}
+    <Button
+      icon={<UploadOutlined />}
+      style={{ height: 40, borderRadius: 8 }}
+      onClick={() => setShowBulkUpload(true)}
+    >
+      Bulk Upload
+    </Button>
+
+  </div>
+</Col>
           </Row>
 
           {/* STATS */}
@@ -824,6 +876,51 @@ export default function Tasks() {
           </Row>
         </Form>
       </Modal>
+      {/* ✅ BULK UPLOAD TASKS MODAL */}
+<Modal
+  title="Bulk Upload Tasks"
+  open={showBulkUpload}
+  onCancel={() => setShowBulkUpload(false)}
+  footer={null}
+  centered
+  width={900}
+>
+  {/* Step 1 */}
+  <h3>Step 1: Download Template</h3>
+  <p>Download the Excel template with correct format.</p>
+
+  <Button onClick={downloadTemplate}>
+  Download Tasks Template
+</Button>
+
+  <div style={{ marginBottom: 20 }}>
+    <b>Required Fields:</b>
+    <div style={{ marginTop: 10 }}>
+      <Tag>title</Tag>
+      <Tag>description</Tag>
+      <Tag>priority</Tag>
+      <Tag>status</Tag>
+      <Tag>assigned_to</Tag>
+      <Tag>due_date</Tag>
+    </div>
+  </div>
+
+  <hr />
+
+  {/* Step 2 */}
+  <h3 style={{ marginTop: 20 }}>Step 2: Upload Your File</h3>
+  <Upload.Dragger beforeUpload={(file) => {
+  handleUpload(file);
+  return false;
+}} >
+    <p>Click or drag file to upload</p>
+    <p>Support Excel (.xlsx, .xls) and CSV</p>
+  </Upload.Dragger>
+
+  <div style={{ textAlign: "right", marginTop: 20 }}>
+    <Button onClick={() => setShowBulkUpload(false)}>Close</Button>
+  </div>
+</Modal>
     </div>
   );
 }

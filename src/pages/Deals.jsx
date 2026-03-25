@@ -131,16 +131,27 @@ export default function Deals() {
               </Text>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] transition-colors text-white px-4 h-10 rounded-lg font-medium text-[14px] shadow-sm"
-              >
-                <Plus size={18}/>
-                Add Deal
-              </button>
-              
-            </div>
+<div className="flex gap-2">
+
+  {/* ADD DEAL */}
+  <button
+    onClick={() => setShowModal(true)}
+    className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] text-white px-4 h-10 rounded-lg"
+  >
+    <Plus size={18}/>
+    Add Deal
+  </button>
+
+  {/* ✅ ADD THIS BULK UPLOAD BUTTON */}
+  <button
+    onClick={() => setShowBulkUpload(true)}
+    className="flex items-center gap-2 border border-gray-300 px-4 h-10 rounded-lg hover:bg-gray-100"
+  >
+    <Upload size={18}/>
+    Bulk Upload
+  </button>
+
+</div>
           </div>
 
           {/* ================= SEARCH + FILTER AREA ================= */}

@@ -7,6 +7,7 @@ import {
   SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
   CustomerServiceOutlined
 } from "@ant-design/icons";
+import { WhatsAppOutlined, FacebookOutlined, InstagramOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { ticketService, customerService, userService } from "../services";
@@ -162,15 +163,65 @@ export default function Tickets() {
       ),
     },
     {
-      title: "Customer",
-      key: "customer",
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>{record.customer?.name || 'N/A'}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>{record.customer?.email || ''}</div>
-        </div>
-      ),
-    },
+  title: "Customer",
+  key: "customer",
+   align: "center",
+  render: (_, record) => (
+    <div style={{ textAlign: "center" }}>
+      
+      {/* Name */}
+      <div style={{ fontWeight: 600, color: "#111827" }}>
+        {record.customer?.name || 'N/A'}
+      </div>
+
+      {/* Email */}
+      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+        {record.customer?.email || ''}
+      </div>
+
+      {/* SOCIAL ICONS */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+        
+        {/* WhatsApp */}
+        <a
+          href={`https://wa.me/${record.customer?.phone || ""}`}
+          target="_blank"
+        >
+          <div style={{
+            background: "#e6f7f0",
+            padding: 6,
+            borderRadius: "50%"
+          }}>
+            <WhatsAppOutlined style={{ color: "#25D366", fontSize: 16 }} />
+          </div>
+        </a>
+
+        {/* Facebook */}
+        <a href="#" target="_blank">
+          <div style={{
+            background: "#e6f0ff",
+            padding: 6,
+            borderRadius: "50%"
+          }}>
+            <FacebookOutlined style={{ color: "#1877F2", fontSize: 16 }} />
+          </div>
+        </a>
+
+        {/* Instagram */}
+        <a href="#" target="_blank">
+          <div style={{
+            background: "#ffe6f0",
+            padding: 6,
+            borderRadius: "50%"
+          }}>
+            <InstagramOutlined style={{ color: "#E1306C", fontSize: 16 }} />
+          </div>
+        </a>
+
+      </div>
+    </div>
+  ),
+},
     {
       title: "Status",
       dataIndex: "status",
@@ -362,6 +413,25 @@ export default function Tickets() {
                       <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
                         {record.customer?.email || ''}
                       </div>
+                      {/* ✅ ADD THIS BLOCK HERE */}
+<div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
+  
+  {/* WhatsApp */}
+  <a href={`https://wa.me/${record.customer?.phone || ""}`} target="_blank">
+    <WhatsAppOutlined style={{ color: "#25D366", fontSize: 18 }} />
+  </a>
+
+  {/* Facebook */}
+  <a href="#" target="_blank">
+    <FacebookOutlined style={{ color: "#1877F2", fontSize: 18 }} />
+  </a>
+
+  {/* Instagram */}
+  <a href="#" target="_blank">
+    <InstagramOutlined style={{ color: "#E1306C", fontSize: 18 }} />
+  </a>
+
+</div>
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
                         <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
                       </div>

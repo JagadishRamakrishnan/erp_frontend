@@ -33,6 +33,7 @@ import { Modal, Form, DatePicker } from "antd";
 import { activityService, leadService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import { UploadOutlined } from "@ant-design/icons";
 import ResponsiveTable from "../../components/ResponsiveTable";
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -55,7 +56,7 @@ export default function Activities() {
   const [deals, setDeals] = useState([]);
   const [viewOpen, setViewOpen] = useState(false);
 const [selectedActivity, setSelectedActivity] = useState(null);
-
+const [bulkOpen, setBulkOpen] = useState(false);
   useEffect(() => {
     fetchActivities();
     fetchLeads();
@@ -381,16 +382,25 @@ const handleView = (activity) => {
 
   </Col>
 
-  <Col>
-    <Button
-      type="primary"
-      icon={<PlusOutlined />}
-      style={styles.primaryBtn}
-      onClick={handleAddNew}
-    >
-      Add Activity
-    </Button>
-  </Col>
+  <Col style={{ display: "flex", gap: 10 }}>
+  {/* Existing Add Button */}
+  <Button
+    type="primary"
+    icon={<PlusOutlined />}
+    style={styles.primaryBtn}
+    onClick={handleAddNew}
+  >
+    Add Activity
+  </Button>
+  <Button
+    icon={<UploadOutlined />}
+    style={styles.secondaryBtn}
+    onClick={() => setBulkOpen(true)}
+  >
+    Bulk Upload
+  </Button>
+
+</Col>
 </Row>
           {/* ================= SUMMARY CARDS (Animated) ================= */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -788,7 +798,71 @@ width={750}
 
 
 )} </Modal>
+<Modal
+  title="Bulk Upload Activities"
+  open={bulkOpen}
+  onCancel={() => setBulkOpen(false)}
+  footer={null}
+  centered
+  width={700}   // ✅ increase size
+>
+  {/* STEP 1 */}
+  <div style={{ marginBottom: 24 }}>
+    <h2 style={{ fontWeight: 600 }}>Step 1: Download Template</h2>
+    <p style={{ color: "#6b7280" }}>
+      Download the Excel template with correct format.
+    </p>
 
+    <Button
+      type="primary"
+      icon={<UploadOutlined />}
+      style={{ borderRadius: 8 }}
+    >
+      Download Activities Template
+    </Button>
+
+    <div
+      style={{
+        marginTop: 16,
+        padding: 12,
+        background: "#f9fafb",
+        borderRadius: 8
+      }}
+    >
+      <strong>Required Fields:</strong>
+      <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {["type", "activity_date", "notes", "related_type", "related_id"].map(f => (
+          <Tag key={f} color="blue">{f}</Tag>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* STEP 2 */}
+  <div>
+    <h2 style={{ fontWeight: 600 }}>Step 2: Upload Your File</h2>
+    <p style={{ color: "#6b7280" }}>
+      Upload Excel (.xlsx, .xls) or CSV file
+    </p>
+
+    <div
+      style={{
+        border: "2px dashed #d1d5db",
+        borderRadius: 10,
+        padding: 30,
+        textAlign: "center",
+        background: "#fafafa"
+      }}
+    >
+      <UploadOutlined style={{ fontSize: 30, color: "#1677ff" }} />
+      <p style={{ marginTop: 10 }}>
+        Click or drag file to upload
+      </p>
+
+      <input type="file" style={{ marginTop: 10 }} />
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }
