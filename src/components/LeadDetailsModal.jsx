@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin } from "antd";
-import { noteService, taskService } from "../services";
-import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message } from "antd";
+import { leadService, noteService, taskService } from "../services";
+import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
 import { Briefcase, Info, CheckCircle2, X } from "lucide-react";
 
 const { Step } = Steps;
 const { TabPane } = Tabs;
 
-export default function LeadDetailsModal({ open, lead, onClose }) {
+export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) {
+  const [localLead, setLocalLead] = useState(lead);
+  const [isEditingSummary, setIsEditingSummary] = useState(false);
+  const [summaryContent, setSummaryContent] = useState("");
   const [notes, setNotes] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loadingConfig, setLoadingConfig] = useState(false);
+  const [savingSummary, setSavingSummary] = useState(false);
 
   useEffect(() => {
-    if (open && lead) {
+    if (lead) {
+      setLocalLead(lead);
+      setSummaryContent(lead.internal_summary || "");
+    }
+  }, [lead]);
+
+  useEffect(() => {
+    if (open && localLead) {
       const fetchData = async () => {
         setLoadingConfig(true);
         try {
-          const notesRes = await noteService.getAll({ related_type: 'Lead', related_id: lead.id });
-          const tasksRes = await taskService.getAll({ related_type: 'Lead', related_id: lead.id });
+          const notesRes = await noteService.getAll({ related_type: 'Lead', related_id: localLead.id });
+          const tasksRes = await taskService.getAll({ related_type: 'Lead', related_id: localLead.id });
           
           if (notesRes.success) setNotes(notesRes.data || []);
           if (tasksRes.success) setTasks(tasksRes.data || []);
@@ -29,9 +40,29 @@ export default function LeadDetailsModal({ open, lead, onClose }) {
       };
       fetchData();
     }
-  }, [open, lead]);
+  }, [open, localLead?.id]);
 
-  if (!lead) return null;
+  const handleUpdateSummary = async () => {
+    if (!localLead) return;
+    setSavingSummary(true);
+    try {
+      const response = await leadService.update(localLead.id, {
+        internal_summary: summaryContent
+      });
+      if (response.success) {
+        setLocalLead(response.data);
+        setIsEditingSummary(false);
+        message.success("Summary updated successfully");
+        if (onLeadUpdate) onLeadUpdate(response.data);
+      }
+    } catch (error) {
+      message.error("Failed to update summary");
+    } finally {
+      setSavingSummary(false);
+    }
+  };
+
+  if (!localLead) return null;
 
   const timelineItems = [
     ...notes.map(n => ({ type: 'note', date: new Date(n.created_at), data: n })),
@@ -43,8 +74,8 @@ export default function LeadDetailsModal({ open, lead, onClose }) {
   
   // Calculate current stage index. If "Lost", we might show it differently, 
   // but for the stepper, we'll just find the index or set it to 0.
-  let currentStageIndex = stages.indexOf(lead.status);
-  if (lead.status === "Lost") currentStageIndex = -1; // Specific handling for Lost
+  let currentStageIndex = stages.indexOf(localLead.status);
+  if (localLead.status === "Lost") currentStageIndex = -1; // Specific handling for Lost
 
   return (
     <Modal
@@ -204,15 +235,72 @@ export default function LeadDetailsModal({ open, lead, onClose }) {
           </div>
 
           <div className="flex-1">
-            <div className="text-xs text-gray-400 uppercase font-bold mb-3">Internal Summary</div>
-            <p className="text-[13px] text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-gray-200 shadow-sm italic">
-              "Lead captured from {lead.source || 'system'}. Currently in {lead.status} stage. Needs follow-up."
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Internal Summary</div>
+              {!isEditingSummary ? (
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<EditOutlined className="text-gray-400 hover:text-blue-500" />} 
+                  onClick={() => setIsEditingSummary(true)}
+                />
+              ) : (
+                <div className="flex gap-1">
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<CloseOutlined className="text-red-400" />} 
+                    onClick={() => {
+                      setIsEditingSummary(false);
+                      setSummaryContent(localLead.internal_summary || "");
+                    }} 
+                  />
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    loading={savingSummary}
+                    icon={<SaveOutlined className="text-green-500" />} 
+                    onClick={handleUpdateSummary} 
+                  />
+                </div>
+              )}
+            </div>
+            
+            {isEditingSummary ? (
+              <Input.TextArea
+                rows={4}
+                value={summaryContent}
+                onChange={(e) => setSummaryContent(e.target.value)}
+                placeholder="Enter an internal summary for this lead..."
+                className="text-[13px] rounded-xl border-blue-200 focus:border-blue-400 shadow-sm"
+              />
+            ) : (
+              <div className="group relative">
+                <p className="text-[13px] text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-gray-200 shadow-sm italic min-h-[60px]">
+                  {localLead.internal_summary ? `"${localLead.internal_summary}"` : "No internal summary provided."}
+                </p>
+                {localLead.summary_updated_at && (
+                  <div className="mt-2 text-[10px] text-gray-400 flex flex-col gap-0.5 px-1">
+                    <span className="font-medium">
+                      Last edited {new Date(localLead.summary_updated_at).toLocaleString()}
+                    </span>
+                    {localLead.summaryUpdatedBy && (
+                      <span className="uppercase tracking-tighter">
+                        By {localLead.summaryUpdatedBy.name}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
-          <div className="mt-auto pt-6 border-t border-gray-200">
-            <div className="text-[11px] text-center text-gray-400">
-              Last updated: {new Date(lead.updated_at).toLocaleString()}
+          <div className="mt-auto pt-6 border-t border-gray-100">
+            <div className="text-[10px] text-center text-gray-400 font-medium uppercase tracking-widest">
+              Lead Code: {localLead.lead_code}
+            </div>
+            <div className="text-[10px] text-center text-gray-300 mt-1">
+              Refreshed: {new Date().toLocaleTimeString()}
             </div>
           </div>
         </div>
