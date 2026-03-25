@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  Card, Row, Col, Tag, Spin, message, 
-  Avatar, Progress, Typography, Grid 
+import {
+  Card, Row, Col, Tag, Spin, message,
+  Avatar, Progress, Typography, Grid
 } from "antd";
 import { Phone, Users, IndianRupee, Percent } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { 
-  UserOutlined, 
-  ShoppingOutlined, 
-  DollarOutlined, 
+import {
+  UserOutlined,
+  ShoppingOutlined,
+  DollarOutlined,
   RiseOutlined,
   RightOutlined
 } from "@ant-design/icons";
@@ -70,14 +70,14 @@ const styles = {
     opacity: 0.8
   },
 
- statIconCircle: {
-  width: 48,
-  height: 48,
-  borderRadius: 12,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center"
-},
+  statIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
 
   statChevron: {
     marginTop: 6
@@ -90,14 +90,38 @@ const styles = {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { useBreakpoint } = Grid;
-const screens = useBreakpoint();
+  const screens = useBreakpoint();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [todayTasks, setTodayTasks] = useState([]);
 
+
+  // Fetch today tasks from backend
+  const fetchTodayTasks = async () => {
+    try {
+      const res = await dashboardService.getTodayTasks();
+      setTodayTasks(res.data);
+      console.log('Today Tasks:', res.data);
+    } catch (err) {
+      message.error("Failed to load today's tasks");
+    }
+  };
+useEffect(() => {
+  console.log('Today tasks from set:', todayTasks);
+}, [todayTasks]);
   useEffect(() => {
     fetchDashboardStats();
+    fetchTodayTasks(); // fetch today tasks
   }, []);
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    const auth = localStorage.getItem("auth");
 
+    console.log("User:", user ? JSON.parse(user) : null);
+    console.log("Token:", token);
+    console.log("Auth:", auth);
+  }, []);
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
@@ -195,7 +219,7 @@ const screens = useBreakpoint();
       color: "#f5222d"
     }
   ];
-const data = stats?.recent?.deals || [];
+  const data = stats?.recent?.deals || [];
   return (
     <div style={{ padding: "24px 32px", background: "#f5f6f8", minHeight: "100vh" }}>
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>Dashboard</h1>
@@ -205,13 +229,13 @@ const data = stats?.recent?.deals || [];
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={12} lg={6}>
           <motion.div
-  variants={cardAnimation}
-  initial="hidden"
-  animate="visible"
-  whileHover={{ scale: 1.05 }}
-  style={styles.statGridCardWrap}
-  onClick={() => navigate("/activities")}
->
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            style={styles.statGridCardWrap}
+            onClick={() => navigate("/activities")}
+          >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#7c3aed,#a78bfa)" }}>
               <div style={styles.statLeft}>
                 <div style={styles.statTitle}>Total Activities</div>
@@ -219,14 +243,14 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Total tracked activities</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-<div
-  style={{
-    ...styles.statIconCircle,
-    background: "transparent"
-  }}
->
-  <motion.div animate={iconAnimation.animate}>
-    {/* <img
+                <div
+                  style={{
+                    ...styles.statIconCircle,
+                    background: "transparent"
+                  }}
+                >
+                  <motion.div animate={iconAnimation.animate}>
+                    {/* <img
   src={callIcon}
   alt="activities"
   style={{
@@ -235,49 +259,9 @@ const data = stats?.recent?.deals || [];
     background: "transparent"
   }}
 /> */}
-<Phone size={28} color="blue" />
-  </motion.div>
-</div>
-                <div style={styles.statChevron}>
-                  <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
+                    <Phone size={28} color="blue" />
+                  </motion.div>
                 </div>
-              </div>
-            </div>
-         </motion.div>
-        </Col>
-
-        <Col xs={24} sm={12} md={12} lg={6}>
-         <motion.div
-  variants={cardAnimation}
-  initial="hidden"
-  animate="visible"
-  whileHover={{ scale: 1.05 }}
-  style={styles.statGridCardWrap}
-    onClick={() => navigate("/products")}
->
-            <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#ff8a00,#ff5e3a)" }}>
-              <div style={styles.statLeft}>
-                <div style={styles.statTitle}>Total Leads</div>
-                <div style={styles.statValue}>{stats.overview?.totalLeads || 0}</div>
-                <div style={styles.statMeta}>Total created</div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-               
-                <div style={{ ...styles.statIconCircle, background: "rgba(255,138,0,0.25)" }}>
-  <motion.div
-  animate={{
-    scale: [1, 1.2, 1],
-    rotate: [0, 10, -10, 0]
-  }}
-  transition={{
-    duration: 2,
-    repeat: Infinity
-  }}
->
-  <Users size={28} color="#fde68a" />
-</motion.div>
-</div>
-               
                 <div style={styles.statChevron}>
                   <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
                 </div>
@@ -287,14 +271,54 @@ const data = stats?.recent?.deals || [];
         </Col>
 
         <Col xs={24} sm={12} md={12} lg={6}>
-           <motion.div
-  variants={cardAnimation}
-  initial="hidden"
-  animate="visible"
-  whileHover={{ scale: 1.05 }}
-  style={styles.statGridCardWrap}
-  onClick={() => navigate("/invoices")}
->
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            style={styles.statGridCardWrap}
+            onClick={() => navigate("/products")}
+          >
+            <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#ff8a00,#ff5e3a)" }}>
+              <div style={styles.statLeft}>
+                <div style={styles.statTitle}>Total Leads</div>
+                <div style={styles.statValue}>{stats.overview?.totalLeads || 0}</div>
+                <div style={styles.statMeta}>Total created</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
+
+                <div style={{ ...styles.statIconCircle, background: "rgba(255,138,0,0.25)" }}>
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      rotate: [0, 10, -10, 0]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity
+                    }}
+                  >
+                    <Users size={28} color="#fde68a" />
+                  </motion.div>
+                </div>
+
+                <div style={styles.statChevron}>
+                  <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </Col>
+
+        <Col xs={24} sm={12} md={12} lg={6}>
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            style={styles.statGridCardWrap}
+            onClick={() => navigate("/invoices")}
+          >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#1e3a8a,#3b82f6)" }}>
               <div style={styles.statLeft}>
                 <div style={styles.statTitle}>Total Revenue</div>
@@ -302,14 +326,14 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Closed deals amount</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-<div
-  style={{
-    ...styles.statIconCircle,
-    background: "transparent"
-  }}
->
-    <motion.div animate={iconAnimation.animate}>
-    {/* <img
+                <div
+                  style={{
+                    ...styles.statIconCircle,
+                    background: "transparent"
+                  }}
+                >
+                  <motion.div animate={iconAnimation.animate}>
+                    {/* <img
   src={revenueIcon}
   alt="activities"
   style={{
@@ -317,26 +341,26 @@ const data = stats?.recent?.deals || [];
     height: 26
   }}
 /> */}
-<IndianRupee size={28} color="#bfdbfe" />
-  </motion.div>
-</div>
+                    <IndianRupee size={28} color="#bfdbfe" />
+                  </motion.div>
+                </div>
                 <div style={styles.statChevron}>
                   <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
                 </div>
               </div>
             </div>
-         </motion.div>
+          </motion.div>
         </Col>
 
         <Col xs={24} sm={12} md={12} lg={6}>
-                   <motion.div
-  variants={cardAnimation}
-  initial="hidden"
-  animate="visible"
-  whileHover={{ scale: 1.05 }}
-  style={styles.statGridCardWrap}
- onClick={() => navigate("/reports")}
->
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            style={styles.statGridCardWrap}
+            onClick={() => navigate("/reports")}
+          >
             <div style={{ ...styles.statInner, background: "linear-gradient(135deg,#059669,#34d399)" }}>
               <div style={styles.statLeft}>
                 <div style={styles.statTitle}>Conversion Rate</div>
@@ -344,14 +368,14 @@ const data = stats?.recent?.deals || [];
                 <div style={styles.statMeta}>Deal conversion</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-            <div
-  style={{
-    ...styles.statIconCircle,
-    background: "transparent"
-  }}
->
-  <motion.div animate={iconAnimation.animate}>
-   {/* <img
+                <div
+                  style={{
+                    ...styles.statIconCircle,
+                    background: "transparent"
+                  }}
+                >
+                  <motion.div animate={iconAnimation.animate}>
+                    {/* <img
   src={conversionIcon}
   alt="activities"
   style={{
@@ -359,9 +383,9 @@ const data = stats?.recent?.deals || [];
     height: 26
   }}
 /> */}
-<Percent size={28} color="#bbf7d0" />
-  </motion.div>
-</div>
+                    <Percent size={28} color="#bbf7d0" />
+                  </motion.div>
+                </div>
                 <div style={styles.statChevron}>
                   <RightOutlined style={{ color: "rgba(255,255,255,0.9)" }} />
                 </div>
@@ -457,67 +481,68 @@ const data = stats?.recent?.deals || [];
       {/* THIRD ROW */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} md={12}>
-  <motion.div
-    variants={cardAnimation}
-    initial="hidden"
-    animate="visible"
-    whileHover={{ y: -6 }}
-  >
-    {/* Recent Deals Table */}
-      <Card
-        title="Recent Deals"
-        style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-      >
-        <ResponsiveTable
-          dataSource={stats.recent?.deals || []}
-          columns={columns}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-          renderMobileCard={(record) => {
-            const colors = {
-              'Lead': 'blue',
-              'Qualified': 'cyan',
-              'Proposal': 'orange',
-              'Negotiation': 'purple',
-              'Won': 'green',
-              'Lost': 'red'
-            };
-            
-            return (
-              <div>
-                {/* Deal Name */}
-                <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
-                  {record.deal_name}
-                </div>
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -6 }}
+          >
+            {/* Recent Deals Table */}
+            <Card
+              title="Recent Deals"
+              style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+            >
+              <ResponsiveTable
+                dataSource={stats.recent?.deals || []}
+                columns={columns}
+                rowKey="id"
+                pagination={{ pageSize: 10 }}
+                renderMobileCard={(record) => {
+                  const colors = {
+                    'Lead': 'blue',
+                    'Qualified': 'cyan',
+                    'Proposal': 'orange',
+                    'Negotiation': 'purple',
+                    'Won': 'green',
+                    'Lost': 'red'
+                  };
 
-                {/* Customer */}
-                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                  <strong>Customer:</strong> {record.customer?.name || 'N/A'}
-                </div>
+                  return (
+                    <div>
+                      {/* Deal Name */}
+                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
+                        {record.deal_name}
+                      </div>
 
-                {/* Value */}
-                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                  <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
-                </div>
+                      {/* Customer */}
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Customer:</strong> {record.customer?.name || 'N/A'}
+                      </div>
 
-                {/* Stage */}
-                <div style={{ marginBottom: 4 }}>
-                  <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
-                  <Tag color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
-                    {record.stage}
-                  </Tag>
-                </div>
+                      {/* Value */}
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
+                      </div>
 
-                {/* Assigned To */}
-                <div style={{ fontSize: 13, color: "#4b5563" }}>
-                  <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
-                </div>
-              </div>
-            );
-          }}
-        />
-      </Card>
-  {/* <Card
+                      {/* Stage */}
+                      <div style={{ marginBottom: 4 }}>
+                        <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
+                        <Tag color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
+                          {record.stage}
+                        </Tag>
+                      </div>
+
+                      {/* Assigned To */}
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+            </Card>
+
+            {/* <Card
             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Top Sales Agents</span>}
             variant="borderless"
             style={styles.roundedCard}
@@ -552,180 +577,293 @@ const data = stats?.recent?.deals || [];
               </div>
             )}
           </Card> */}
-         </motion.div>
-</Col>
+          </motion.div>
+        </Col>
 
         <Col xs={24} md={12}>
-  <motion.div
-    variants={cardAnimation}
-    initial="hidden"
-    animate="visible"
-    whileHover={{ y: -6 }}
-  >
-  <Card
-             title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
-            variant="borderless"
-            style={styles.roundedCard}
-            styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -6 }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {stats.recent?.activities && stats.recent.activities.length > 0 ? (
-                stats.recent.activities.slice(0, 3).map((activity, index) => {
-                  const icons = ['📞', '📧', '🤝', '📝', '💼'];
-                  const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
-                  
-                  return (
-                    <div
-                      key={activity.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        background: "#f9fafb",
-                        padding: "12px 16px",
-                        borderRadius: 12,
-                        border: "1px solid #f1f5f9",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div
-                          style={{
-                            height: 36, width: 36, borderRadius: 10,
-                            background: backgrounds[index % backgrounds.length],
-                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                          }}
-                        >
-                          {icons[index % icons.length]}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
-                          <div style={{ fontSize: 12, color: "gray" }}>
-                            {new Date(activity.activity_date).toLocaleString('en-IN', { 
-                              hour: '2-digit', 
-                              minute: '2-digit',
-                              day: 'numeric',
-                              month: 'short'
-                            })}
+            <Card
+              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
+              variant="borderless"
+              style={styles.roundedCard}
+              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {stats.recent?.activities && stats.recent.activities.length > 0 ? (
+                  stats.recent.activities.slice(0, 3).map((activity, index) => {
+                    const icons = ['📞', '📧', '🤝', '📝', '💼'];
+                    const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
+
+                    return (
+                      <div
+                        key={activity.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          background: "#f9fafb",
+                          padding: "12px 16px",
+                          borderRadius: 12,
+                          border: "1px solid #f1f5f9",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div
+                            style={{
+                              height: 36, width: 36, borderRadius: 10,
+                              background: backgrounds[index % backgrounds.length],
+                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                            }}
+                          >
+                            {icons[index % icons.length]}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
+                            <div style={{ fontSize: 12, color: "gray" }}>
+                              {new Date(activity.activity_date).toLocaleString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: 'numeric',
+                                month: 'short'
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
+                    No recent activities
+                  </div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        </Col>
+      </Row>
+      {/* Forth ROW */}
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        {/* Todays Task Card */}
+        <Col xs={24} md={12}>
+          <motion.div variants={cardAnimation} initial="hidden" animate="visible" whileHover={{ y: -6 }}>
+            <Card
+              title="Today's Tasks"
+              style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+            >
+              <ResponsiveTable
+                dataSource={todayTasks || []} // ✅ use todayTasks state
+                columns={columns}
+                rowKey="id"
+                pagination={{ pageSize: 10 }}
+                renderMobileCard={(record) => {
+                  const colors = {
+                    'Lead': 'blue',
+                    'Qualified': 'cyan',
+                    'Proposal': 'orange',
+                    'Negotiation': 'purple',
+                    'Won': 'green',
+                    'Lost': 'red'
+                  };
+
+                  return (
+                    <div>
+                      <div className="text-black" style={{ fontWeight: 600, fontSize: 15, color: "#111827", marginBottom: 8 }}>
+                        {record.title}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                        <strong>Due Date:</strong> {new Date(record.due_date).toLocaleDateString('en-IN')}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Status:</strong> {record.status}
+                      </div>
                     </div>
                   );
-                })
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
-                  No recent activities
-                </div>
-              )}
-            </div>
-          </Card>
-         </motion.div>
-</Col>
+                }}
+              />
+            </Card>
+          </motion.div>
+        </Col>
+
+        <Col xs={24} md={12}>
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -6 }}
+          >
+            <Card
+              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
+              variant="borderless"
+              style={styles.roundedCard}
+              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {stats.recent?.activities && stats.recent.activities.length > 0 ? (
+                  stats.recent.activities.slice(0, 3).map((activity, index) => {
+                    const icons = ['📞', '📧', '🤝', '📝', '💼'];
+                    const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
+
+                    return (
+                      <div
+                        key={activity.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          background: "#f9fafb",
+                          padding: "12px 16px",
+                          borderRadius: 12,
+                          border: "1px solid #f1f5f9",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div
+                            style={{
+                              height: 36, width: 36, borderRadius: 10,
+                              background: backgrounds[index % backgrounds.length],
+                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                            }}
+                          >
+                            {icons[index % icons.length]}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
+                            <div style={{ fontSize: 12, color: "gray" }}>
+                              {new Date(activity.activity_date).toLocaleString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: 'numeric',
+                                month: 'short'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
+                    No recent activities
+                  </div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        </Col>
       </Row>
 
       {/* DEAL STAGE SUMMARY */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-       <Col xs={24} md={12}>
-  <motion.div
-    variants={cardAnimation}
-    initial="hidden"
-    animate="visible"
-    whileHover={{ y: -6 }}
-  >
-  
-          <Card 
-            title={<span style={{ fontSize: 16, fontWeight: 600 }}>Deal Stage Overview</span>} 
-            variant="borderless"
-            style={styles.roundedCard}
-            styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
+        <Col xs={24} md={12}>
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -6 }}
           >
-            {stats.breakdown?.dealsByStage?.map((stage, index) => {
-              const colors = {
-                'Lead': '#3b82f6',
-                'Qualified': '#8b5cf6',
-                'Proposal': '#f97316',
-                'Negotiation': '#f59e0b',
-                'Won': '#10b981',
-                'Lost': '#ef4444'
-              };
-              const totalDeals = stats.overview?.totalDeals || 1;
-              const percent = Math.round((stage.count / totalDeals) * 100);
-              
-              return (
-                <div key={stage.stage}>
-                  <div style={{ marginTop: index > 0 ? 12 : 0, marginBottom: 6 }}>
-                    <Text strong>{stage.stage} ({stage.count})</Text>
+
+            <Card
+              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Deal Stage Overview</span>}
+              variant="borderless"
+              style={styles.roundedCard}
+              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
+            >
+              {stats.breakdown?.dealsByStage?.map((stage, index) => {
+                const colors = {
+                  'Lead': '#3b82f6',
+                  'Qualified': '#8b5cf6',
+                  'Proposal': '#f97316',
+                  'Negotiation': '#f59e0b',
+                  'Won': '#10b981',
+                  'Lost': '#ef4444'
+                };
+                const totalDeals = stats.overview?.totalDeals || 1;
+                const percent = Math.round((stage.count / totalDeals) * 100);
+
+                return (
+                  <div key={stage.stage}>
+                    <div style={{ marginTop: index > 0 ? 12 : 0, marginBottom: 6 }}>
+                      <Text strong>{stage.stage} ({stage.count})</Text>
+                    </div>
+                    <Progress percent={percent} strokeColor={colors[stage.stage] || '#3b82f6'} />
                   </div>
-                  <Progress percent={percent} strokeColor={colors[stage.stage] || '#3b82f6'} />
-                </div>
-              );
-            })}
-          </Card>
-        </motion.div>
-</Col>
+                );
+              })}
+            </Card>
+          </motion.div>
+        </Col>
 
         <Col xs={24} md={12}>
-  <motion.div
-    variants={cardAnimation}
-    initial="hidden"
-    animate="visible"
-    whileHover={{ y: -6 }}
-  >
-  <Card
-            title={<span style={{ fontSize: 16, fontWeight: 600 }}>Lead Sources</span>}
-            variant="borderless"
-            style={styles.roundedCard}
-            styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" }, body: { display: 'flex', flexDirection: 'column', justifyContent: 'center'} }}
+          <motion.div
+            variants={cardAnimation}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ y: -6 }}
           >
-            <div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: screens.xs ? "column" : "row",
-    gap: 60,
-    padding: "10px 0"
-  }}
->
-              {/* Donut Chart */}
-             <Progress
-  type="circle"
-  percent={stats.breakdown?.leadsByStatus?.length > 0 ? 100 : 0}
-  strokeWidth={12}
-  strokeColor="#3b82f6"
-  format={() => stats.overview?.totalLeads || 0}
-  size={160}
-/>
-              {/* Legend */}
+            <Card
+              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Lead Sources</span>}
+              variant="borderless"
+              style={styles.roundedCard}
+              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" }, body: { display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
+            >
               <div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    fontSize: 14,
-    justifyContent: "center"
-  }}
-> 
-                {stats.breakdown?.leadsByStatus?.map((lead, index) => {
-                  const colors = ['#3b82f6', '#ec4899', '#6366f1', '#f59e0b', '#10b981'];
-                  const totalLeads = stats.overview?.totalLeads || 1;
-                  const percent = Math.round((lead.count / totalLeads) * 100);
-                  
-                  return (
-                    <div key={lead.status}>
-                      <span style={{ color: colors[index % colors.length], marginRight: 8, fontSize: 18 }}>●</span> 
-                      {lead.status} ({percent}%)
-                    </div>
-                  );
-                })}
-</div>
-</div>
-</Card>
-</motion.div>
-</Col>
-</Row>
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: screens.xs ? "column" : "row",
+                  gap: 60,
+                  padding: "10px 0"
+                }}
+              >
+                {/* Donut Chart */}
+                <Progress
+                  type="circle"
+                  percent={stats.breakdown?.leadsByStatus?.length > 0 ? 100 : 0}
+                  strokeWidth={12}
+                  strokeColor="#3b82f6"
+                  format={() => stats.overview?.totalLeads || 0}
+                  size={160}
+                />
+                {/* Legend */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    fontSize: 14,
+                    justifyContent: "center"
+                  }}
+                >
+                  {stats.breakdown?.leadsByStatus?.map((lead, index) => {
+                    const colors = ['#3b82f6', '#ec4899', '#6366f1', '#f59e0b', '#10b981'];
+                    const totalLeads = stats.overview?.totalLeads || 1;
+                    const percent = Math.round((lead.count / totalLeads) * 100);
+
+                    return (
+                      <div key={lead.status}>
+                        <span style={{ color: colors[index % colors.length], marginRight: 8, fontSize: 18 }}>●</span>
+                        {lead.status} ({percent}%)
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </Col>
+      </Row>
       {/* Stats Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24, marginTop:44 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24, marginTop: 44 }}>
         {cardData.map((card, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
             <Card
