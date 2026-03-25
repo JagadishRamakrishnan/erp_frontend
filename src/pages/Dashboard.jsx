@@ -4,7 +4,7 @@ import {
   Card, Row, Col, Tag, Spin, message, Button,
   Avatar, Progress, Typography, Grid
 } from "antd";
-import { Phone, Users, IndianRupee, Percent } from "lucide-react";
+import { Phone, Users, IndianRupee, Percent, Mail, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import {
@@ -144,6 +144,7 @@ export default function Dashboard() {
       const response = await dashboardService.getStats();
       if (response.success) {
         setStats(response.data);
+        console.log(response.data)
       }
     } catch (error) {
       message.error('Failed to load dashboard statistics');
@@ -667,12 +668,12 @@ export default function Dashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {todayActivities && todayActivities.length > 0 ? (
                   todayActivities.map((activity, index) => {
-                    const icons = {
-                      Call: '📞',
-                      Email: '📧',
-                      Meeting: '🤝',
-                      WhatsApp: '💬'
-                    };
+const icons = {
+  Call: <Phone size={18} />,
+  Email: <Mail size={18} />,
+  Meeting: <Users size={18} />,
+  WhatsApp: <MessageCircle size={18} />
+};
 
                     const backgrounds = {
                       Call: '#fee2e2',
@@ -709,7 +710,7 @@ export default function Dashboard() {
                               fontSize: 18,
                             }}
                           >
-                            {icons[activity.type] || '📝'}
+                            {icons[activity.type] || <FileText size={18} />}
                           </div>
 
                           {/* Content */}

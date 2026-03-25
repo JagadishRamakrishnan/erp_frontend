@@ -33,7 +33,7 @@ export default function AppHeader({ collapsed, setCollapsed }) {
         height: 64,
         position: "sticky",
         top: 0,
-        zIndex: 1000,
+        zIndex: 99,
         boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
         borderBottom: "1px solid #f3f4f6", 
         display: "flex",
