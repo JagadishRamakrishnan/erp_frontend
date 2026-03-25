@@ -24,6 +24,7 @@ import { Typography } from "antd";
 import { invoiceService, customerService, dealService, quotationService } from "../../services";
 import dayjs from "dayjs";
 import ResponsiveTable from "../../components/ResponsiveTable";
+import QuoteInvoiceView from "../../components/QuoteInvoiceView";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -660,111 +661,12 @@ const pending = invoices
           </Row>
         </Form>
       </Modal>
-      <Modal
+      <QuoteInvoiceView
   open={viewOpen}
-  footer={null}
-  onCancel={() => setViewOpen(false)}
-  width={900}
-  centered
->
-  {selectedInvoice && (
-    <div style={{ padding: 24, background: "#fff", borderRadius: 10 }}>
-
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Atelier Creations</h2>
-          <p style={{ margin: 0, color: "#6b7280" }}>
-            CRM Billing System
-          </p>
-        </div>
-
-        <div style={{ textAlign: "right" }}>
-          <h1 style={{ margin: 0, color: "#1677ff" }}>INVOICE</h1>
-          <p style={{ margin: 0 }}>#{selectedInvoice.invoice_number}</p>
-          <p style={{ margin: 0 }}>
-            {dayjs(selectedInvoice.created_at).format("DD MMM YYYY")}
-          </p>
-        </div>
-      </div>
-
-      {/* CUSTOMER */}
-      <div style={{ marginBottom: 20 }}>
-        <h4 style={{ marginBottom: 4 }}>Bill To:</h4>
-        <p style={{ margin: 0 }}>{selectedInvoice.customer?.name}</p>
-        <p style={{ margin: 0, color: "#6b7280" }}>
-          {selectedInvoice.customer?.email}
-        </p>
-      </div>
-
-      {/* TABLE */}
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 20 }}>
-        <thead>
-          <tr style={{ background: "#f3f4f6" }}>
-            <th style={th}>Description</th>
-            <th style={th}>Amount</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td style={td}>Service / Deal</td>
-            <td style={td}>
-              ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      {/* TOTAL SECTION */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <div style={{ width: 300 }}>
-
-          <div style={row}>
-            <span>Total</span>
-            <span>₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}</span>
-          </div>
-
-          <div style={row}>
-            <span>Paid</span>
-            <span style={{ color: "#10b981" }}>
-              ₹{selectedInvoice.paid_amount?.toLocaleString("en-IN")}
-            </span>
-          </div>
-
-          <div style={row}>
-            <span>Due</span>
-            <span style={{ color: "#ef4444" }}>
-              ₹{selectedInvoice.due_amount?.toLocaleString("en-IN")}
-            </span>
-          </div>
-
-          <hr />
-
-          <div style={{ ...row, fontWeight: "bold", fontSize: 18 }}>
-            <span>Grand Total</span>
-            <span>
-              ₹{selectedInvoice.total_amount?.toLocaleString("en-IN")}
-            </span>
-          </div>
-
-        </div>
-      </div>
-
-      {/* FOOTER */}
-      <div style={{ marginTop: 40 }}>
-        <p style={{ color: "#6b7280" }}>Thank you for your business 🙏</p>
-
-        <div style={{ textAlign: "right", marginTop: 30 }}>
-          <p>Authorized Signature</p>
-          <div style={{ height: 40 }}></div>
-          <strong>Atelier Creations</strong>
-        </div>
-      </div>
-
-    </div>
-  )}
-</Modal>
+  onClose={() => setViewOpen(false)}
+  record={selectedInvoice}
+  type="invoice"
+/>
 <Modal
   open={bulkModalOpen}
   onCancel={() => setBulkModalOpen(false)}
