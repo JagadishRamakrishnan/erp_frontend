@@ -66,8 +66,17 @@ button:hover {
   border-color: #646cff;
 }
 button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:focus-visible,
+.ant-btn:focus,
+.ant-btn:focus-visible,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus,
+.ant-input:focus,
+.ant-select:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 .login-icon {
   width: 60px;

@@ -50,7 +50,7 @@ const ResponsiveTable = ({
       loading={loading}
       pagination={pagination}
       rowKey={rowKey}
-      scroll={{ x: true }}
+      scroll={{ x: false }}
       {...otherProps}
     />
   );

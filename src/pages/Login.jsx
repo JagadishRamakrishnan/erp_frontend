@@ -8,7 +8,7 @@ import { authService } from "../services";
 
 const BackgroundCard = ({ index = 1 }) => {
   const isEven = index % 2 === 0;
-  const price = 1000 + (index * 153) % 4000;
+  const price = 100000 + (index * 15398) % 400000;
   const orderId = 1000 + (index * 79) % 9000;
 
   return (
@@ -21,21 +21,21 @@ const BackgroundCard = ({ index = 1 }) => {
       <div className="flex justify-between">
         <div>
           <div className="font-semibold text-gray-700 text-sm">
-            Order #{orderId}
+           {isEven ? "Lead" : "Deal"}  #{orderId}
           </div>
           <div className="text-xs text-gray-400">Fixed Display</div>
         </div>
-        <span className="text-xs font-bold text-gray-700">₹{price}</span>
+        <span className="text-xs font-bold text-gray-700">{isEven ? "Proposal" : "Quote"} ₹{price}</span>
       </div>
 
       <span
         className={`text-[10px] px-2 py-1 rounded-full font-medium ${
           isEven
-            ? "bg-emerald-50 text-emerald-600"
-            : "bg-amber-50 text-amber-600"
+            ?  "bg-amber-50 text-amber-600"
+            : "bg-emerald-50 text-emerald-600"
         }`}
       >
-        {isEven ? "Delivered" : "In Progress"}
+        {isEven ? "In Progress" :  "Deal Won"}
       </span>
     </motion.div>
   );
@@ -124,7 +124,7 @@ export default function Login() {
       </div>
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/90 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none" />
 
       {/* Login Card */}
 <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-12 border border-white/40 relative z-10">
@@ -195,7 +195,7 @@ export default function Login() {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full py-3 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-300/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          className="w-full cursor-pointer py-3 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-300/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           {loading ? "Signing In..." : "Sign In"}
         </button>

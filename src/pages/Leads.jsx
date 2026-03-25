@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
-import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin } from "antd";
+import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import { leadService, userService } from "../services";
+import { leadService, userService, noteService, taskService } from "../services";
+import authService from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
 import ResponsiveTable from "../components/ResponsiveTable";
+import LeadKanbanBoard from "../components/LeadKanbanBoard";
+import LeadDetailsModal from "../components/LeadDetailsModal";
+import { LayoutGrid, List, ClipboardCopy, CheckCircle2, Users, UserPlus, UserCheck, Crown, TrendingUp, TrendingDown } from "lucide-react";
 import {
   WhatsAppOutlined,
   FacebookOutlined,
@@ -26,6 +30,13 @@ export default function Leads() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [viewType, setViewType] = useState("kanban");
+  const tabs = ["All", "New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
+  const [activeTab, setActiveTab] = useState("All");
+  const currentUser = authService.getCurrentUser();
+  const [stageChangeModalOpen, setStageChangeModalOpen] = useState(false);
+  const [pendingStageChange, setPendingStageChange] = useState(null);
+  const [stageForm] = Form.useForm();
   useEffect(() => {
     fetchLeads();
     fetchUsers();
@@ -61,7 +72,7 @@ export default function Leads() {
       const response = editingLead
         ? await leadService.update(editingLead.id, values)
         : await leadService.create(values);
-      
+
       if (response.success) {
         message.success(editingLead ? 'Lead updated successfully' : 'Lead created successfully');
         fetchLeads();
@@ -75,6 +86,10 @@ export default function Leads() {
   };
 
   const handleEdit = (lead) => {
+    if (lead.assigned_to && lead.assigned_to !== currentUser?.id) {
+      message.warning(`This lead is assigned to ${lead.assignedTo?.name || 'another user'}. You cannot modify it.`);
+      return;
+    }
     setEditingLead(lead);
     form.setFieldsValue({
       name: lead.name,
@@ -87,10 +102,81 @@ export default function Leads() {
     });
     setModalOpen(true);
   };
- const handleView = (lead) => {
-  setSelectedLead(lead);
-  setViewModalOpen(true);
-};
+  const handleView = (lead) => {
+    if (!lead.assigned_to) {
+      Modal.confirm({
+        title: 'Assign Lead',
+        content: 'This lead is currently unassigned. Would you like to assign it to yourself to manage it?',
+        okText: 'Assign to Me',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          try {
+            const response = await leadService.update(lead.id, { assigned_to: currentUser.id });
+            if (response.success) {
+              message.success('Lead assigned to you successfully!');
+              fetchLeads();
+              setSelectedLead({ ...lead, assigned_to: currentUser.id, assignedTo: currentUser });
+              setViewModalOpen(true);
+            }
+          } catch (error) {
+            message.error('Failed to assign lead');
+          }
+        }
+      });
+    } else if (lead.assigned_to !== currentUser?.id) {
+      message.warning(`This lead is assigned to ${lead.assignedTo?.name || 'another user'}. You can view it but cannot make changes.`);
+      setSelectedLead(lead);
+      setViewModalOpen(true);
+    } else {
+      setSelectedLead(lead);
+      setViewModalOpen(true);
+    }
+  };
+
+  const handleLeadDrop = (lead, newStage) => {
+    setPendingStageChange({ lead, newStage });
+    setStageChangeModalOpen(true);
+  };
+
+  const handleStageChangeSubmit = async (values) => {
+    if (!pendingStageChange) return;
+    const { lead, newStage } = pendingStageChange;
+
+    try {
+      // 1. Update Lead Status
+      await leadService.update(lead.id, { status: newStage });
+
+      // 2. Create Note
+      await noteService.create({
+        related_type: 'Lead',
+        related_id: lead.id,
+        note: `Moved to ${newStage}. Notes: ${values.note}`
+      });
+
+      // 3. Create Follow-up Task if required
+      if (values.requiresFollowUp && values.followUpDate) {
+        await taskService.create({
+          title: `Follow up with ${lead.name}`,
+          description: values.note,
+          related_type: 'Lead',
+          related_id: lead.id,
+          assigned_to: currentUser.id,
+          due_date: values.followUpDate.toISOString(),
+          priority: 'Medium',
+          status: 'Pending'
+        });
+      }
+
+      message.success(`Lead moved to ${newStage} successfully`);
+      setStageChangeModalOpen(false);
+      setPendingStageChange(null);
+      stageForm.resetFields();
+      fetchLeads();
+    } catch (error) {
+      message.error('Failed to update stage and metadata');
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       const response = await leadService.delete(id);
@@ -154,7 +240,7 @@ export default function Leads() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -173,11 +259,13 @@ export default function Leads() {
     }
   };
 
-  const filteredLeads = leads.filter(lead =>
-    lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-    lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
-    lead.company?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredLeads = leads.filter(lead => {
+    const searchMatch = lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+      lead.company?.toLowerCase().includes(searchText.toLowerCase());
+    const tabMatch = activeTab === "All" || lead.status === activeTab;
+    return searchMatch && tabMatch;
+  });
 
   const getStatusColor = (status) => {
     const colors = {
@@ -192,190 +280,202 @@ export default function Leads() {
   };
 
   const columns = [
-  {
-    title: "Lead",
-    dataIndex: "name",
-    align: "left",   // keep left like customer avatar column
-    render: (text, record) => (
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar
-  src={
-    record.email
-      ? `https://logo.clearbit.com/${record.email.split("@")[1]}`
-      : null
-  }
-  style={{ backgroundColor: "#ff8a00", color: "#fff" }}
-  icon={<UserOutlined />}
->
-  {!record.email && text?.charAt(0)}
-</Avatar>
+    {
+      title: "Lead",
+      dataIndex: "name",
+      align: "left",   // keep left like customer avatar column
+      render: (text, record) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Avatar
+            src={
+              record.email
+                ? `https://logo.clearbit.com/${record.email.split("@")[1]}`
+                : null
+            }
+            style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
+            icon={<UserOutlined />}
+          >
+            {!record.email && text?.charAt(0)}
+          </Avatar>
 
+          <div>
+            <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.lead_code}</div>
+          </div>
+        </div>
+      ),
+    },
+
+    {
+      title: "Contact",
+      key: "contact",
+      align: "center",
+      render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
-          <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.lead_code}</div>
+          {record.email && (
+            <div style={{ fontSize: 13, marginBottom:"5px" }}>
+              <Typography.Text 
+                copyable={{ 
+                  text: record.email,
+                  icon: [<ClipboardCopy size={14} className="text-gray-400 hover:text-blue-500 ml-1" key="copy" />, <CheckCircle2 size={14} className="text-green-500 ml-1" key="copied" />],
+                  tooltips: ['Copy', 'Copied!']
+                }}
+              >
+                {record.email}
+              </Typography.Text>
+            </div>
+          )}
+
+          {record.phone && (
+            <div style={{ fontSize: 13 }}>
+              <Typography.Text 
+                copyable={{ 
+                  text: record.phone,
+                  icon: [<ClipboardCopy size={14} className="text-gray-400 hover:text-blue-500 ml-1" key="copy" />, <CheckCircle2 size={14} className="text-green-500 ml-1" key="copied" />],
+                  tooltips: ['Copy', 'Copied!']
+                }}
+              >
+                {record.phone}
+              </Typography.Text>
+            </div>
+          )}
+
+          {/* ✅ SOCIAL LINKS ADD HERE */}
+          {/* <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 10 }}>
+
+            
+            <a
+              href={`https://wa.me/${record.phone}`}
+              target="_blank"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "#e6f7ee",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <WhatsAppOutlined style={{ color: "#25D366", fontSize: 16 }} />
+            </a>
+
+            
+            <a
+              href={record.facebook_url || "#"}
+              target="_blank"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "#e7f0ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <FacebookOutlined style={{ color: "#1877F2", fontSize: 16 }} />
+            </a>
+
+            
+            <a
+              href={record.instagram_url || "#"}
+              target="_blank"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "#fce7f3",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <InstagramOutlined style={{ color: "#E1306C", fontSize: 16 }} />
+            </a>
+
+          </div> */}
         </div>
-      </div>
-    ),
-  },
+      ),
+    },
 
-  {
-  title: "Contact",
-  key: "contact",
-  align: "center",
-  render: (_, record) => (
-    <div>
-      {record.email && (
-        <div style={{ fontSize: 13 }}>
-          <MailOutlined /> {record.email}
-        </div>
-      )}
+    {
+      title: "Company",
+      dataIndex: "company",
+      align: "center",
+      render: (text) => <span>{text || "N/A"}</span>,
+    },
 
-      {record.phone && (
-        <div style={{ fontSize: 13 }}>
-          <PhoneOutlined /> {record.phone}
-        </div>
-      )}
+    {
+      title: "Source",
+      dataIndex: "source",
+      align: "center",
+      render: (text) => <span>{text || "N/A"}</span>,
+    },
 
-      {/* ✅ SOCIAL LINKS ADD HERE */}
-      <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 10 }}>
+    {
+      title: "Status",
+      dataIndex: "status",
+      align: "center",
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {status}
+        </Tag>
+      ),
+    },
 
-  {/* WhatsApp */}
-  <a
-    href={`https://wa.me/${record.phone}`}
-    target="_blank"
-    style={{
-      width: 32,
-      height: 32,
-      borderRadius: "50%",
-      background: "#e6f7ee",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}
-  >
-    <WhatsAppOutlined style={{ color: "#25D366", fontSize: 16 }} />
-  </a>
+    {
+      title: "Assigned To",
+      dataIndex: "assigned_to",
+      align: "center",
+      render: (_, record) => (
+        <span>
+          {record.assignedTo?.name || "Unassigned"}
+        </span>
+      ),
+    },
 
-  {/* Facebook */}
-  <a
-    href={record.facebook_url || "#"}
-    target="_blank"
-    style={{
-      width: 32,
-      height: 32,
-      borderRadius: "50%",
-      background: "#e7f0ff",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}
-  >
-    <FacebookOutlined style={{ color: "#1877F2", fontSize: 16 }} />
-  </a>
+    {
+      title: "Actions",
+      key: "actions",
+      align: "center",
+      render: (_, record) => (
+        <div style={{ display: "flex", alignItems:"center", justifyContent: "center", gap: 5 }}>
+          {record.status !== "Won" && (
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => handleConvert(record)}
+              style={{ background: "#52c41a", borderColor: "#52c41a" }}
+            >
+              Convert
+            </Button>
+          )}
 
-  {/* Instagram */}
-  <a
-    href={record.instagram_url || "#"}
-    target="_blank"
-    style={{
-      width: 32,
-      height: 32,
-      borderRadius: "50%",
-      background: "#fce7f3",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}
-  >
-    <InstagramOutlined style={{ color: "#E1306C", fontSize: 16 }} />
-  </a>
+          <Button
+            icon={<EyeOutlined />}
+            type=""
+            onClick={() => handleView(record)}
+          >
+          </Button>
 
-</div>
-    </div>
-  ),
-},
-
-  {
-    title: "Company",
-    dataIndex: "company",
-    align: "center",
-    render: (text) => <span>{text || "N/A"}</span>,
-  },
-
-  {
-    title: "Source",
-    dataIndex: "source",
-    align: "center",
-    render: (text) => <span>{text || "N/A"}</span>,
-  },
-
-  {
-    title: "Status",
-    dataIndex: "status",
-    align: "center",
-    render: (status) => (
-      <Tag color={getStatusColor(status)}>
-        {status}
-      </Tag>
-    ),
-  },
-
-  {
-    title: "Assigned To",
-    dataIndex: "assigned_to",
-    align: "center",
-    render: (_, record) => (
-      <span>
-        {record.assignedTo?.name || "Unassigned"}
-      </span>
-    ),
-  },
-
-  {
-    title: "Actions",
-    key: "actions",
-    align: "center",
-    render: (_, record) => (
-      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-        {record.status !== "Won" && (
           <Button
             type="primary"
-            size="small"
-            onClick={() => handleConvert(record)}
-            style={{ background: "#52c41a", borderColor: "#52c41a" }}
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
           >
-            Convert
           </Button>
-        )}
 
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => handleView(record)}
-        >
-          View
-        </Button>
-
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => handleEdit(record)}
-        >
-          Edit
-        </Button>
-
-        <Popconfirm
-          title="Delete lead"
-          onConfirm={() => handleDelete(record.id)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            Delete
-          </Button>
-        </Popconfirm>
-      </div>
-    ),
-  },
-];
+          <Popconfirm
+            title="Delete lead"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
 
   const cardAnimation = {
     hidden: { opacity: 0, y: 30 },
@@ -387,7 +487,7 @@ export default function Leads() {
   };
 
   return (
-    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8"}}>
+    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8" }}>
       {loading && !leads.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -427,10 +527,10 @@ export default function Leads() {
           {/* STATS */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             {[
-              { title: "Total Leads", count: leads.length, color: "#ff8a00" },
-              { title: "New", count: leads.filter(l => l.status === 'New').length, color: "#1677ff" },
-              { title: "Qualified", count: leads.filter(l => l.status === 'Qualified').length, color: "#52c41a" },
-              { title: "Won", count: leads.filter(l => l.status === 'Won').length, color: "#10b981" },
+              { title: "Total Leads", count: leads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
+              { title: "New Leads", count: leads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
+              { title: "Qualified", count: leads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
+              { title: "Deals Won", count: leads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
             ].map((item, index) => (
               <Col xs={24} sm={12} lg={6} key={index}>
                 <motion.div
@@ -439,12 +539,35 @@ export default function Leads() {
                   animate="visible"
                   variants={cardAnimation}
                 >
-                  <Card style={{ borderRadius: 12, borderTop: `4px solid ${item.color}` }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
-                      {item.title}
-                    </div>
-                    <div style={{ fontSize: 32, fontWeight: 800, marginTop: 8, color: "#111827" }}>
-                      {item.count}
+                  <Card bordered={false} style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.03)", overflow: 'hidden' }}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: '0.5px' }}>
+                          {item.title}
+                        </div>
+                        <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, color: "#111827" }}>
+                          {item.count}
+                        </div>
+                        <div className="flex items-center mt-3 text-[11px] font-medium">
+                          <span className={`flex items-center gap-0.5 ${item.isUp ? 'text-green-500' : 'text-red-500'}`}>
+                            {item.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                            {item.trend}
+                          </span>
+                          <span className="text-gray-400 ml-1.5">vs last 30 days</span>
+                        </div>
+                      </div>
+                      <div style={{ 
+                        width: 44, 
+                        height: 44, 
+                        borderRadius: 12, 
+                        backgroundColor: `${item.color}15`, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: item.color
+                      }}>
+                        {item.icon}
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
@@ -452,126 +575,178 @@ export default function Leads() {
             ))}
           </Row>
 
-          {/* SEARCH */}
+          {/* SEARCH & TOGGLES */}
           <Card style={{ borderRadius: 12, marginBottom: 20 }}>
-            <Input
-              placeholder="Search leads by name, email, or company..."
-              prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
-              style={{ height: 40, borderRadius: 8 }}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-          </Card>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <Input
+                placeholder="Search leads by name, email, or company..."
+                prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
+                style={{ height: 40, borderRadius: 8, maxWidth: "250px" }}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
 
-          {/* LEADS TABLE */}
-          <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
-                Lead Directory ({filteredLeads.length})
-              </span>
-            </div>
-            <ResponsiveTable
-              columns={columns}
-              dataSource={filteredLeads}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              renderMobileCard={(record) => (
-                <div>
-                  {/* Header with Avatar and Name */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <Avatar 
-                      style={{ backgroundColor: "#ff8a00", color: "#fff" }} 
-                      icon={<UserOutlined />}
-                    >
-                      {record.name?.charAt(0)}
-                    </Avatar>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                        {record.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                        {record.lead_code}
-                      </div>
-                    </div>
-                    <Tag color={getStatusColor(record.status)}>
-                      {record.status}
-                    </Tag>
-                  </div>
-
-                  {/* Contact Info */}
-                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                    {record.email && (
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <MailOutlined style={{ marginRight: 6 }} />
-                        {record.email}
-                      </div>
-                    )}
-                    {record.phone && (
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <PhoneOutlined style={{ marginRight: 6 }} />
-                        {record.phone}
-                      </div>
-                    )}
-                    {record.company && (
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Company:</strong> {record.company}
-                      </div>
-                    )}
-                    {record.source && (
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Source:</strong> {record.source}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 13, color: "#4b5563" }}>
-                      <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                    {record.status !== 'Won' && (
-                      <Button
-                        type="primary"
-                        size="small"
-                        onClick={() => handleConvert(record)}
-                        style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                      >
-                        Convert
-                      </Button>
-                    )}
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<EyeOutlined />}
-                      onClick={() => handleView(record)}
-                    >
-                      View
-                    </Button>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEdit(record)}
-                    >
-                      Edit
-                    </Button>
-                    <Popconfirm
-                      title="Delete lead"
-                      description="Are you sure?"
-                      onConfirm={() => handleDelete(record.id)}
-                      okText="Yes"
-                      cancelText="No"
-                    >
-                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                        Delete
-                      </Button>
-                    </Popconfirm>
-                  </div>
+              <div className="flex items-center gap-4">
+                {/* VIEW TOGGLE */}
+                <div className="flex bg-[#f3f4f6] p-1 rounded-lg">
+                  <button
+                    onClick={() => { setViewType("kanban"); setActiveTab("All"); }}
+                    className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "kanban" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
+                  >
+                    <LayoutGrid size={16} /> Kanban
+                  </button>
+                  <button
+                    onClick={() => setViewType("list")}
+                    className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "list" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
+                  >
+                    <List size={16} /> Table
+                  </button>
                 </div>
-              )}
-            />
+
+
+              </div>
+            </div>
+            {/* STATUS TABS - ONLY SHOW IN LIST VIEW */}
+            {viewType === "list" && (
+              <div className="flex items-center mt-3 gap-2 overflow-x-auto whitespace-nowrap hidden lg:flex">
+                {tabs.map((tab) => {
+                  const count = tab === "All" ? leads.length : leads.filter((d) => d.status === tab).length;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${activeTab === tab ? "bg-[#1677ff] text-white shadow-sm" : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"}`}
+                    >
+                      {tab} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </Card>
+
+          {/* LEADS RENDER ZONE */}
+          {viewType === "kanban" ? (
+            <LeadKanbanBoard
+              leads={filteredLeads}
+              onLeadDrop={handleLeadDrop}
+              onLeadClick={handleView}
+              currentUser={currentUser}
+            />
+          ) : (
+            <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)",padding:"10px" }}>
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
+                <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
+                  Lead Directory ({filteredLeads.length})
+                </span>
+              </div>
+              <ResponsiveTable
+                columns={columns}
+                dataSource={filteredLeads}
+                rowKey="id"
+                loading={loading}
+                pagination={{ 
+                  defaultPageSize: 10,
+                  showSizeChanger: true, 
+                  pageSizeOptions: ['10', '20', '50', '100'] 
+                }}
+                renderMobileCard={(record) => (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Header with Avatar and Name */}
+                    <div style={{ display: 'flex', alignItems: 'center'}}>
+                      <Avatar
+                        style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
+                        icon={<UserOutlined />}
+                      >
+                        {record.name?.charAt(0)}
+                      </Avatar>
+                      <div style={{ flex: 1 , paddingLeft: 10 }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
+                          {record.name}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          {record.lead_code}
+                        </div>
+                      </div>
+                      <Tag color={getStatusColor(record.status)}>
+                        {record.status}
+                      </Tag>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
+                      {record.email && (
+                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                          <MailOutlined style={{ marginRight: 6 }} />
+                          {record.email}
+                        </div>
+                      )}
+                      {record.phone && (
+                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                          <PhoneOutlined style={{ marginRight: 6 }} />
+                          {record.phone}
+                        </div>
+                      )}
+                      {record.company && (
+                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                          <strong>Company:</strong> {record.company}
+                        </div>
+                      )}
+                      {record.source && (
+                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
+                          <strong>Source:</strong> {record.source}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 13, color: "#4b5563" }}>
+                        <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                      {record.status !== 'Won' && (
+                        <Button
+                          type="primary"
+                          size="small"
+                          onClick={() => handleConvert(record)}
+                          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                        >
+                          Convert
+                        </Button>
+                      )}
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Delete lead"
+                        description="Are you sure?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                )}
+              />
+            </Card>
+          )}
         </>
       )}
 
@@ -589,9 +764,9 @@ export default function Leads() {
         width={800}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item 
-            label="Name" 
-            name="name" 
+          <Form.Item
+            label="Name"
+            name="name"
             rules={[{ required: true, message: 'Please enter name' }]}
           >
             <Input placeholder="Enter name" />
@@ -599,9 +774,9 @@ export default function Leads() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item 
-                label="Email" 
-                name="email" 
+              <Form.Item
+                label="Email"
+                name="email"
                 rules={[{ type: 'email', message: 'Please enter valid email' }]}
               >
                 <Input placeholder="Enter email" />
@@ -629,9 +804,9 @@ export default function Leads() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item 
-                label="Status" 
-                name="status" 
+              <Form.Item
+                label="Status"
+                name="status"
                 rules={[{ required: true, message: 'Please select status' }]}
               >
                 <Select placeholder="Select status">
@@ -646,9 +821,9 @@ export default function Leads() {
             </Col>
             <Col span={12}>
               <Form.Item label="Assigned To" name="assigned_to">
-                <Select 
-                  placeholder="Select user" 
-                  showSearch 
+                <Select
+                  placeholder="Select user"
+                  showSearch
                   optionFilterProp="children"
                   allowClear
                 >
@@ -665,8 +840,8 @@ export default function Leads() {
 
           <Row gutter={10}>
             <Col span={12}>
-              <Button 
-                block 
+              <Button
+                block
                 onClick={() => {
                   setModalOpen(false);
                   setEditingLead(null);
@@ -684,108 +859,68 @@ export default function Leads() {
           </Row>
         </Form>
       </Modal>
-     <Modal
-title="Lead Details"
-open={viewModalOpen}
-footer={null}
-onCancel={() => setViewModalOpen(false)}
-centered
-width={800}
 
->
+      {/* STAGE CHANGE MODAL */}
+      <Modal
+        title={`Move to ${pendingStageChange?.newStage}`}
+        open={stageChangeModalOpen}
+        onCancel={() => {
+          setStageChangeModalOpen(false);
+          setPendingStageChange(null);
+          stageForm.resetFields();
+        }}
+        footer={null}
+        centered
+        width={500}
+      >
+        <Form form={stageForm} layout="vertical" onFinish={handleStageChangeSubmit} initialValues={{ requiresFollowUp: false }}>
+          <Form.Item
+            label="What did the customer say?"
+            name="note"
+            rules={[{ required: true, message: 'Please provide notes on this stage change' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter details of the conversation..." />
+          </Form.Item>
 
-{selectedLead && (
-<div style={{ padding: 20 }}>
+          <Form.Item label="Follow-up needed?" name="requiresFollowUp" valuePropName="checked">
+            <Switch checkedChildren="Yes" unCheckedChildren="No" />
+          </Form.Item>
 
-```
-  {/* HEADER */}
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 16,
-      marginBottom: 20
-    }}
-  >
-    <Avatar
-  size={70}
-  src={
-    selectedLead.email
-      ? `https://logo.clearbit.com/${selectedLead.email.split("@")[1]}`
-      : null
-  }
-  style={{ background: "#ff8a00" }}
-  icon={<UserOutlined />}
->
-  {!selectedLead.email && selectedLead.name?.charAt(0)}
-</Avatar>
-    <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>
-        {selectedLead.name}
-      </div>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => prevValues.requiresFollowUp !== currentValues.requiresFollowUp}
+          >
+            {({ getFieldValue }) => getFieldValue('requiresFollowUp') ? (
+              <Form.Item
+                label="Follow-up Date & Time"
+                name="followUpDate"
+                rules={[{ required: true, message: 'Please select follow-up date' }]}
+              >
+                <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+              </Form.Item>
+            ) : null}
+          </Form.Item>
 
-      <Tag color="blue">{selectedLead.status}</Tag>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button onClick={() => {
+              setStageChangeModalOpen(false);
+              setPendingStageChange(null);
+              stageForm.resetFields();
+            }}>
+              Cancel
+            </Button>
+            <Button type="primary" htmlType="submit">
+              Save & Move
+            </Button>
+          </div>
+        </Form>
+      </Modal>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-  <img
-  src={`https://logo.clearbit.com/${selectedLead.email?.split("@")[1]}`}
-  alt="logo"
-  style={{ width: 20, height: 20 }}
-  onError={(e) => {
-    e.target.src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-  }}
-/>
-  <span style={{ color: "#6b7280" }}>
-    {selectedLead.company || "No Company"}
-  </span>
-</div>
-    </div>
-  </div>
-
-  {/* DETAILS CARD */}
-  <Card bordered style={{ borderRadius: 10 }}>
-    <Row gutter={[20, 20]}>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Email</div>
-        <div>
-          <MailOutlined /> {selectedLead.email || "N/A"}
-        </div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Phone</div>
-        <div>
-          <PhoneOutlined /> {selectedLead.phone || "N/A"}
-        </div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Company</div>
-        <div>{selectedLead.company || "N/A"}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Source</div>
-        <div>{selectedLead.source || "N/A"}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Lead Code</div>
-        <div>{selectedLead.lead_code}</div>
-      </Col>
-
-      <Col span={12}>
-        <div style={{ fontWeight: 600 }}>Assigned To</div>
-        <div>{selectedLead.assignedTo?.name || "Unassigned"}</div>
-      </Col>
-
-    </Row>
-  </Card>
-
-</div>
-
-)} </Modal>
+      <LeadDetailsModal
+        open={viewModalOpen}
+        lead={selectedLead}
+        onClose={() => setViewModalOpen(false)}
+      />
 
       <BulkUploadModal
         open={showBulkUpload}

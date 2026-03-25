@@ -26,21 +26,21 @@ export default function Deals() {
   }, []);
 
   const fetchDeals = async () => {
-  setLoading(true);
-  try {
-    const response = await dealService.getAll();
-    if (response.success) {
-      const sortedDeals = (response.data || []).sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
-      setDeals(sortedDeals);
+    setLoading(true);
+    try {
+      const response = await dealService.getAll();
+      if (response.success) {
+        const sortedDeals = (response.data || []).sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        setDeals(sortedDeals);
+      }
+    } catch (error) {
+      message.error("Failed to load deals");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    message.error("Failed to load deals");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const handleAddDeal = async (newDeal) => {
     try {
       const response = await dealService.create(newDeal);
@@ -74,7 +74,7 @@ export default function Deals() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -113,7 +113,7 @@ export default function Deals() {
   const fontInter = { fontFamily: '"Inter", sans-serif' };
 
   return (
-<div className="p-4 md:p-6 min-h-screen" style={fontInter}>
+    <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
       {loading && !deals.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -131,27 +131,27 @@ export default function Deals() {
               </Text>
             </div>
 
-<div className="flex gap-2">
+            <div className="flex gap-2">
 
-  {/* ADD DEAL */}
-  <button
-    onClick={() => setShowModal(true)}
-    className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] text-white px-4 h-10 rounded-lg"
-  >
-    <Plus size={18}/>
-    Add Deal
-  </button>
+              {/* ADD DEAL */}
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 bg-[#1677ff] hover:bg-[#0958d9] text-white px-4 h-10 rounded-lg"
+              >
+                <Plus size={18} />
+                Add Deal
+              </button>
 
-  {/* ✅ ADD THIS BULK UPLOAD BUTTON */}
-  <button
-    onClick={() => setShowBulkUpload(true)}
-    className="flex items-center gap-2 border border-gray-300 px-4 h-10 rounded-lg hover:bg-gray-100"
-  >
-    <Upload size={18}/>
-    Bulk Upload
-  </button>
+              {/* ✅ ADD THIS BULK UPLOAD BUTTON */}
+              <button
+                onClick={() => setShowBulkUpload(true)}
+                className="flex items-center gap-2 border border-gray-300 px-4 h-10 rounded-lg hover:bg-gray-100"
+              >
+                <Upload size={18} />
+                Bulk Upload
+              </button>
 
-</div>
+            </div>
           </div>
 
           {/* ================= SEARCH + FILTER AREA ================= */}
@@ -160,7 +160,7 @@ export default function Deals() {
 
               {/* SEARCH */}
               <div className="flex items-center gap-3 w-full lg:max-w-sm bg-[#f9fafb] border border-[#d1d5db] px-3 h-10 rounded-lg shrink-0">
-                <Search size={18} className="text-[#9ca3af]"/>
+                <Search size={18} className="text-[#9ca3af]" />
                 <input
                   type="text"
                   placeholder="Search deals..."
@@ -172,26 +172,25 @@ export default function Deals() {
               </div>
 
               {/* STATUS TABS */}
-<div className="flex items-center gap-2 ml-auto overflow-x-auto whitespace-nowrap">
-                    {tabs.map((tab) => {
+              <div className="flex items-center gap-2 ml-auto overflow-x-auto whitespace-nowrap">
+                {tabs.map((tab) => {
                   const count =
                     tab === "All"
                       ? deals.length
                       : deals.filter((d) => d.stage === tab).length;
 
                   return (
-                   <button
-  key={tab}
-  onClick={() => setActiveTab(tab)}
-  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
-  ${
-    activeTab === tab
-      ? "bg-[#1677ff] text-white shadow"
-      : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
-  }`}
->
-  {tab} ({count})
-</button>
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
+  ${activeTab === tab
+                          ? "bg-[#1677ff] text-white shadow"
+                          : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
+                        }`}
+                    >
+                      {tab} ({count})
+                    </button>
                   );
                 })}
               </div>
@@ -217,7 +216,7 @@ export default function Deals() {
                   </h3>
 
                   <p className="text-[#6b7280] text-[13px] mt-1 font-medium">
-                    <span className="text-[#4b5563]">{deal.customer?.name || 'No Customer'}</span> 
+                    <span className="text-[#4b5563]">{deal.customer?.name || 'No Customer'}</span>
                     {deal.assignedTo && (
                       <>
                         <span className="mx-1">•</span> {deal.assignedTo.name}
@@ -228,12 +227,11 @@ export default function Deals() {
                   <div className="flex flex-wrap items-center gap-4 mt-4">
                     {/* Dynamically colored Dutch Badge */}
                     <span className={`px-3 py-1 rounded-[6px] text-[11px] font-bold tracking-[0.5px] uppercase
-                      ${
-                        deal.stage === "Won" ? "bg-[#d1fae5] text-[#059669]" :
+                      ${deal.stage === "Won" ? "bg-[#d1fae5] text-[#059669]" :
                         deal.stage === "Lost" ? "bg-[#fee2e2] text-[#dc2626]" :
-                        deal.stage === "Negotiation" ? "bg-[#fef3c7] text-[#d97706]" :
-                        deal.stage === "Proposal" ? "bg-[#e0e7ff] text-[#4f46e5]" :
-                        "bg-[#f3f4f6] text-[#4b5563]"
+                          deal.stage === "Negotiation" ? "bg-[#fef3c7] text-[#d97706]" :
+                            deal.stage === "Proposal" ? "bg-[#e0e7ff] text-[#4f46e5]" :
+                              "bg-[#f3f4f6] text-[#4b5563]"
                       }`}
                     >
                       {deal.stage}
@@ -241,7 +239,7 @@ export default function Deals() {
 
                     {deal.expected_close_date && (
                       <span className="flex items-center text-[#6b7280] text-[13px] font-medium">
-                        <Calendar size={15} className="mr-1.5 text-[#9ca3af]"/>
+                        <Calendar size={15} className="mr-1.5 text-[#9ca3af]" />
                         Close: <span className="ml-1 text-[#4b5563]">{new Date(deal.expected_close_date).toLocaleDateString()}</span>
                       </span>
                     )}
@@ -256,7 +254,7 @@ export default function Deals() {
 
                 {/* RIGHT (Amounts & Actions) */}
                 <div className="md:text-right flex flex-col items-start md:items-end border-t md:border-none border-gray-100 pt-4 md:pt-0 mt-2 md:mt-0">
-                  
+
                   <div className="mb-3">
                     <p className="text-[#9ca3af] text-[12px] uppercase tracking-wide font-semibold mb-0.5 mt-0">Value</p>
                     <div className="text-[#111827] font-[800] text-[22px] leading-none">

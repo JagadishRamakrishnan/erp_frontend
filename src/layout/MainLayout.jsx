@@ -37,7 +37,7 @@ const screens = useBreakpoint();
   style={{
     margin: 0,
     background: "#f5f6f8",
-    padding: 24,
+    padding: "0px 5px",
     minHeight: "calc(100vh - 64px)",
     overflowY: "auto",
   }}
