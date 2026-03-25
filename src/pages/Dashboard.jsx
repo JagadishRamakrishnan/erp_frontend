@@ -144,6 +144,7 @@ export default function Dashboard() {
       const response = await dashboardService.getStats();
       if (response.success) {
         setStats(response.data);
+        console.log(response.data)
       }
     } catch (error) {
       message.error('Failed to load dashboard statistics');

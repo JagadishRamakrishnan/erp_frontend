@@ -19,7 +19,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   RiseOutlined,
-   CalendarOutlined
+  CalendarOutlined
 } from "@ant-design/icons";
 
 // Lucide Icons
@@ -39,23 +39,23 @@ import {
 
 const Sidebar = ({
   collapsed = true,
-  setCollapsed = () => {},
+  setCollapsed = () => { },
 }) => {
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
-  
+
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const theme = "light";
-const primaryColor = "#1C2244";
-const sidebarBgColor = "#ffffff";
+  const primaryColor = "#1C2244";
+  const sidebarBgColor = "#ffffff";
   const [openMenu, setOpenMenu] = useState(null); // stores key of open inline menu OR open popover
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const containerRef = useRef(null);
 
   // Colors
   const ACTIVE_TEXT = "#ffffff";
-  const INACTIVE_TEXT = theme === "dark" ? "#D1D5DB" : "#374151"; 
+  const INACTIVE_TEXT = theme === "dark" ? "#D1D5DB" : "#374151";
 
   // Handle window resize
   useEffect(() => {
@@ -80,7 +80,7 @@ const sidebarBgColor = "#ffffff";
 
   // Expand logic correctly matching the user's route structure
   const selectedKey = pathname.replace("/", "") || "dashboard";
-  
+
   // Menu configuration injected from user's code
   const menuItems = [
     {
@@ -145,28 +145,28 @@ const sidebarBgColor = "#ffffff";
       label: "Reports",
     },
     // MARKETING GROUP
-{
-  key: "marketing",
-  icon: <Megaphone size={18} />,
-  label: "Marketing",
-  children: [
     {
-  key: "marketing-dashboard",
-  icon: <BarChartOutlined style={{ fontSize: 18 }} />,
-  label: "Overview",
-},
-    {
-      key: "campaigns",
-      icon: <RiseOutlined style={{ fontSize: 18 }} />,
-      label: "Campaigns",
+      key: "marketing",
+      icon: <Megaphone size={18} />,
+      label: "Marketing",
+      children: [
+        {
+          key: "marketing-dashboard",
+          icon: <BarChartOutlined style={{ fontSize: 18 }} />,
+          label: "Overview",
+        },
+        {
+          key: "campaigns",
+          icon: <RiseOutlined style={{ fontSize: 18 }} />,
+          label: "Campaigns",
+        },
+        {
+          key: "whatsapp-campaign",
+          icon: <MessageSquare size={18} />,
+          label: "WhatsApp Campaign",
+        },
+      ],
     },
-    {
-      key: "whatsapp-campaign",
-      icon: <MessageSquare size={18} />,
-      label: "WhatsApp Campaign",
-    },
-  ],
-},
     // ADMINISTRATION GROUP
     {
       key: "admin",
@@ -206,50 +206,50 @@ const sidebarBgColor = "#ffffff";
   ];
 
   // Set the correct menu folder open on mount / navigate if it matches child keys
-useEffect(() => {
-  const adminMenu = ["contact", "users", "roles", "admin"];
+  useEffect(() => {
+    const adminMenu = ["contact", "users", "roles", "admin"];
 
-  const salesMenu = [
-    "leads",
-    "opportunities",
-    "quotes",
-    "activities",
-    "invoices",
-    "sales"
-  ];
+    const salesMenu = [
+      "leads",
+      "opportunities",
+      "quotes",
+      "activities",
+      "invoices",
+      "sales"
+    ];
 
-  const marketingMenu = [
-    "marketing-dashboard",
-    "campaigns",
-    "whatsapp-campaign",
-    "marketing"
-  ];
+    const marketingMenu = [
+      "marketing-dashboard",
+      "campaigns",
+      "whatsapp-campaign",
+      "marketing"
+    ];
 
-  const supportMenu = [
-    "tickets",
-    "payments",
-    "notes",
-    "support"
-  ];
+    const supportMenu = [
+      "tickets",
+      "payments",
+      "notes",
+      "support"
+    ];
 
-  if (adminMenu.includes(selectedKey)) {
-    setOpenMenu("admin");
-  } 
-  else if (salesMenu.includes(selectedKey)) {
-    setOpenMenu("sales");
-  } 
-  else if (marketingMenu.includes(selectedKey)) {
-    setOpenMenu("marketing");
-  }
-  else if (supportMenu.includes(selectedKey)) {
-    setOpenMenu("support");
-  }
+    if (adminMenu.includes(selectedKey)) {
+      setOpenMenu("admin");
+    }
+    else if (salesMenu.includes(selectedKey)) {
+      setOpenMenu("sales");
+    }
+    else if (marketingMenu.includes(selectedKey)) {
+      setOpenMenu("marketing");
+    }
+    else if (supportMenu.includes(selectedKey)) {
+      setOpenMenu("support");
+    }
 
-}, [selectedKey]);
+  }, [selectedKey]);
   // Helper for determining active state
   const isActive = (itemKey) => {
     if (!itemKey) return false;
-    
+
     // Exact match
     if (selectedKey === itemKey || pathname === `/${itemKey}`) return true;
 
@@ -351,10 +351,12 @@ useEffect(() => {
           trigger="hover"
           placement="rightTop"
           overlayClassName="sidebar-flyout-popover"
+          overlayInnerStyle={{ padding: 0,backgroundColor:"transparent",boxShadow:"none" }} 
+          
           open={openMenu === item.key && collapsed && !isMobile} // Only if collapsed
           onOpenChange={(visible) => {
-             if(collapsed && !isMobile)
-                setOpenMenu(visible ? item.key : null)
+            if (collapsed && !isMobile)
+              setOpenMenu(visible ? item.key : null)
           }}
           getPopupContainer={() => containerRef.current || document.body}
           destroyTooltipOnHide
@@ -408,19 +410,19 @@ useEffect(() => {
           }
         }}
         className="group transition-all duration-200"
-      style={{
-  padding: collapsed && !isMobile ? 14 : "14px 18px",
-  cursor: "pointer",
-  margin: "8px 0",
-  borderRadius: 14,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: collapsed && !isMobile ? "center" : "flex-start",
-  color: active ? "#ffffff" : INACTIVE_TEXT,
-  background: active ? "#2F2A68" : "transparent",
-  boxShadow: active ? "0 6px 14px rgba(47,42,104,0.35)" : "none",
-  fontWeight: active ? 600 : 500,
-}}
+        style={{
+          padding: collapsed && !isMobile ? 14 : "14px 18px",
+          cursor: "pointer",
+          margin: "8px 0",
+          borderRadius: 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: collapsed && !isMobile ? "center" : "flex-start",
+          color: active ? "#ffffff" : INACTIVE_TEXT,
+          background: active ? "#2F2A68" : "transparent",
+          boxShadow: active ? "0 6px 14px rgba(47,42,104,0.35)" : "none",
+          fontWeight: active ? 600 : 500,
+        }}
         onMouseEnter={(e) => {
           if (!active) e.currentTarget.style.backgroundColor = theme === "dark" ? "rgba(255,255,255,0.05)" : "#F3F4F6";
         }}
@@ -428,25 +430,25 @@ useEffect(() => {
           if (!active) e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-<span style={{
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 18,
-  width: 22
-}}>
-            {item.icon}
+        <span style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 18,
+          width: 22
+        }}>
+          {item.icon}
         </span>
         {/* show label only when not collapsed OR on mobile */}
-{(!collapsed || isMobile) && (
-  <span style={{
-    marginLeft: 14,
-    fontSize: 15,
-    fontWeight: 500
-  }}>
-    {item.label}
-  </span>
-)}
+        {(!collapsed || isMobile) && (
+          <span style={{
+            marginLeft: 14,
+            fontSize: 15,
+            fontWeight: 500
+          }}>
+            {item.label}
+          </span>
+        )}
         {item.children && item.children.length > 0 && (!collapsed || isMobile) && (
           <span style={{ marginLeft: "auto", fontSize: 14, opacity: 0.7 }}>{openMenu === item.key ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         )}
@@ -524,7 +526,7 @@ useEffect(() => {
                 top: 0,
                 left: 0,
                 bottom: 0,
-                zIndex: 1601,
+                zIndex: 100,
               }}
             >
               {/* Top (Logo) */}
@@ -539,29 +541,29 @@ useEffect(() => {
                   marginBottom: 8,
                 }}
               >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/dashboard")}>
-                    <div
-                      style={{
-                        background: primaryColor || "#1C2244",
-                        padding: 10,
-                        borderRadius: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <RiseOutlined style={{ color: "#fff", fontSize: 20 }} />
-                    </div>
-
-                    {(!collapsed || isMobile) && (
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 18, color: theme === "dark" ? "#ffffff" : "#111827" }}>CRM</div>
-                        <div style={{ fontSize: 12, color: theme === "dark" ? "#9CA3AF" : "#6b7280" }}>
-                          Management
-                        </div>
-                      </div>
-                    )}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/dashboard")}>
+                  <div
+                    style={{
+                      background: primaryColor || "#1C2244",
+                      padding: 10,
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <RiseOutlined style={{ color: "#fff", fontSize: 20 }} />
                   </div>
+
+                  {(!collapsed || isMobile) && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 18, color: theme === "dark" ? "#ffffff" : "#111827" }}>CRM</div>
+                      <div style={{ fontSize: 12, color: theme === "dark" ? "#9CA3AF" : "#6b7280" }}>
+                        Management
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Menu items */}
