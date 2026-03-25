@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Card, Row, Col, Tag, Spin, message,
+  Card, Row, Col, Tag, Spin, message, Button,
   Avatar, Progress, Typography, Grid
 } from "antd";
 import { Phone, Users, IndianRupee, Percent } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 import {
   UserOutlined,
   ShoppingOutlined,
   DollarOutlined,
   RiseOutlined,
-  RightOutlined
+  RightOutlined,
+  CheckCircleOutlined
 } from "@ant-design/icons";
 
 import { dashboardService } from "../services";
@@ -87,6 +89,22 @@ const styles = {
     borderRadius: 12
   }
 };
+
+const getPriorityColor = (priority) => {
+  const colors = {
+    'Low': 'default',
+    'Medium': 'warning',
+    'High': 'error'
+  };
+  return colors[priority] || 'default';
+};
+const getStatusColor = (status) => {
+  const colors = {
+    'Pending': 'processing',
+    'Completed': 'success'
+  };
+  return colors[status] || 'default';
+};
 export default function Dashboard() {
   const navigate = useNavigate();
   const { useBreakpoint } = Grid;
@@ -94,6 +112,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [todayTasks, setTodayTasks] = useState([]);
+  const [todayActivities, setTodayActivities] = useState([]);
 
 
   // Fetch today tasks from backend
@@ -101,26 +120,23 @@ export default function Dashboard() {
     try {
       const res = await dashboardService.getTodayTasks();
       setTodayTasks(res.data);
-      console.log('Today Tasks:', res.data);
     } catch (err) {
       message.error("Failed to load today's tasks");
     }
   };
-useEffect(() => {
-  console.log('Today tasks from set:', todayTasks);
-}, [todayTasks]);
+  const fetchTodayActivities = async () => {
+    try {
+      const res = await dashboardService.getTodayActivities();
+      setTodayActivities(res.data);
+      console.log('Today activities:', res.data);
+    } catch (err) {
+      message.error("Failed to load today's tasks");
+    }
+  };
   useEffect(() => {
     fetchDashboardStats();
+    fetchTodayActivities();
     fetchTodayTasks(); // fetch today tasks
-  }, []);
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-    const auth = localStorage.getItem("auth");
-
-    console.log("User:", user ? JSON.parse(user) : null);
-    console.log("Token:", token);
-    console.log("Auth:", auth);
   }, []);
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -175,6 +191,61 @@ useEffect(() => {
       key: "assignedTo",
       render: (_, record) => record.assignedTo?.name || 'Unassigned'
     }
+  ];
+  const taskColumns = [
+    {
+      title: "Task",
+      dataIndex: "title",
+      align: "left", // keep task left like customer avatar column
+      render: (text, record) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>{text}</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>
+              {record.description || "No description"}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      align: "center",
+      render: (priority) => (
+        <Tag color={getPriorityColor(priority)}>{priority}</Tag>
+      ),
+    },
+
+    {
+      title: "Status",
+      dataIndex: "status",
+      align: "center",
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>{status}</Tag>
+      ),
+    },
+
+    {
+      title: "Assigned To",
+      align: "center",
+      render: (_, record) => (
+        <span>{record.assignedTo?.name || "Unassigned"}</span>
+      ),
+    },
+
+    {
+      title: "Related To",
+      align: "center",
+      render: (_, record) => (
+        <span>
+          {record.related_type
+            ? `${record.related_type} #${record.related_id}`
+            : "N/A"}
+        </span>
+      ),
+    },
   ];
 
   if (loading) {
@@ -594,10 +665,21 @@ useEffect(() => {
               styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {stats.recent?.activities && stats.recent.activities.length > 0 ? (
-                  stats.recent.activities.slice(0, 3).map((activity, index) => {
-                    const icons = ['📞', '📧', '🤝', '📝', '💼'];
-                    const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
+                {todayActivities && todayActivities.length > 0 ? (
+                  todayActivities.map((activity, index) => {
+                    const icons = {
+                      Call: '📞',
+                      Email: '📧',
+                      Meeting: '🤝',
+                      WhatsApp: '💬'
+                    };
+
+                    const backgrounds = {
+                      Call: '#fee2e2',
+                      Email: '#e0f2fe',
+                      Meeting: '#fef9c3',
+                      WhatsApp: '#dcfce7'
+                    };
 
                     return (
                       <div
@@ -613,25 +695,38 @@ useEffect(() => {
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+                          {/* Icon */}
                           <div
                             style={{
-                              height: 36, width: 36, borderRadius: 10,
-                              background: backgrounds[index % backgrounds.length],
-                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                              height: 36,
+                              width: 36,
+                              borderRadius: 10,
+                              background: backgrounds[activity.type] || '#f3f4f6',
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 18,
                             }}
                           >
-                            {icons[index % icons.length]}
+                            {icons[activity.type] || '📝'}
                           </div>
+
+                          {/* Content */}
                           <div>
-                            <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
-                            <div style={{ fontSize: 12, color: "gray" }}>
-                              {new Date(activity.activity_date).toLocaleString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                day: 'numeric',
-                                month: 'short'
-                              })}
+                            <div style={{ fontWeight: 500 }}>
+                              {activity.type} - {activity.related_type} #{activity.related_id}
                             </div>
+
+                            <div style={{ fontSize: 12, color: "gray" }}>
+                              {dayjs(activity.activity_date).format("DD MMM, hh:mm A")}
+                            </div>
+
+                            {activity.notes && (
+                              <div style={{ fontSize: 12, color: "#6b7280" }}>
+                                {activity.notes}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -639,7 +734,7 @@ useEffect(() => {
                   })
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
-                    No recent activities
+                    No activities for today
                   </div>
                 )}
               </div>
@@ -650,7 +745,7 @@ useEffect(() => {
       {/* Forth ROW */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         {/* Todays Task Card */}
-        <Col xs={24} md={12}>
+        <Col xs={24} md={24}>
           <motion.div variants={cardAnimation} initial="hidden" animate="visible" whileHover={{ y: -6 }}>
             <Card
               title="Today's Tasks"
@@ -658,7 +753,7 @@ useEffect(() => {
             >
               <ResponsiveTable
                 dataSource={todayTasks || []} // ✅ use todayTasks state
-                columns={columns}
+                columns={taskColumns}
                 rowKey="id"
                 pagination={{ pageSize: 10 }}
                 renderMobileCard={(record) => {
@@ -689,73 +784,6 @@ useEffect(() => {
                   );
                 }}
               />
-            </Card>
-          </motion.div>
-        </Col>
-
-        <Col xs={24} md={12}>
-          <motion.div
-            variants={cardAnimation}
-            initial="hidden"
-            animate="visible"
-            whileHover={{ y: -6 }}
-          >
-            <Card
-              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
-              variant="borderless"
-              style={styles.roundedCard}
-              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {stats.recent?.activities && stats.recent.activities.length > 0 ? (
-                  stats.recent.activities.slice(0, 3).map((activity, index) => {
-                    const icons = ['📞', '📧', '🤝', '📝', '💼'];
-                    const backgrounds = ['#fee2e2', '#e0f2fe', '#fef9c3', '#f3e8ff', '#d1fae5'];
-
-                    return (
-                      <div
-                        key={activity.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          background: "#f9fafb",
-                          padding: "12px 16px",
-                          borderRadius: 12,
-                          border: "1px solid #f1f5f9",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div
-                            style={{
-                              height: 36, width: 36, borderRadius: 10,
-                              background: backgrounds[index % backgrounds.length],
-                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                            }}
-                          >
-                            {icons[index % icons.length]}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 500 }}>{activity.activity_type}: {activity.subject}</div>
-                            <div style={{ fontSize: 12, color: "gray" }}>
-                              {new Date(activity.activity_date).toLocaleString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                day: 'numeric',
-                                month: 'short'
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
-                    No recent activities
-                  </div>
-                )}
-              </div>
             </Card>
           </motion.div>
         </Col>

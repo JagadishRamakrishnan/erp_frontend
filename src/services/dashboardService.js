@@ -17,14 +17,27 @@ const dashboardService = {
     // ✅ Get today's tasks
   getTodayTasks: async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const response = await api(`/tasks?due_date=${today}`, { method: 'GET' });
+      const response = await api(`/tasks/today`, { method: 'GET' });
       return response;
     } catch (error) {
       console.error("Error fetching today's tasks:", error);
       throw error;
     }
-  }
+  },
+
+
+    // ✅ Get today's activity
+  getTodayActivities: async () => {
+    try {
+      const response = await api(`/activities/today`, { method: 'GET' });
+      return response;
+    } catch (error) {
+      console.error("Error fetching today's activities:", error);
+      throw error;
+    }
+  },
+
+
 };
 
 export default dashboardService;
