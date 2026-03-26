@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import { leadService, userService, noteService, taskService } from "../services";
+import { leadService, userService, noteService, taskService, activityService } from "../services";
 import authService from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
@@ -15,8 +15,37 @@ import {
   FacebookOutlined,
   InstagramOutlined
 } from "@ant-design/icons";
-import { CheckCircle, FileText, Phone, Trophy, XCircle } from "lucide-react";
+import { CheckCircle, FileText, Phone, Trophy, XCircle, Info } from "lucide-react";
 const { Option } = Select;
+const { Text } = Typography;
+
+const STAGE_OUTCOMES = {
+  New: [
+    { label: 'RNR (Ring Not Received)', value: 'RNR', autoTask: 'Call Back: Lead was RNR', offset: 24 },
+    { label: 'Busy / Call Later', value: 'Busy', autoTask: 'Call Back: Lead was Busy', offset: 4 },
+  ],
+  Contacted: [
+    { label: 'RNR (Ring Not Received)', value: 'RNR', autoTask: 'Call Back: Lead was RNR', offset: 24 },
+    { label: 'Do Not Disturb (DND)', value: 'DND', autoTask: 'Re-engage: Lead requested DND', offset: 720 },
+    { label: 'Busy / Call Later', value: 'Busy', autoTask: 'Call Back: Lead was Busy', offset: 4 },
+    { label: 'Interested', value: 'Interested', autoTask: 'Follow-up: Interested Lead', requiresDate: true },
+  ],
+  Qualified: [
+    { label: 'Interested / Follow-up', value: 'Interested', autoTask: 'Follow-up: Discuss requirements', requiresDate: true },
+    { label: 'Decision Maker Away', value: 'DM_Away', autoTask: 'Call Back: DM was away', offset: 168 },
+    { label: 'Info Needed', value: 'Info_Needed', autoTask: 'Prep Info: Lead needs more info', offset: 48 },
+  ],
+  Proposal: [
+    { label: 'Sent - Awaiting', value: 'Sent_Awaiting', autoTask: 'Follow-up: Proposal Sent', offset: 72 },
+    { label: 'Pricing Review', value: 'Pricing_Review', autoTask: 'Follow-up: Pricing Discussion', offset: 168 },
+    { label: 'Budget Issue', value: 'Budget_Issue', autoTask: 'Re-check: Budget constraints', offset: 360 },
+  ],
+  Lost: [
+    { label: 'Budget Issue', value: 'Budget_Issue', autoTask: 'Re-engage: Re-check budget', offset: 2160 },
+    { label: 'Competition', value: 'Competition', autoTask: 'Re-engage: Check relationship', offset: 4320 },
+  ],
+  Won: []
+};
 
 
 export default function Leads() {
@@ -165,7 +194,9 @@ export default function Leads() {
 
     try {
       const finalStage = isConverting ? values.selectedStatus : newStage;
-      
+      const stageOutcomes = STAGE_OUTCOMES[finalStage] || [];
+      const selectedOutcome = stageOutcomes.find(o => o.value === values.outcome);
+
       if (isConverting) {
         // Convert Lead to Customer first
         const convertRes = await leadService.convertToCustomer(lead.id);
@@ -182,22 +213,50 @@ export default function Leads() {
         await leadService.update(lead.id, { status: finalStage });
       }
 
-      // 2. Create Note
+      // 2. Create Note and Activity
+      const notePrefix = isConverting ? 'conversion' : 'stage change';
+      const outcomeText = selectedOutcome ? ` (Outcome: ${selectedOutcome.label})` : '';
+      const finalNote = `Moved to ${finalStage} during ${notePrefix}${outcomeText}. Notes: ${values.note}`;
+      
       await noteService.create({
         related_type: 'Lead',
         related_id: lead.id,
-        note: `Moved to ${finalStage} during ${isConverting ? 'conversion' : 'stage change'}. Notes: ${values.note}`
+        note: finalNote
       });
 
-      // 3. Create Follow-up Task if required
-      if (values.requiresFollowUp && values.followUpDate) {
+      // Log this as an Activity too so it appears on the Activity Feed
+      await activityService.create({
+        type: 'Stage Change',
+        related_type: 'Lead',
+        related_id: lead.id,
+        notes: finalNote,
+        activity_date: new Date().toISOString()
+      });
+
+      // 3. Create Automation Task
+      let taskDueDate = null;
+      let taskTitle = `Follow up with ${lead.name}`;
+
+      if (selectedOutcome) {
+        if (selectedOutcome.offset) {
+          taskDueDate = new Date(Date.now() + selectedOutcome.offset * 60 * 60 * 1000);
+          taskTitle = selectedOutcome.autoTask;
+        } else if (selectedOutcome.requiresDate && values.followUpDate) {
+          taskDueDate = values.followUpDate.toDate ? values.followUpDate.toDate() : new Date(values.followUpDate);
+        }
+      } else if (values.requiresFollowUp && values.followUpDate) {
+        // Fallback for legacy "requiresFollowUp" logic
+        taskDueDate = values.followUpDate.toDate ? values.followUpDate.toDate() : new Date(values.followUpDate);
+      }
+
+      if (taskDueDate) {
         await taskService.create({
-          title: `Follow up with ${lead.name}`,
+          title: taskTitle,
           description: values.note,
           related_type: 'Lead',
           related_id: lead.id,
           assigned_to: currentUser.id,
-          due_date: values.followUpDate.toISOString(),
+          due_date: taskDueDate.toISOString(),
           priority: 'Medium',
           status: 'Pending'
         });
@@ -520,7 +579,7 @@ export default function Leads() {
   };
 
   return (
-    <div style={{ padding: "24px", minHeight: "100vh", background: "#f5f6f8" }}>
+    <div style={{ padding: "10px", minHeight: "100vh", background: "#f5f6f8" }}>
       {loading && !leads.length ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
@@ -970,24 +1029,77 @@ export default function Leads() {
           >
             <Input.TextArea rows={4} placeholder="Enter details of the conversation..." />
           </Form.Item>
-
-          <Form.Item label="Follow-up needed?" name="requiresFollowUp" valuePropName="checked">
-            <Switch checkedChildren="Yes" unCheckedChildren="No" />
-          </Form.Item>
-
           <Form.Item
             noStyle
-            shouldUpdate={(prevValues, currentValues) => prevValues.requiresFollowUp !== currentValues.requiresFollowUp}
+            shouldUpdate={(prevValues, currentValues) => 
+              prevValues.selectedStatus !== currentValues.selectedStatus || 
+              prevValues.outcome !== currentValues.outcome
+            }
           >
-            {({ getFieldValue }) => getFieldValue('requiresFollowUp') ? (
-              <Form.Item
-                label="Follow-up Date & Time"
-                name="followUpDate"
-                rules={[{ required: true, message: 'Please select follow-up date' }]}
-              >
-                <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
-              </Form.Item>
-            ) : null}
+            {({ getFieldValue }) => {
+              const currentStage = isConverting ? getFieldValue('selectedStatus') : pendingStageChange?.newStage;
+              const outcomes = STAGE_OUTCOMES[currentStage] || [];
+              
+              return (
+                <>
+                  {outcomes.length > 0 && (
+                    <Form.Item
+                      label="Interaction Outcome"
+                      name="outcome"
+                      rules={[{ required: true, message: 'Please select an outcome' }]}
+                    >
+                      <Select placeholder="How did the interaction go?">
+                        {outcomes.map(o => (
+                          <Option key={o.value} value={o.value}>
+                            <div className="flex justify-between items-center w-full">
+                              <span>{o.label}</span>
+                              {o.offset && (
+                                <Tag color="blue" className="mr-0">
+                                  {o.offset < 24 ? `+${o.offset}h` : `+${Math.round(o.offset/24)}d`}
+                                </Tag>
+                              )}
+                            </div>
+                          </Option>
+                        ))}
+                        <Option value="Other">Other (Manual Follow-up)</Option>
+                      </Select>
+                    </Form.Item>
+                  )}
+
+                  {(getFieldValue('outcome') === 'Other' || outcomes.length === 0) && (
+                    <Form.Item label="Manual Follow-up needed?" name="requiresFollowUp" valuePropName="checked">
+                      <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                    </Form.Item>
+                  )}
+
+                  {((getFieldValue('outcome') === 'Other' || outcomes.length === 0) && getFieldValue('requiresFollowUp')) || 
+                   (outcomes.find(o => o.value === getFieldValue('outcome'))?.requiresDate) ? (
+                    <Form.Item
+                      label="Follow-up Date & Time"
+                      name="followUpDate"
+                      rules={[{ required: true, message: 'Please select follow-up date' }]}
+                    >
+                      <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+                    </Form.Item>
+                  ) : null}
+
+                  {outcomes.find(o => o.value === getFieldValue('outcome'))?.offset && !getFieldValue('requiresFollowUp') && (
+                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4 flex items-center gap-2">
+                      <Info size={16} className="text-blue-500" />
+                      <Text size="small" className="text-blue-700">
+                        A follow-up task will be auto-scheduled for <strong>
+                          {(() => {
+                            const o = outcomes.find(o => o.value === getFieldValue('outcome'));
+                            const date = new Date(Date.now() + o.offset * 60 * 60 * 1000);
+                            return date.toLocaleString();
+                          })()}
+                        </strong>
+                      </Text>
+                    </div>
+                  )}
+                </>
+              );
+            }}
           </Form.Item>
 
           <div className="flex justify-end gap-3 mt-4">

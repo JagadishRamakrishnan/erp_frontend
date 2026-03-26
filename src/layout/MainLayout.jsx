@@ -21,7 +21,7 @@ const screens = useBreakpoint();
       {/* RIGHT SIDE */}
        <Layout
   style={{
-    marginLeft: screens.xs ? 0 : collapsed ? 80 : 240, // 👈 IMPORTANT
+    marginLeft: screens.xs ? 0 : collapsed ? 80 : 260, // 👈 IMPORTANT
     transition: "all 0.2s",
     minHeight: "100vh",
     background: "#ffffff",

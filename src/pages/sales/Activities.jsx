@@ -24,7 +24,7 @@ import {
   DownOutlined,
   EditOutlined,
   DeleteOutlined,
-  WhatsAppOutlined,  EyeOutlined
+  WhatsAppOutlined,  EyeOutlined, TrophyOutlined, FileTextOutlined
 } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -233,14 +233,20 @@ const handleView = (activity) => {
  const iconMap = {
   Call: <PhoneOutlined style={{ fontSize: 16, color: "#10b981" }} />,
   Email: <MailOutlined style={{ fontSize: 16, color: "#3b82f6" }} />,
- Meeting: <CalendarOutlined style={{ fontSize: 16, color: "#f59e0b", marginTop: "-2px" }} />,
-  WhatsApp: <WhatsAppOutlined style={{ fontSize: 16, color: "#25d366" }} />
+  Meeting: <CalendarOutlined style={{ fontSize: 16, color: "#f59e0b", marginTop: "-2px" }} />,
+  WhatsApp: <WhatsAppOutlined style={{ fontSize: 16, color: "#25d366" }} />,
+  'Stage Change': <TrophyOutlined style={{ fontSize: 16, color: "#6366f1" }} />,
+  Note: <FileTextOutlined style={{ fontSize: 16, color: "#6b7280" }} />,
+  Task: <CheckCircleOutlined style={{ fontSize: 16, color: "#8b5cf6" }} />
 };
  const bgMap = {
   Call: "#ecfdf5",
   Email: "#eff6ff",
   Meeting: "#fffbeb",
-  WhatsApp: "#ecfdf5"
+  WhatsApp: "#ecfdf5",
+  'Stage Change': "#eef2ff",
+  Note: "#f9fafb",
+  Task: "#f5f3ff"
 };
 
   const filteredActivities = activities.filter((item) => {
@@ -262,6 +268,9 @@ const handleView = (activity) => {
     if (type === "Meeting") color = "gold";
     if (type === "Email") color = "blue";
     if (type === "WhatsApp") color = "lime";
+    if (type === 'Stage Change') color = 'blue';
+    if (type === 'Note') color = 'default';
+    if (type === 'Task') color = 'purple';
 
     return (
       <Tag
@@ -444,7 +453,7 @@ const handleView = (activity) => {
             <Row gutter={[12, 12]} align="middle">
               <Col xs={24} sm={24} lg={16}>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  {["All", "Call", "Email", "Meeting", "WhatsApp"].map((type) => (
+                  {["All", "Call", "Email", "Meeting", "WhatsApp", "Stage Change"].map((type) => (
                     <Button
                       key={type}
                       style={{
