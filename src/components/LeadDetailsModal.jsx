@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message, Popconfirm, Tooltip } from "antd";
 import { leadService, noteService, taskService } from "../services";
-import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, TrophyOutlined } from "@ant-design/icons";
+import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, TrophyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { Briefcase, Info, CheckCircle2, X } from "lucide-react";
 
 const { Step } = Steps;
-const { TabPane } = Tabs;
 
 export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, onEdit, onDelete, onConvert }) {
   const [localLead, setLocalLead] = useState(lead);
@@ -16,6 +15,11 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
   const [tasks, setTasks] = useState([]);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [savingSummary, setSavingSummary] = useState(false);
+
+  if (!localLead && lead) {
+    // We have a lead prop but haven't synced to local state yet
+    // This can happen on first mount or when lead changes
+  }
 
   useEffect(() => {
     if (lead) {
@@ -69,7 +73,7 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
     message.success(`${field} copied to clipboard!`);
   };
 
-  if (!localLead) return null;
+  if (!open || !localLead) return null;
 
   const timelineItems = [
     ...notes.map(n => ({ type: 'note', date: new Date(n.created_at), data: n })),
@@ -192,7 +196,7 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
             <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-4 flex items-center gap-2">
               <CheckCircle2 size={16} /> Pipeline Progress
             </h4>
-            {lead.status === "Lost" ? (
+            {localLead.status === "Lost" ? (
               <div className="text-red-500 font-medium bg-red-50 p-3 rounded-lg border border-red-100 text-center">
                 This lead was marked as Lost.
               </div>
@@ -207,109 +211,120 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
 
           {/* Main Tabs */}
           <div className="flex-1">
-            <Tabs defaultActiveKey="details" className="lead-tabs">
-              <TabPane tab={<span className="font-semibold text-[14px]">Details</span>} key="details">
-                <div className="grid grid-cols-2 gap-6 mt-4">
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
-                    <div>
-                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Email Address</div>
-                      <div className="font-medium text-gray-800 flex items-center gap-2">
-                        <MailOutlined className="text-blue-500" /> {localLead.email || "N/A"}
-                      </div>
-                    </div>
-                    {localLead.email && (
-                      <Button 
-                        type="text" 
-                        size="small" 
-                        icon={<CopyOutlined className="text-gray-400" />} 
-                        onClick={() => handleCopy(localLead.email, 'Email')}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    )}
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-green-200 transition-colors">
-                    <div>
-                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Phone Number</div>
-                      <div className="font-medium text-gray-800 flex items-center gap-2">
-                        <PhoneOutlined className="text-green-500" /> {localLead.phone || "N/A"}
-                      </div>
-                    </div>
-                    {localLead.phone && (
-                      <Button 
-                        type="text" 
-                        size="small" 
-                        icon={<CopyOutlined className="text-gray-400" />} 
-                        onClick={() => handleCopy(localLead.phone, 'Phone')}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    )}
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Lead Source</div>
-                    <div className="font-medium text-gray-800 flex items-center gap-2">
-                      <LinkOutlined className="text-purple-500" /> {localLead.source || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Date Created</div>
-                    <div className="font-medium text-gray-800">
-                      {new Date(localLead.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </TabPane>
-              
-              <TabPane tab={<span className="font-semibold text-[14px]">Notes & Activities</span>} key="notes">
-                <div className="mt-4 px-2 h-[400px] overflow-y-auto">
-                  {loadingConfig ? (
-                    <div className="flex justify-center items-center h-full"><Spin /></div>
-                  ) : timelineItems.length > 0 ? (
-                    <Timeline 
-                      className="mt-4"
-                      items={timelineItems.map(item => ({
-                        color: item.type === 'note' ? 'blue' : 'green',
-                        children: (
-                          <div className="mb-2">
-                            <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
-                              {item.type === 'note' ? <FileTextOutlined /> : <CheckCircleOutlined />}
-                              {item.date.toLocaleString()}
-                              {item.data.creator && (
-                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
-                                  {item.data.creator.name}
-                                </span>
-                              )}
-                              {item.data.User && !item.data.creator && (
-                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
-                                  {item.data.User.name}
-                                </span>
-                              )}
-                            </div>
-                            {item.type === 'note' ? (
-                              <div className="text-gray-800 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50 shadow-sm text-[13px] leading-relaxed mt-2">
-                                {item.data.note}
-                              </div>
-                            ) : (
-                              <div className="bg-green-50/50 p-3 rounded-lg border border-green-100/50 shadow-sm text-[13px] mt-2">
-                                <p className="font-bold text-green-800 m-0">{item.data.title}</p>
-                                {item.data.description && <p className="text-green-700 mt-1 mb-0 leading-relaxed">{item.data.description}</p>}
-                                <p className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
-                                  <CheckCircle2 size={12} /> Due: {new Date(item.data.due_date).toLocaleString()}
-                                </p>
-                              </div>
-                            )}
+            <Tabs 
+              defaultActiveKey="details" 
+              className="lead-tabs"
+              items={[
+                {
+                  key: 'details',
+                  label: <span className="font-semibold text-[14px]">Details</span>,
+                  children: (
+                    <div className="grid grid-cols-2 gap-6 mt-4">
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
+                        <div>
+                          <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Email Address</div>
+                          <div className="font-medium text-gray-800 flex items-center gap-2">
+                            <MailOutlined className="text-blue-500" /> {localLead.email || "N/A"}
                           </div>
-                        )
-                      }))}
-                    />
-                  ) : (
-                    <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
-                      <FileTextOutlined style={{ fontSize: 32, color: '#d1d5db', marginBottom: 12 }} />
-                      <p>No notes or activities recorded yet.</p>
+                        </div>
+                        {localLead.email && (
+                          <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<CopyOutlined className="text-gray-400" />} 
+                            onClick={() => handleCopy(localLead.email, 'Email')}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          />
+                        )}
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-green-200 transition-colors">
+                        <div>
+                          <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Phone Number</div>
+                          <div className="font-medium text-gray-800 flex items-center gap-2">
+                            <PhoneOutlined className="text-green-500" /> {localLead.phone || "N/A"}
+                          </div>
+                        </div>
+                        {localLead.phone && (
+                          <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<CopyOutlined className="text-gray-400" />} 
+                            onClick={() => handleCopy(localLead.phone, 'Phone')}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          />
+                        )}
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Lead Source</div>
+                        <div className="font-medium text-gray-800 flex items-center gap-2">
+                          <LinkOutlined className="text-purple-500" /> {localLead.source || "N/A"}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Date Created</div>
+                        <div className="font-medium text-gray-800">
+                          {new Date(localLead.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </TabPane>
-            </Tabs>
+                  )
+                },
+                {
+                  key: 'notes',
+                  label: <span className="font-semibold text-[14px]">Notes & Activities</span>,
+                  children: (
+                    <div className="mt-4 px-2 h-[400px] overflow-y-auto">
+                      {loadingConfig ? (
+                        <div className="flex justify-center items-center h-full"><Spin /></div>
+                      ) : timelineItems.length > 0 ? (
+                        <Timeline 
+                          className="mt-4"
+                          items={timelineItems.map(item => ({
+                            color: item.type === 'note' ? 'blue' : 'green',
+                            children: (
+                              <div className="mb-2">
+                                <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                                  {item.type === 'note' ? <FileTextOutlined /> : <CheckCircleOutlined />}
+                                  {item.date.toLocaleString()}
+                                  {item.data.creator && (
+                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
+                                      {item.data.creator.name}
+                                    </span>
+                                  )}
+                                  {item.data.User && !item.data.creator && (
+                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
+                                      {item.data.User.name}
+                                    </span>
+                                  )}
+                                </div>
+                                {item.type === 'note' ? (
+                                  <div className="text-gray-800 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50 shadow-sm text-[13px] leading-relaxed mt-2">
+                                    {item.data.note}
+                                  </div>
+                                ) : (
+                                  <div className="bg-green-50/50 p-3 rounded-lg border border-green-100/50 shadow-sm text-[13px] mt-2">
+                                    <p className="font-bold text-green-800 m-0">{item.data.title}</p>
+                                    {item.data.description && <p className="text-green-700 mt-1 mb-0 leading-relaxed">{item.data.description}</p>}
+                                    <p className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
+                                      <CheckCircle2 size={12} /> Due: {new Date(item.data.due_date).toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          }))}
+                        />
+                      ) : (
+                        <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
+                          <FileTextOutlined style={{ fontSize: 32, color: '#d1d5db', marginBottom: 12 }} />
+                          <p>No notes or activities recorded yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+              ]}
+            />
           </div>
         </div>
 

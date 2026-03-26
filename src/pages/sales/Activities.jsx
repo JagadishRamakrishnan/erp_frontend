@@ -75,8 +75,9 @@ export default function Activities() {
     try {
       const response = await activityService.getAll();
       if (response.success) {
+        const now = new Date();
         const sorted = (response.data || []).sort(
-          (a, b) => new Date(b.activity_date) - new Date(a.activity_date)
+          (a, b) => Math.abs(new Date(a.activity_date) - now) - Math.abs(new Date(b.activity_date) - now)
         );
         setActivities(sorted);
       }

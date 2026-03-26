@@ -392,7 +392,7 @@ const handleUpload = async (file) => {
     dataIndex: "due_date",
     align: "center",
     render: (date) => (
-      <span>
+      <span className="text-xs">
         {date ? dayjs(date).format("MMM DD, YYYY") : "N/A"}
       </span>
     ),
@@ -402,21 +402,22 @@ const handleUpload = async (file) => {
     title: "Actions",
     align: "center",
     render: (_, record) => (
-      <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 2 }}>
         <Button
           type="link"
           icon={<EditOutlined />}
           onClick={() => handleEdit(record)}
+          title="Edit"
         >
-          Edit
+          
         </Button>
 
         <Popconfirm
           title="Delete task"
           onConfirm={() => handleDelete(record.id)}
         >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            Delete
+          <Button type="link" title="Delete" danger icon={<DeleteOutlined />}>
+            
           </Button>
         </Popconfirm>
       </div>

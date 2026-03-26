@@ -14,7 +14,7 @@ const STATUS_CONFIG = {
   Paid:     { color: "#16a34a", bg: "#f0fdf4", icon: <CheckCircleOutlined /> },
 };
 
-export default function QuoteInvoiceView({ open, onClose, record, type = "quote" }) {
+export default function QuoteInvoiceView({ open, onClose, record, type = "quote", directPrint = false }) {
   const printRef = useRef();
   const [company, setCompany] = useState(null);
 
@@ -23,6 +23,16 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
       if (res.success && res.data?.length > 0) setCompany(res.data[0]);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (directPrint && record && company && open) {
+      // Small timeout to ensure the ref is populated
+      setTimeout(() => {
+        handlePrint();
+        onClose();
+      }, 500);
+    }
+  }, [directPrint, record, company, open]);
 
   const handlePrint = () => {
     const content = printRef.current?.innerHTML;
@@ -58,6 +68,175 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
   const accentGrad = isInvoice
     ? "linear-gradient(135deg,#7c3aed 0%,#a855f7 100%)"
     : "linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%)";
+
+  const mainContent = (
+    <div ref={printRef} style={{
+      padding: "28px 32px", background: "#fff",
+      fontFamily: '"Inter", Arial, sans-serif', maxHeight: directPrint ? "none" : "80vh", overflowY: "auto"
+    }}>
+
+      {/* GRADIENT HEADER BAND */}
+      <div style={{
+        background: accentGrad, borderRadius: 14, padding: "24px 28px",
+        marginBottom: 24, display: "flex", justifyContent: "space-between",
+        alignItems: "center", color: "#fff"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {company?.logo_url ? (
+            <img src={company.logo_url} alt="logo" style={{
+              width: 52, height: 52, objectFit: "contain", borderRadius: 10,
+              background: "#fff", padding: 4
+            }} />
+          ) : (
+            <div style={{
+              width: 52, height: 52, borderRadius: 10,
+              background: "rgba(255,255,255,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 20, fontWeight: 800
+            }}>
+              {(company?.name || "C")[0].toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>{company?.name || "Your Company"}</div>
+            {company?.email && <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{company.email}</div>}
+            {company?.phone && <div style={{ fontSize: 12, opacity: 0.8 }}>{company.phone}</div>}
+            {company?.gst_number && <div style={{ fontSize: 11, opacity: 0.65, marginTop: 2 }}>GST: {company.gst_number}</div>}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: 3 }}>
+            {isInvoice ? "INVOICE" : "QUOTATION"}
+          </div>
+          <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>#{docNumber}</div>
+          <div style={{ fontSize: 12, opacity: 0.65 }}>{dayjs(record.created_at).format("DD MMMM YYYY")}</div>
+        </div>
+      </div>
+
+      {/* BILL TO + DETAILS */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+        <div style={{
+          flex: 1, background: "#f8fafc", borderRadius: 12,
+          padding: "16px 18px", border: "1px solid #e5e7eb"
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Bill To</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 3 }}>{customer.name || "—"}</div>
+          {customer.company && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.company}</div>}
+          {customer.email && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.email}</div>}
+          {customer.phone && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.phone}</div>}
+          {customer.address && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.address}{customer.city ? `, ${customer.city}` : ""}</div>}
+        </div>
+        <div style={{
+          width: 210, background: "#f8fafc", borderRadius: 12,
+          padding: "16px 18px", border: "1px solid #e5e7eb"
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Details</div>
+          {[
+            { label: "Number", value: `#${docNumber}` },
+            { label: "Date", value: dayjs(record.created_at).format("DD MMM YYYY") },
+            { label: "Status", value: status, color: statusCfg.color },
+            record.deal?.deal_name && { label: "Deal", value: record.deal.deal_name },
+          ].filter(Boolean).map((row, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
+              <span style={{ color: "#9ca3af" }}>{row.label}</span>
+              <span style={{ fontWeight: 600, color: row.color || "#111827", textAlign: "right", maxWidth: 110 }}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ITEMS TABLE */}
+      <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb", marginBottom: 24 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#111827" }}>
+              {["#", "Description", "Amount"].map((h, i) => (
+                <th key={i} style={{
+                  padding: "11px 16px", fontSize: 11, color: "#9ca3af",
+                  fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+                  textAlign: i === 2 ? "right" : "left", width: i === 0 ? 40 : "auto"
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {(record.items?.length > 0 ? record.items : [null]).map((item, i) => (
+              <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>{i + 1}</td>
+                <td style={{ padding: "11px 16px", fontSize: 13, borderBottom: "1px solid #f0f0f0" }}>
+                  <div style={{ fontWeight: 600, color: "#111827" }}>
+                    {item ? (item.item_name || item.description || "Service") : `${isInvoice ? "Invoice" : "Quotation"} — ${record.deal?.deal_name || "Professional Services"}`}
+                  </div>
+                  {item?.description && item?.item_name && (
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{item.description}</div>
+                  )}
+                </td>
+                <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#111827", borderBottom: "1px solid #f0f0f0" }}>
+                  ₹{Number(item ? (item.amount || item.total || 0) : subtotal).toLocaleString("en-IN")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* TOTALS + FOOTER */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+        <div>
+          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>Thank you for your business 🙏</div>
+          {company?.pan_number && <div style={{ fontSize: 11, color: "#9ca3af" }}>PAN: {company.pan_number}</div>}
+          {company?.website && <div style={{ fontSize: 11, color: "#9ca3af" }}>{company.website}</div>}
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <div style={{ height: 36, borderBottom: "1px solid #374151", width: 150, marginBottom: 5 }} />
+            <div style={{ fontSize: 11, color: "#9ca3af" }}>Authorized Signature</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#111827", marginTop: 2 }}>{company?.name || ""}</div>
+          </div>
+        </div>
+
+        <div style={{ width: 270, borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+          {[
+            { label: "Subtotal", value: `₹${subtotal.toLocaleString("en-IN")}`, show: true },
+            { label: "Tax", value: `₹${tax.toLocaleString("en-IN")}`, show: !isInvoice && tax > 0, color: "#374151" },
+            { label: "Paid", value: `₹${paid.toLocaleString("en-IN")}`, show: isInvoice && paid > 0, color: "#16a34a" },
+            { label: "Balance Due", value: `₹${due.toLocaleString("en-IN")}`, show: isInvoice && due > 0, color: "#dc2626" },
+          ].filter(r => r.show).map((r, i) => (
+            <div key={i} style={{
+              display: "flex", justifyContent: "space-between",
+              padding: "10px 16px", fontSize: 13,
+              borderBottom: "1px solid #e5e7eb", color: r.color || "#374151"
+            }}>
+              <span>{r.label}</span>
+              <span style={{ fontWeight: 600 }}>{r.value}</span>
+            </div>
+          ))}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            padding: "14px 16px", background: accentGrad,
+            color: "#fff", fontSize: 15, fontWeight: 800
+          }}>
+            <span>Grand Total</span>
+            <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+
+  if (directPrint) {
+    return (
+      <div style={{ 
+        position: 'absolute', 
+        left: -9999, 
+        top: -9999,
+        width: 800,
+        height: 'auto',
+        visibility: 'hidden'
+      }}>
+        {mainContent}
+      </div>
+    );
+  }
 
   return (
     <Modal
@@ -96,157 +275,7 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
       </div>
 
       {/* DOCUMENT BODY */}
-      <div ref={printRef} style={{
-        padding: "28px 32px", background: "#fff",
-        fontFamily: '"Inter", Arial, sans-serif', maxHeight: "80vh", overflowY: "auto"
-      }}>
-
-        {/* GRADIENT HEADER BAND */}
-        <div style={{
-          background: accentGrad, borderRadius: 14, padding: "24px 28px",
-          marginBottom: 24, display: "flex", justifyContent: "space-between",
-          alignItems: "center", color: "#fff"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {company?.logo_url ? (
-              <img src={company.logo_url} alt="logo" style={{
-                width: 52, height: 52, objectFit: "contain", borderRadius: 10,
-                background: "#fff", padding: 4
-              }} />
-            ) : (
-              <div style={{
-                width: 52, height: 52, borderRadius: 10,
-                background: "rgba(255,255,255,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 20, fontWeight: 800
-              }}>
-                {(company?.name || "C")[0].toUpperCase()}
-              </div>
-            )}
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 800 }}>{company?.name || "Your Company"}</div>
-              {company?.email && <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{company.email}</div>}
-              {company?.phone && <div style={{ fontSize: 12, opacity: 0.8 }}>{company.phone}</div>}
-              {company?.gst_number && <div style={{ fontSize: 11, opacity: 0.65, marginTop: 2 }}>GST: {company.gst_number}</div>}
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: 3 }}>
-              {isInvoice ? "INVOICE" : "QUOTATION"}
-            </div>
-            <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>#{docNumber}</div>
-            <div style={{ fontSize: 12, opacity: 0.65 }}>{dayjs(record.created_at).format("DD MMMM YYYY")}</div>
-          </div>
-        </div>
-
-        {/* BILL TO + DETAILS */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          <div style={{
-            flex: 1, background: "#f8fafc", borderRadius: 12,
-            padding: "16px 18px", border: "1px solid #e5e7eb"
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Bill To</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 3 }}>{customer.name || "—"}</div>
-            {customer.company && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.company}</div>}
-            {customer.email && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.email}</div>}
-            {customer.phone && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.phone}</div>}
-            {customer.address && <div style={{ fontSize: 12, color: "#6b7280" }}>{customer.address}{customer.city ? `, ${customer.city}` : ""}</div>}
-          </div>
-          <div style={{
-            width: 210, background: "#f8fafc", borderRadius: 12,
-            padding: "16px 18px", border: "1px solid #e5e7eb"
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Details</div>
-            {[
-              { label: "Number", value: `#${docNumber}` },
-              { label: "Date", value: dayjs(record.created_at).format("DD MMM YYYY") },
-              { label: "Status", value: status, color: statusCfg.color },
-              record.deal?.deal_name && { label: "Deal", value: record.deal.deal_name },
-            ].filter(Boolean).map((row, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                <span style={{ color: "#9ca3af" }}>{row.label}</span>
-                <span style={{ fontWeight: 600, color: row.color || "#111827", textAlign: "right", maxWidth: 110 }}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ITEMS TABLE */}
-        <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb", marginBottom: 24 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#111827" }}>
-                {["#", "Description", "Amount"].map((h, i) => (
-                  <th key={i} style={{
-                    padding: "11px 16px", fontSize: 11, color: "#9ca3af",
-                    fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
-                    textAlign: i === 2 ? "right" : "left", width: i === 0 ? 40 : "auto"
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(record.items?.length > 0 ? record.items : [null]).map((item, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>{i + 1}</td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, borderBottom: "1px solid #f0f0f0" }}>
-                    <div style={{ fontWeight: 600, color: "#111827" }}>
-                      {item ? (item.item_name || item.description || "Service") : `${isInvoice ? "Invoice" : "Quotation"} — ${record.deal?.deal_name || "Professional Services"}`}
-                    </div>
-                    {item?.description && item?.item_name && (
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{item.description}</div>
-                    )}
-                  </td>
-                  <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#111827", borderBottom: "1px solid #f0f0f0" }}>
-                    ₹{Number(item ? (item.amount || item.total || 0) : subtotal).toLocaleString("en-IN")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* TOTALS + FOOTER */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-          <div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>Thank you for your business 🙏</div>
-            {company?.pan_number && <div style={{ fontSize: 11, color: "#9ca3af" }}>PAN: {company.pan_number}</div>}
-            {company?.website && <div style={{ fontSize: 11, color: "#9ca3af" }}>{company.website}</div>}
-            <div style={{ marginTop: 24, textAlign: "center" }}>
-              <div style={{ height: 36, borderBottom: "1px solid #374151", width: 150, marginBottom: 5 }} />
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>Authorized Signature</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#111827", marginTop: 2 }}>{company?.name || ""}</div>
-            </div>
-          </div>
-
-          <div style={{ width: 270, borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
-            {[
-              { label: "Subtotal", value: `₹${subtotal.toLocaleString("en-IN")}`, show: true },
-              { label: "Tax", value: `₹${tax.toLocaleString("en-IN")}`, show: !isInvoice && tax > 0, color: "#374151" },
-              { label: "Paid", value: `₹${paid.toLocaleString("en-IN")}`, show: isInvoice && paid > 0, color: "#16a34a" },
-              { label: "Balance Due", value: `₹${due.toLocaleString("en-IN")}`, show: isInvoice && due > 0, color: "#dc2626" },
-            ].filter(r => r.show).map((r, i) => (
-              <div key={i} style={{
-                display: "flex", justifyContent: "space-between",
-                padding: "10px 16px", fontSize: 13,
-                borderBottom: "1px solid #e5e7eb", color: r.color || "#374151"
-              }}>
-                <span>{r.label}</span>
-                <span style={{ fontWeight: 600 }}>{r.value}</span>
-              </div>
-            ))}
-            <div style={{
-              display: "flex", justifyContent: "space-between",
-              padding: "14px 16px", background: accentGrad,
-              color: "#fff", fontSize: 15, fontWeight: 800
-            }}>
-              <span>Grand Total</span>
-              <span>₹{grandTotal.toLocaleString("en-IN")}</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      {mainContent}
     </Modal>
   );
 }

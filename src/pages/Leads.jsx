@@ -206,35 +206,20 @@ export default function Leads() {
         }
       }
 
+      const updateData = { 
+        status: finalStage, 
+        last_outcome: values.outcome || null 
+      };
+
       if (pendingLeadValues) {
         // Full update from Edit Modal
-        await leadService.update(lead.id, { ...pendingLeadValues, status: finalStage });
+        await leadService.update(lead.id, { ...pendingLeadValues, ...updateData });
       } else {
         // Single status update or Conversion update
-        await leadService.update(lead.id, { status: finalStage });
+        await leadService.update(lead.id, updateData);
       }
 
-      // 2. Create Note and Activity
-      const notePrefix = isConverting ? 'conversion' : 'stage change';
-      const outcomeText = selectedOutcome ? ` (Outcome: ${selectedOutcome.label})` : '';
-      const finalNote = `Moved to ${finalStage} during ${notePrefix}${outcomeText}. Notes: ${values.note}`;
-      
-      await noteService.create({
-        related_type: 'Lead',
-        related_id: lead.id,
-        note: finalNote
-      });
-
-      // Log this as an Activity too so it appears on the Activity Feed
-      await activityService.create({
-        type: values.contact_type || 'Stage Change',
-        related_type: 'Lead',
-        related_id: lead.id,
-        notes: finalNote,
-        activity_date: new Date().toISOString()
-      });
-
-      // 3. Create Automation Task
+      // 2. Create Automation Task logic first to get the date for Activity
       let taskDueDate = null;
       let taskTitle = `Follow up with ${lead.name}`;
 
@@ -246,9 +231,29 @@ export default function Leads() {
           taskDueDate = values.followUpDate.toDate ? values.followUpDate.toDate() : new Date(values.followUpDate);
         }
       } else if (values.requiresFollowUp && values.followUpDate) {
-        // Fallback for legacy "requiresFollowUp" logic
         taskDueDate = values.followUpDate.toDate ? values.followUpDate.toDate() : new Date(values.followUpDate);
       }
+
+      // 3. Create Note and Activity
+      const notePrefix = isConverting ? 'conversion' : 'stage change';
+      const outcomeText = selectedOutcome ? ` (Outcome: ${selectedOutcome.label})` : '';
+      const finalNote = `Moved to ${finalStage} during ${notePrefix}${outcomeText}. Notes: ${values.note}`;
+      
+      await noteService.create({
+        related_type: 'Lead',
+        related_id: lead.id,
+        note: finalNote
+      });
+
+      // Log this as an Activity (using scheduled date if available)
+      await activityService.create({
+        type: values.contact_type || (taskDueDate ? 'Task' : 'Stage Change'),
+        related_type: 'Lead',
+        related_id: lead.id,
+        notes: finalNote,
+        activity_date: (taskDueDate || new Date()).toISOString(),
+        scheduled_at: taskDueDate ? taskDueDate.toISOString() : null
+      });
 
       if (taskDueDate) {
         await taskService.create({
@@ -261,6 +266,15 @@ export default function Leads() {
           priority: 'Medium',
           status: 'Pending'
         });
+      }
+
+      // 4. Optional: Redirect to Quotes if Sent_Awaiting
+      if (values.outcome === 'Sent_Awaiting') {
+        const hide = message.loading('Preparing quote board...', 1.5);
+        setTimeout(() => {
+          hide();
+          navigate('/quotes', { state: { activeTab: '2' } });
+        }, 1500);
       }
 
       message.success(isConverting ? 'Lead successfully converted to customer!' : (pendingLeadValues ? 'Lead and stage updated' : `Lead moved to ${finalStage}`));
@@ -740,7 +754,7 @@ export default function Leads() {
 
           {viewTransitioning ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px', background: '#fff', borderRadius: 16 }}>
-              <Spin size="large" tip="Switching view..." />
+              <Spin size="large" description="Switching view..." />
             </div>
           ) : viewType === "kanban" ? (
             <LeadKanbanBoard

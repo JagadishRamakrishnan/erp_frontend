@@ -1,28 +1,25 @@
 import { useState, useEffect } from "react";
-import { 
-  Card, Input, Button, Modal, Form, Select, message, 
-  Popconfirm, Row, Col, Spin, Tag, InputNumber 
+import { useLocation } from "react-router-dom";
+import {
+  Card, Input, Button, Modal, Form, Select, message,
+  Popconfirm, Row, Col, Spin, Tag, InputNumber, Tabs, Table
 } from "antd";
 import { 
   SearchOutlined, PlusOutlined, EyeOutlined, SendOutlined, 
-  DownloadOutlined, FileTextOutlined, EditOutlined, DeleteOutlined 
+  DownloadOutlined, FileTextOutlined, EditOutlined, DeleteOutlined, UploadOutlined,
+  WhatsAppOutlined, FacebookOutlined, InstagramOutlined, FilePdfOutlined
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
-import { quotationService, customerService, dealService } from "../../services";
+import { quotationService, customerService, dealService, leadService } from "../../services";
 import dayjs from "dayjs";
 import ResponsiveTable from "../../components/ResponsiveTable";
 import QuoteInvoiceView from "../../components/QuoteInvoiceView";
 import q2 from "../../assets/icons/q2.gif";
 import q3 from "../../assets/icons/q3.gif";
 import q4 from "../../assets/icons/q4.gif";
-import { UploadOutlined } from "@ant-design/icons";
-import {
-  WhatsAppOutlined,
-  FacebookOutlined,
-  InstagramOutlined
-} from "@ant-design/icons";
 import BulkUploadModal from "../../components/BulkUploadModal";
+
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -36,15 +33,27 @@ export default function Quotes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [form] = Form.useForm();
-const [viewModalOpen, setViewModalOpen] = useState(false);
-const [selectedQuote, setSelectedQuote] = useState(null);
-const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [leadsAwaitingQuote, setLeadsAwaitingQuote] = useState([]);
+  const [activeTab, setActiveTab] = useState("1");
+  const [selectedLeadForQuote, setSelectedLeadForQuote] = useState(null);
+  const [directPrintActive, setDirectPrintActive] = useState(false);
+  const [downloadRecord, setDownloadRecord] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     fetchQuotations();
     fetchCustomers();
     fetchDeals();
-  }, []);
+    fetchLeads();
+
+    // Check for redirected state to activate specific tab
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const fetchQuotations = async () => {
     setLoading(true);
@@ -82,17 +91,68 @@ const [showBulkUpload, setShowBulkUpload] = useState(false);
     }
   };
 
+  const fetchLeads = async () => {
+    try {
+      const resp = await leadService.getAll();
+      if (resp.success) {
+        const filtered = (resp.data || []).filter(l => l.last_outcome === 'Sent_Awaiting');
+        setLeadsAwaitingQuote(filtered);
+      }
+    } catch (err) {
+      console.error('Failed to load leads', err);
+    }
+  };
+
+  const handleDownload = (quote) => {
+    setDownloadRecord(quote);
+    setDirectPrintActive(true);
+  };
+
+  const handlePreviewBeforeSave = () => {
+    const values = form.getFieldsValue();
+    if (!values.customer_id) {
+      return message.warning('Please select a customer first');
+    }
+    
+    const customer = customers.find(c => c.id === values.customer_id);
+    const deal = deals.find(d => d.id === values.deal_id);
+    
+    const mockRecord = {
+      ...values,
+      customer,
+      deal,
+      quotation_number: 'DRAFT',
+      created_at: new Date().toISOString(),
+      items: [] // In this simple version we don't have items yet in the UI
+    };
+    
+    setSelectedQuote(mockRecord);
+    setViewModalOpen(true);
+  };
+
   const handleSubmit = async (values) => {
     try {
       const response = editingQuote
         ? await quotationService.update(editingQuote.id, values)
         : await quotationService.create(values);
-      
+
       if (response.success) {
         message.success(editingQuote ? 'Quotation updated successfully' : 'Quotation created successfully');
+
+        // If we were creating this quote for a specific lead, clear its "Needs Quote" status
+        if (!editingQuote && selectedLeadForQuote) {
+          try {
+            await leadService.update(selectedLeadForQuote.id, { last_outcome: 'Quote_Created' });
+            fetchLeads(); // Refresh leads list
+          } catch (err) {
+            console.error('Failed to update lead status after quote creation', err);
+          }
+        }
+
         fetchQuotations();
         setModalOpen(false);
         setEditingQuote(null);
+        setSelectedLeadForQuote(null);
         form.resetFields();
       }
     } catch (error) {
@@ -111,10 +171,12 @@ const [showBulkUpload, setShowBulkUpload] = useState(false);
     });
     setModalOpen(true);
   };
-const handleView = (quote) => {
-  setSelectedQuote(quote);
-  setViewModalOpen(true);
-};
+
+  const handleView = (quote) => {
+    setSelectedQuote(quote);
+    setViewModalOpen(true);
+  };
+
   const handleDelete = async (id) => {
     try {
       const response = await quotationService.delete(id);
@@ -134,7 +196,7 @@ const handleView = (quote) => {
   };
 
   const filteredQuotes = quotations.filter((q) => {
-    const matchSearch = 
+    const matchSearch =
       q.quotation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       q.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === "All" || q.status === filterStatus;
@@ -152,610 +214,263 @@ const handleView = (quote) => {
   };
 
   const columns = [
-  {
-    title: "Quote ID",
-    dataIndex: "quotation_number",
-    align: "center",
-    render: (text) => (
-      <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
-    )
-  },
-  {
-  title: "Customer",
-  key: "customer",
-  align: "center",
-  render: (_, record) => (
-    <div>
-      <div style={{ fontWeight: 600 }}>
-        {record.customer?.name || "N/A"}
-      </div>
-
-      <div style={{ fontSize: 12, color: "#6b7280" }}>
-        {record.customer?.email || ""}
-      </div>
-
-      {/* 🔥 SOCIAL ICONS */}
-      <div
-        style={{
-          marginTop: 8,
-          display: "flex",
-          justifyContent: "center",
-          gap: 10
-        }}
-      >
-        {/* WhatsApp */}
-        <a
-          href={`https://wa.me/${record.customer?.phone || ""}`}
-          target="_blank"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            background: "#e6f7ee",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <WhatsAppOutlined style={{ color: "#25D366" }} />
-        </a>
-
-        {/* Facebook */}
-        <a
-          href={record.customer?.facebook_url || "#"}
-          target="_blank"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            background: "#e7f0ff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <FacebookOutlined style={{ color: "#1877F2" }} />
-        </a>
-
-        {/* Instagram */}
-        <a
-          href={record.customer?.instagram_url || "#"}
-          target="_blank"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            background: "#fce7f3",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <InstagramOutlined style={{ color: "#E1306C" }} />
-        </a>
-      </div>
-    </div>
-  ),
-},
-  {
-    title: "Amount",
-    dataIndex: "total_amount",
-    align: "center",
-    render: (amount) => (
-      <span style={{ fontWeight: 700, color: "#10b981" }}>
-        ₹{amount?.toLocaleString("en-IN") || 0}
-      </span>
-    ),
-  },
-  {
-    title: "Tax",
-    dataIndex: "tax_amount",
-    align: "center",
-    render: (tax) => (
-      <span style={{ color: "#4b5563" }}>
-        ₹{tax?.toLocaleString("en-IN") || 0}
-      </span>
-    )
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    align: "center",
-    render: (status) => (
-      <Tag color={getStatusColor(status)}>{status}</Tag>
-    ),
-  },
-  {
-    title: "Created",
-    dataIndex: "created_at",
-    align: "center",
-    render: (date) => (
-      <span style={{ color: "#4b5563" }}>
-        {date ? dayjs(date).format("MMM DD, YYYY") : "N/A"}
-      </span>
-    ),
-  },
-  {
-    title: "Actions",
-    key: "actions",
-    align: "center",
-    render: (_, record) => (
-      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => handleView(record)}
-        >
-          View
-        </Button>
-
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => handleEdit(record)}
-        >
-          Edit
-        </Button>
-
-        <Popconfirm
-          title="Delete quotation"
-          description="Are you sure you want to delete this quotation?"
-          onConfirm={() => handleDelete(record.id)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            Delete
-          </Button>
-        </Popconfirm>
-      </div>
-    ),
-  },
-];
-
-  const cardAnimation = {
-    hidden: { opacity: 0, y: 40 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" }
-    })
-  };
-
-  const fontInter = { fontFamily: '"Inter", sans-serif' };
+    {
+      title: "Quote ID",
+      dataIndex: "quotation_number",
+      align: "center",
+      render: (text) => <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
+    },
+    {
+      title: "Customer",
+      key: "customer",
+      align: "center",
+      render: (_, record) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{record.customer?.name || "N/A"}</div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>{record.customer?.email || ""}</div>
+          <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 10 }}>
+            <a href={`https://wa.me/${record.customer?.phone || ""}`} target="_blank" style={{ width: 30, height: 30, borderRadius: "50%", background: "#e6f7ee", display: "flex", alignItems: "center", justifyContent: "center" }}><WhatsAppOutlined style={{ color: "#25D366" }} /></a>
+            <a href={record.customer?.facebook_url || "#"} target="_blank" style={{ width: 30, height: 30, borderRadius: "50%", background: "#e7f0ff", display: "flex", alignItems: "center", justifyContent: "center" }}><FacebookOutlined style={{ color: "#1877F2" }} /></a>
+            <a href={record.customer?.instagram_url || "#"} target="_blank" style={{ width: 30, height: 30, borderRadius: "50%", background: "#fce7f3", display: "flex", alignItems: "center", justifyContent: "center" }}><InstagramOutlined style={{ color: "#E1306C" }} /></a>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Amount",
+      dataIndex: "total_amount",
+      align: "center",
+      render: (amount) => <span style={{ fontWeight: 700, color: "#10b981" }}>₹{amount?.toLocaleString("en-IN") || 0}</span>,
+    },
+    {
+      title: "Tax",
+      dataIndex: "tax_amount",
+      align: "center",
+      render: (tax) => <span style={{ color: "#4b5563" }}>₹{tax?.toLocaleString("en-IN") || 0}</span>
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      align: "center",
+      render: (status) => <Tag color={getStatusColor(status)}>{status}</Tag>,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      align: "center",
+      render: (_, record) => (
+        <div style={{ display: "flex", justifyContent: "center", gap: 2 }}>
+          <Button type="link" title="View" icon={<EyeOutlined />} onClick={() => handleView(record)}></Button>
+          <Button type="link" title="Edit" icon={<EditOutlined />} onClick={() => handleEdit(record)}></Button>
+          <Button type="link" title="Download as pdf" icon={<DownloadOutlined />} style={{ color: '#E11D48' }} onClick={() => handleDownload(record)}></Button>
+          <Popconfirm title="Delete quotation" onConfirm={() => handleDelete(record.id)} okText="Yes" cancelText="No">
+            <Button type="link" title="Delete" danger icon={<DeleteOutlined />}></Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
 
   const totalValue = quotations.reduce((sum, q) => sum + (q.total_amount || 0), 0);
   const approvedValue = quotations.filter(q => q.status === 'Approved').reduce((sum, q) => sum + (q.total_amount || 0), 0);
   const pendingCount = quotations.filter(q => q.status === 'Sent').length;
- const handleBulkUpload = async (formData) => {
-  try {
-    const response = await quotationService.bulkUpload(formData);
-    if (response.success) {
-      fetchQuotations();
-    }
-    return response;
-  } catch (error) {
-    throw error;
-  }
-};
 
-const handleDownloadTemplate = async () => {
-  try {
-   const API_BASE_URL = "http://localhost:3000/api";  // or your port
+  const handleBulkUpload = async (formData) => {
+    try {
+      const response = await quotationService.bulkUpload(formData);
+      if (response.success) fetchQuotations();
+      return response;
+    } catch (error) { throw error; }
+  };
 
-    const response = await fetch(`${API_BASE_URL}/quotes/template/download`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  const handleDownloadTemplate = async () => {
+    try {
+      const API_BASE_URL = window.location.hostname === 'localhost' ? "http://localhost:5000/api" : "/api";
+      const response = await fetch(`${API_BASE_URL}/quotes/template/download`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quotes_template.csv";
+        a.click();
+        message.success("Template downloaded successfully");
+      } else throw new Error("Download failed");
+    } catch (error) { message.error("Template download failed"); }
+  };
 
-    console.log("STATUS:", response.status); // 👈 ADD THIS
+  const cardAnimation = {
+    hidden: { opacity: 0, y: 40 },
+    visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" } })
+  };
 
-    if (response.ok) {
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quotes_template.csv";
-      a.click();
-      message.success("Template downloaded successfully");
-    } else {
-      const text = await response.text();
-      console.log("ERROR RESPONSE:", text); // 👈 ADD THIS
-      throw new Error("Download failed");
-    }
-  } catch (error) {
-    message.error("Template download failed");
-  }
-};
   return (
-    <div className="p-4 md:p-6 min-h-screen" style={fontInter}>
-      {loading && !quotations.length ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <Spin size="large" />
+    <div className="p-4 md:p-6 min-h-screen" style={{ fontFamily: '"Inter", sans-serif' }}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+          <Title level={2} style={{ margin: 0 }}>Quotes Management</Title>
+          <Text type="secondary">Create and manage sales quotations</Text>
         </div>
-      ) : (
-        <>
-          {/* ================= HEADER ================= */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div className="flex gap-3">
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew} style={{ height: 40, borderRadius: 8 }}>New Quote</Button>
+          <Button icon={<UploadOutlined />} onClick={() => setShowBulkUpload(true)} style={{ height: 40, borderRadius: 8 }}>Bulk Upload</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[
+          { title: "Total Quotes", count: quotations.length, icon: <img src={q2} alt="q" style={{ width: 28, mixBlendMode: 'multiply' }} />, bg: "bg-purple-50", color: "#7c3aed" },
+          { title: "Quote Value", count: `₹${(totalValue / 100000).toFixed(1)}L`, icon: <img src={q3} alt="q" style={{ width: 28, mixBlendMode: 'multiply' }} />, bg: "bg-emerald-50", color: "#10b981" },
+          { title: "Needs Quote (Leads)", count: leadsAwaitingQuote.length, icon: <img src={q4} alt="q" style={{ width: 28, mixBlendMode: 'multiply' }} />, bg: "bg-orange-50", color: "#f59e0b" },
+          { title: "Approved Value", count: `₹${(approvedValue / 100000).toFixed(1)}L`, icon: <img src={q2} alt="q" style={{ width: 28, mixBlendMode: 'multiply' }} />, bg: "bg-blue-50", color: "#3b82f6" },
+        ].map((item, i) => (
+          <motion.div key={i} custom={i} initial="hidden" animate="visible" variants={cardAnimation} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className={`${item.bg} p-3 rounded-xl`}>{item.icon}</div>
             <div>
-              <Title level={2} style={{ margin: 0 }}>
-                Quotes Management
-              </Title>
-              <Text type="secondary">
-                Create and manage sales quotations
-              </Text>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">{item.title}</p>
+              <h2 className="text-2xl font-extrabold" style={{ color: item.color }}>{item.count}</h2>
             </div>
+          </motion.div>
+        ))}
+      </div>
 
-            <div className="flex gap-3">
-  <Button
-    type="primary"
-    icon={<PlusOutlined />}
-    onClick={handleAddNew}
-    style={{ height: 40, borderRadius: 8 }}
-  >
-    New Quote
-  </Button>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        className="mb-6"
+        items={[
+          { key: "1", label: <span className="px-4 font-semibold">Active Quotations</span> },
+          { key: "2", label: <span className="px-4 font-semibold flex items-center gap-2">Needs Quote (Leads) <Tag color="orange" className="mr-0 border-none rounded-full">{leadsAwaitingQuote.length}</Tag></span> }
+        ]}
+      />
 
-  <Button
-    icon={<UploadOutlined />}
-    onClick={() => setShowBulkUpload(true)}
-    style={{ height: 40, borderRadius: 8 }}
-  >
-    Bulk Upload
-  </Button>
-</div>
-          </div>
-
-          {/* ================= SUMMARY CARDS (Animated) ================= */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[
-             {
-    title: "Total Quotes",
-    count: quotations.length,
-    icon: (
-  <img 
-    src={q2} 
-    alt="quotes" 
-    style={{ 
-      width: 28, 
-      height: 28,
-      mixBlendMode: "multiply",
-      background: "transparent"
-    }} 
-  />
-),
-    bg: "bg-[#7c3aed]/10",
-    color: "#111827"
-  },
-  {
-    title: "Quote Value",
-    count: `₹${(totalValue / 100000).toFixed(1)}L`,
-    icon: (
-  <img 
-    src={q3} 
-    alt="quotes" 
-    style={{ 
-      width: 28, 
-      height: 28,
-      mixBlendMode: "multiply",
-      background: "transparent"
-    }} 
-  />
-),
-    bg: "bg-[#10b981]/10",
-    color: "#10b981"
-  },
-  {
-    title: "Pending",
-    count: pendingCount,
-    icon: (
-  <img 
-    src={q4} 
-    alt="quotes" 
-    style={{ 
-      width: 28, 
-      height: 28,
-      mixBlendMode: "multiply",
-      background: "transparent"
-    }} 
-  />
-),
-    bg: "bg-[#f59e0b]/10",
-    color: "#f59e0b"
-  },
-  {
-    title: "Approved Value",
-    count: `₹${(approvedValue / 100000).toFixed(1)}L`,
-    icon: (
-  <img 
-    src={q2} 
-    alt="quotes" 
-    style={{ 
-      width: 28, 
-      height: 28,
-      mixBlendMode: "multiply",
-      background: "transparent"
-    }} 
-  />
-),
-    bg: "bg-[#3b82f6]/10",
-    color: "#3b82f6"
-  }
- ].map((item, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                initial="hidden"
-                animate="visible"
-                whileHover={{ y: -6, boxShadow: "0 12px 35px rgba(2,6,23,0.12)" }}
-                variants={cardAnimation}
-                className="bg-white p-5 rounded-[14px] shadow-[0_10px_30px_rgba(2,6,23,0.06)] flex items-center gap-4 cursor-pointer transition-shadow"
-              >
-                <div className={`${item.bg} p-3 rounded-[10px] text-[20px]`}>
-                  {item.icon}
-                </div>
-                <div>
-                  <p className="text-[#6b7280] text-[13px] font-semibold uppercase tracking-[0.5px]">{item.title}</p>
-                  <h2 className={`text-[28px] font-[800] mt-1 leading-none`} style={{ color: item.color }}>
-                    {item.count}
-                  </h2>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* ================= SEARCH & FILTERS ================= */}
-<div className="bg-white p-4 lg:px-6 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-[#e5e7eb] mb-6 flex items-center justify-between gap-4 flex-wrap">           
-<div className="flex items-center gap-3 w-[350px] bg-[#f9fafb] border border-[#e5e7eb] px-3 h-10 rounded-lg">
-                <SearchOutlined className="text-[#9ca3af]" />
-              <input
-                placeholder="Search quotes or customers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="outline-none w-full bg-transparent text-[14px] text-[#111827]"
-                style={fontInter}
-              />
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {["All", "Draft", "Sent", "Approved", "Rejected"].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-  filterStatus === status
-    ? "bg-[#1677ff] text-white shadow"
-    : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"
-}`}
-                >
-                  {status}
-                </button>
+      {activeTab === "1" ? (
+        <>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <Input
+              placeholder="Search quotes..."
+              prefix={<SearchOutlined className="text-gray-400" />}
+              style={{ width: 300, borderRadius: 8 }}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            <div className="flex gap-2">
+              {["All", "Draft", "Sent", "Approved", "Rejected"].map(s => (
+                <Button key={s} type={filterStatus === s ? "primary" : "default"} onClick={() => setFilterStatus(s)} style={{ borderRadius: 8 }}>{s}</Button>
               ))}
             </div>
           </div>
-
-          {/* ================= QUOTATIONS TABLE ================= */}
-          <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
-                Latest Quotations ({filteredQuotes.length})
-              </span>
-            </div>
-            <ResponsiveTable
-              columns={columns}
-              dataSource={filteredQuotes}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              renderMobileCard={(record) => {
-                const statusColors = {
-                  'Draft': 'default',
-                  'Sent': 'processing',
-                  'Approved': 'success',
-                  'Rejected': 'error'
-                };
-                
-                return (
-                  <div>
-                    {/* Header with Quote ID and Status */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FileTextOutlined style={{ color: "#1677ff", fontSize: 18 }} />
-                        <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                          {record.quotation_number}
-                        </span>
-                      </div>
-                      <Tag color={statusColors[record.status] || 'default'}>
-                        {record.status}
-                      </Tag>
-                    </div>
-
-                    {/* Customer Info */}
-                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                      <div style={{ fontWeight: 600, color: "#111827", marginBottom: 4 }}>
-                        {record.customer?.name || 'N/A'}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-                        {record.customer?.email || ''}
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Amount:</strong>{' '}
-                        <span style={{ fontWeight: 700, color: "#10b981" }}>
-                          ₹{record.total_amount?.toLocaleString("en-IN") || 0}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Tax:</strong> ₹{record.tax_amount?.toLocaleString("en-IN") || 0}
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563" }}>
-                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY') : 'N/A'}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                      >
-                        Edit
-                      </Button>
-                      <Popconfirm
-                        title="Delete quotation"
-                        description="Are you sure?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                          Delete
-                        </Button>
-                      </Popconfirm>
-                    </div>
-                  </div>
-                );
-              }}
-            />
+          <Card variant="borderless" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <Table columns={columns} dataSource={filteredQuotes} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
           </Card>
         </>
+      ) : (
+        <Card variant="borderless" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+          <Table
+            columns={[
+              { title: "Lead Code", dataIndex: "lead_code", render: t => <span className="font-bold text-blue-600">#{t}</span> },
+              { title: "Client Name", dataIndex: "name", render: (t, r) => <div><div className="font-semibold">{t}</div><div className="text-xs text-gray-400">{r.company || 'Personal'}</div></div> },
+              { title: "Contact Info", render: (_, r) => <div className="text-xs"><div>{r.email}</div><div>{r.phone}</div></div> },
+              { title: "Outcome", dataIndex: "last_outcome", render: () => <Tag color="gold">Awaiting Quote</Tag> },
+              {
+                title: "Action", render: (_, r) => <Button type="primary" icon={<PlusOutlined />} onClick={async () => {
+                  setEditingQuote(null);
+                  setSelectedLeadForQuote(r); // 👈 TRACK WHICH LEAD THIS IS FOR
+                  
+                  // Find matching customer by email or name
+                  let match = customers.find(c => (c.email && c.email === r.email) || c.name === r.name);
+                  
+                  if (!match) {
+                    const hide = message.loading(`Creating customer record for ${r.name}...`, 0);
+                    try {
+                      const res = await leadService.convertToCustomer(r.id);
+                      if (res.success) {
+                        // The backend returns { lead, customer } or { alreadyConverted, lead }
+                        const newCustomer = res.data.customer;
+                        if (newCustomer) {
+                          match = newCustomer;
+                          // Refresh customers list in background
+                          fetchCustomers();
+                        }
+                        hide();
+                        message.success(`Lead successfully converted to Customer!`);
+                      }
+                    } catch (err) {
+                      hide();
+                      message.error("Auto-conversion failed. Please select/create customer manually.");
+                    }
+                  }
+
+                  form.setFieldsValue({
+                    customer_id: match ? (match.id || match.id) : null,
+                    status: 'Draft'
+                  });
+                  setModalOpen(true);
+                  if (match) {
+                    message.info(`Preparing quote for ${match.name}`);
+                  }
+                }}>Create Quote</Button>
+              }
+            ]}
+            dataSource={leadsAwaitingQuote}
+            rowKey="id"
+          />
+        </Card>
       )}
 
-      {/* ================= ADD/EDIT MODAL ================= */}
-      <Modal
-        title={editingQuote ? "Edit Quotation" : "Create Quotation"}
-        open={modalOpen}
-        onCancel={() => {
-          setModalOpen(false);
-          setEditingQuote(null);
-          form.resetFields();
-        }}
-        footer={null}
-        centered
-        width={600}
-      >
+      <Modal title={editingQuote ? "Edit Quotation" : "Create Quotation"} open={modalOpen} onCancel={() => setModalOpen(false)} footer={null} centered width={600}>
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item 
-            label="Customer" 
-            name="customer_id" 
-            rules={[{ required: true, message: 'Please select customer' }]}
-          >
-            <Select placeholder="Select customer" showSearch optionFilterProp="children">
-              {customers.map(customer => (
-                <Option key={customer.id} value={customer.id}>
-                  {customer.name} - {customer.email}
-                </Option>
-              ))}
+          <Form.Item label="Customer" name="customer_id" rules={[{ required: true }]}>
+            <Select showSearch placeholder="Select customer" optionFilterProp="children">
+              {customers.map(c => <Option key={c.id} value={c.id}>{c.name} ({c.email})</Option>)}
             </Select>
           </Form.Item>
-
-          <Form.Item label="Deal (Optional)" name="deal_id">
-            <Select placeholder="Select deal" showSearch optionFilterProp="children" allowClear>
-              {deals.map(deal => (
-                <Option key={deal.id} value={deal.id}>
-                  {deal.deal_name} - {deal.stage}
-                </Option>
-              ))}
+          <Form.Item label="Deal" name="deal_id">
+            <Select allowClear showSearch placeholder="Select deal (Optional)">
+              {deals.map(d => <Option key={d.id} value={d.id}>{d.deal_name} - {d.stage}</Option>)}
             </Select>
           </Form.Item>
-
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item 
-  label="Total Amount" 
-  name="total_amount" 
-  rules={[{ required: true, message: 'Please enter amount' }]}
->
-  <InputNumber
-    style={{ width: "100%" }}
-    placeholder="Enter amount"
-    min={0}
-    prefix="₹"
-    onChange={(value) => {
-      const tax = value ? (value * 0.18).toFixed(2) : 0;
-      form.setFieldsValue({
-        tax_amount: Number(tax)
-      });
-    }}
-  />
-</Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Tax Amount" name="tax_amount">
-                <InputNumber 
-                  style={{ width: '100%' }} 
-                  placeholder="Enter tax" 
-                  min={0}
-                  prefix="₹"
-                />
+              <Form.Item label="Total Amount" name="total_amount" rules={[{ required: true }]}>
+                <InputNumber prefix="₹" style={{ width: '100%' }} onChange={v => form.setFieldsValue({ tax_amount: v ? (v * 0.18).toFixed(2) : 0 })} />
               </Form.Item>
             </Col>
-          </Row>
-
-          <Form.Item 
-            label="Status" 
-            name="status" 
-            rules={[{ required: true, message: 'Please select status' }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="Draft">Draft</Option>
-              <Option value="Sent">Sent</Option>
-              <Option value="Approved">Approved</Option>
-              <Option value="Rejected">Rejected</Option>
-            </Select>
-          </Form.Item>
-
-          <Row gutter={10}>
             <Col span={12}>
-              <Button 
-                block 
-                onClick={() => {
-                  setModalOpen(false);
-                  setEditingQuote(null);
-                  form.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-            </Col>
-            <Col span={12}>
-              <Button type="primary" block htmlType="submit">
-                {editingQuote ? 'Update' : 'Create'} Quotation
-              </Button>
+              <Form.Item label="Tax (18% GST)" name="tax_amount"><InputNumber prefix="₹" style={{ width: '100%' }} /></Form.Item>
             </Col>
           </Row>
+          <Form.Item label="Status" name="status" rules={[{ required: true }]}><Select><Option value="Draft">Draft</Option><Option value="Sent">Sent</Option><Option value="Approved">Approved</Option><Option value="Rejected">Rejected</Option></Select></Form.Item>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              icon={<FilePdfOutlined />} 
+              onClick={handlePreviewBeforeSave}
+              style={{ border: '1px solid #E11D48', color: '#E11D48' }}
+            >
+              Preview & Share
+            </Button>
+            <Button onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button type="primary" htmlType="submit">Save Quote</Button>
+          </div>
         </Form>
       </Modal>
-     <QuoteInvoiceView
-  open={viewModalOpen}
-  onClose={() => setViewModalOpen(false)}
-  record={selectedQuote}
-  type="quote"
-/>
-<BulkUploadModal
-  open={showBulkUpload}
-  onClose={() => setShowBulkUpload(false)}
-  onUpload={handleBulkUpload}
-  onDownloadTemplate={handleDownloadTemplate}
-  moduleName="Quotes"
-  templateFields={[
-    "customer_id",
-    "deal_id",
-    "total_amount",
-    "tax_amount",
-    "status"
-  ]}
-/>
+
+      <QuoteInvoiceView open={viewModalOpen} onClose={() => setViewModalOpen(false)} record={selectedQuote} type="quote" />
+      
+      {/* Background worker for direct PDF generation */}
+      <QuoteInvoiceView
+        open={directPrintActive}
+        onClose={() => {
+          setDirectPrintActive(false);
+          setDownloadRecord(null);
+        }}
+        record={downloadRecord}
+        directPrint={true}
+      />
+
+      <BulkUploadModal open={showBulkUpload} onClose={() => setShowBulkUpload(false)} onUpload={handleBulkUpload} onDownloadTemplate={handleDownloadTemplate} moduleName="Quotes" templateFields={["customer_id", "deal_id", "total_amount", "tax_amount", "status"]} />
     </div>
   );
 }
