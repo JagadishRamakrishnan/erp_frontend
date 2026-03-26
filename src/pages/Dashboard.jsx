@@ -154,59 +154,59 @@ export default function Dashboard() {
   };
 
   const columns = [
-  {
-    title: "DEAL NAME",
-    dataIndex: "deal_name",
-    key: "deal_name",
-    width: 220,
-    render: (text, record) => (
-      <div style={{ fontWeight: 600, color: "#111827", fontSize: '12px' }}>
-        {text || record.deal_name || 'N/A'}
-      </div>
-    )
-  },
-  {
-    title: "CUSTOMER",
-    key: "customer",
-    render: (_, record) => (
-      <div style={{ color: "#6b7280", fontSize: '12px',textTransform:"capitalize" }}>
-        {record.customer?.name ? record.customer.name.charAt(0).toUpperCase() + record.customer.name.slice(1).toLowerCase() : 'N/A'}
-      </div>
-    )
-  },
-  {
-    title: "STAGE",
-    dataIndex: "stage",
-    key: "stage",
-    align: "center", // Center headers and content
-    render: (stage) => {
-      const colors = {
-        'Lead': 'blue',
-        'Qualified': 'cyan',
-        'Proposal': 'orange',
-        'Negotiation': 'purple',
-        'Won': 'green',
-        'Lost': 'red'
-      };
-      return (
-        <Tag variant="filled" color={colors[stage] || 'default'} style={{ borderRadius: 6, fontWeight: 500 }}>
-          {stage ? stage.toUpperCase() : 'N/A'}
-        </Tag>
-      );
+    {
+      title: "DEAL NAME",
+      dataIndex: "deal_name",
+      key: "deal_name",
+      width: 220,
+      render: (text, record) => (
+        <div style={{ fontWeight: 600, color: "#111827", fontSize: '12px' }}>
+          {text || record.deal_name || 'N/A'}
+        </div>
+      )
+    },
+    {
+      title: "CUSTOMER",
+      key: "customer",
+      render: (_, record) => (
+        <div style={{ color: "#6b7280", fontSize: '12px', textTransform: "capitalize" }}>
+          {record.customer?.name ? record.customer.name.charAt(0).toUpperCase() + record.customer.name.slice(1).toLowerCase() : 'N/A'}
+        </div>
+      )
+    },
+    {
+      title: "STAGE",
+      dataIndex: "stage",
+      key: "stage",
+      align: "center", // Center headers and content
+      render: (stage) => {
+        const colors = {
+          'Lead': 'blue',
+          'Qualified': 'cyan',
+          'Proposal': 'orange',
+          'Negotiation': 'purple',
+          'Won': 'green',
+          'Lost': 'red'
+        };
+        return (
+          <Tag variant="filled" color={colors[stage] || 'default'} style={{ borderRadius: 6, fontWeight: 500 }}>
+            {stage ? stage.toUpperCase() : 'N/A'}
+          </Tag>
+        );
+      }
+    },
+    {
+      title: "ASSIGNED TO",
+      key: "assignedTo",
+      align: "right",
+      render: (_, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+          <span style={{ fontSize: '12px', color: '#4b5563' }}>{record.assignedTo?.name || 'Unassigned'}</span>
+          <Avatar size={24} style={{ backgroundColor: '#f3f4f6' }} icon={<UserOutlined style={{ color: '#9ca3af' }} />} />
+        </div>
+      )
     }
-  },
-  {
-    title: "ASSIGNED TO",
-    key: "assignedTo",
-    align: "right",
-    render: (_, record) => (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-         <span style={{ fontSize: '12px', color: '#4b5563' }}>{record.assignedTo?.name || 'Unassigned'}</span>
-         <Avatar size={24} style={{ backgroundColor: '#f3f4f6' }} icon={<UserOutlined style={{ color: '#9ca3af' }} />} />
-      </div>
-    )
-  }
-];
+  ];
 
   const taskColumns = [
     {
@@ -594,7 +594,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Customer */}
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4,textTransform:"capitalize" }}>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4, textTransform: "capitalize" }}>
                         <strong>Customer:</strong> {record.customer?.name ? record.customer.name.charAt(0).toUpperCase() + record.customer.name.slice(1).toLowerCase() : 'N/A'}
                       </div>
 
@@ -664,23 +664,25 @@ export default function Dashboard() {
             variants={cardAnimation}
             initial="hidden"
             animate="visible"
+            className="h-full"
             whileHover={{ y: -6 }}
           >
             <Card
               title={<span style={{ fontSize: 16, fontWeight: 600 }}>Today's Activities</span>}
               variant="borderless"
+              className="h-full"
               style={styles.roundedCard}
               styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {todayActivities && todayActivities.length > 0 ? (
                   todayActivities.map((activity, index) => {
-const icons = {
-  Call: <Phone size={18} />,
-  Email: <Mail size={18} />,
-  Meeting: <Users size={18} />,
-  WhatsApp: <MessageCircle size={18} />
-};
+                    const icons = {
+                      Call: <Phone size={18} />,
+                      Email: <Mail size={18} />,
+                      Meeting: <Users size={18} />,
+                      WhatsApp: <MessageCircle size={18} />
+                    };
 
                     const backgrounds = {
                       Call: '#fee2e2',
@@ -742,7 +744,7 @@ const icons = {
                   })
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
-                    No activities for today
+                    No activities for today, Call Leads
                   </div>
                 )}
               </div>
@@ -805,6 +807,7 @@ const icons = {
             variants={cardAnimation}
             initial="hidden"
             animate="visible"
+            className="h-full"
             whileHover={{ y: -6 }}
           >
 
@@ -812,6 +815,7 @@ const icons = {
               title={<span style={{ fontSize: 16, fontWeight: 600 }}>Deal Stage Overview</span>}
               variant="borderless"
               style={styles.roundedCard}
+              className="h-full"
               styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" } }}
             >
               {stats.breakdown?.dealsByStage?.map((stage, index) => {
