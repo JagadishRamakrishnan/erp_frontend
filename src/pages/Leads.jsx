@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio } from "antd";
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined, CalendarOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService, noteService, taskService, activityService } from "../services";
 import authService from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
 import ResponsiveTable from "../components/ResponsiveTable";
 import LeadKanbanBoard from "../components/LeadKanbanBoard";
@@ -50,6 +50,7 @@ const STAGE_OUTCOMES = {
 
 export default function Leads() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [viewTransitioning, setViewTransitioning] = useState(false);
@@ -226,7 +227,7 @@ export default function Leads() {
 
       // Log this as an Activity too so it appears on the Activity Feed
       await activityService.create({
-        type: 'Stage Change',
+        type: values.contact_type || 'Stage Change',
         related_type: 'Lead',
         related_id: lead.id,
         notes: finalNote,
@@ -299,6 +300,24 @@ export default function Leads() {
     form.resetFields();
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (leads.length > 0 && location.state?.autoAction && location.state?.autoLeadId) {
+      const { autoAction, autoLeadId } = location.state;
+      const targetLead = leads.find(l => l.id === autoLeadId);
+      
+      if (targetLead) {
+        if (autoAction === 'edit') {
+          handleEdit(targetLead);
+        } else if (autoAction === 'convert') {
+          handleConvert(targetLead);
+        }
+        
+        // Clear state to prevent re-opening on manual refresh
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [leads, location, navigate]);
 
   const handleBulkUpload = async (formData) => {
     try {
@@ -1023,6 +1042,21 @@ export default function Leads() {
           )}
 
           <Form.Item
+            label="Communication Channel"
+            name="contact_type"
+            initialValue="Call"
+            rules={[{ required: true, message: 'Select your communication method' }]}
+          >
+            <Radio.Group block buttonStyle="solid">
+              <Radio.Button value="Call"><div className="flex items-center gap-1.5 px-1"><Phone size={14} /> Call</div></Radio.Button>
+              <Radio.Button value="WhatsApp"><div className="flex items-center gap-1.5 px-1"><WhatsAppOutlined /> WA</div></Radio.Button>
+              <Radio.Button value="Email"><div className="flex items-center gap-1.5 px-1"><MailOutlined /> Email</div></Radio.Button>
+              <Radio.Button value="Meeting"><div className="flex items-center gap-1.5 px-1"><CalendarOutlined /> Meet</div></Radio.Button>
+              <Radio.Button value="Stage Change"><div className="flex items-center gap-1.5 px-1">Other</div></Radio.Button>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
             label="What did the customer say?"
             name="note"
             rules={[{ required: true, message: 'Please provide notes on this stage change' }]}
@@ -1124,6 +1158,10 @@ export default function Leads() {
         open={viewModalOpen}
         lead={selectedLead}
         onClose={() => setViewModalOpen(false)}
+        onLeadUpdate={fetchLeads}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onConvert={handleConvert}
       />
 
       <BulkUploadModal

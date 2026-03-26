@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message } from "antd";
+import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message, Popconfirm, Tooltip } from "antd";
 import { leadService, noteService, taskService } from "../services";
-import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
+import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, TrophyOutlined } from "@ant-design/icons";
 import { Briefcase, Info, CheckCircle2, X } from "lucide-react";
 
 const { Step } = Steps;
 const { TabPane } = Tabs;
 
-export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) {
+export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, onEdit, onDelete, onConvert }) {
   const [localLead, setLocalLead] = useState(lead);
+  const [loading, setLoading] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [summaryContent, setSummaryContent] = useState("");
   const [notes, setNotes] = useState([]);
@@ -62,6 +63,12 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
     }
   };
 
+  const handleCopy = (text, field) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    message.success(`${field} copied to clipboard!`);
+  };
+
   if (!localLead) return null;
 
   const timelineItems = [
@@ -77,6 +84,16 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
   let currentStageIndex = stages.indexOf(localLead.status);
   if (localLead.status === "Lost") currentStageIndex = -1; // Specific handling for Lost
 
+  const statusColors = {
+    'New': 'blue',
+    'Contacted': 'geekblue',
+    'Qualified': 'purple',
+    'Proposal': 'gold',
+    'Won': 'success',
+    'Lost': 'error',
+    'Pending': 'default'
+  };
+
   return (
     <Modal
       title={null}
@@ -85,7 +102,7 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
       onCancel={onClose}
       centered
       width={1000}
-      bodyStyle={{ padding: 0, overflow: 'hidden', borderRadius: '12px' }}
+      styles={{ body: { padding: 0, overflow: 'hidden', borderRadius: '12px' } }}
       closeIcon={
         <div className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded-full transition-all">
           <X size={18} />
@@ -101,26 +118,73 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
           <div className="flex items-start gap-4 mb-8">
             <Avatar
               size={64}
-              src={lead.email ? `https://logo.clearbit.com/${lead.email.split("@")[1]}` : null}
+              src={localLead.email ? `https://logo.clearbit.com/${localLead.email.split("@")[1]}` : null}
               style={{ background: "#1677ff", fontSize: '24px' }}
               icon={<UserOutlined />}
             >
-              {!lead.email && lead.name?.charAt(0)}
+              {!localLead.email && localLead.name?.charAt(0)}
             </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-gray-900 m-0">{lead.name}</h2>
-                <Tag color={lead.status === 'Won' ? 'success' : lead.status === 'Lost' ? 'error' : 'processing'} className="rounded-full px-3">
-                  {lead.status}
-                </Tag>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-bold text-gray-800 m-0">{localLead.name}</h2>
+                  <Tag color={statusColors[localLead.status] || 'blue'} className="px-3 py-0.5 rounded-full uppercase text-[10px] font-bold border-none">
+                    {localLead.status}
+                  </Tag>
+                </div>
+                <div className="text-gray-400 text-sm flex items-center gap-4">
+                  <span>Lead ID: <span className="text-gray-600 font-semibold">#{localLead.lead_code || localLead.id}</span></span>
+                  <span>Created: <span className="text-gray-600 font-semibold">{new Date(localLead.created_at).toLocaleDateString()}</span></span>
+                </div>
               </div>
-              <div className="text-gray-500 font-medium mt-1 flex items-center gap-2">
-                <Briefcase size={16} />
-                {lead.company || "No Company"}
-                <span className="text-gray-300 mx-1">|</span>
-                <span className="text-gray-400 text-sm">Code: {lead.lead_code}</span>
+              <div className="flex items-center gap-2">
+                {onEdit && (
+                  <Tooltip title="Edit Lead">
+                    <Button 
+                      shape="circle"
+                      icon={<EditOutlined style={{ color: '#0ea5e9' }} />} 
+                      onClick={() => { onEdit(localLead); onClose(); }}
+                      className="border-blue-100 hover:border-blue-300 hover:bg-blue-50"
+                    />
+                  </Tooltip>
+                )}
+                {onConvert && localLead.status !== 'Won' && (
+                  <Tooltip title="Convert Lead">
+                    <Button 
+                      type="primary"
+                      shape="circle"
+                      icon={<TrophyOutlined />} 
+                      onClick={() => { onConvert(localLead); onClose(); }}
+                      className="bg-emerald-500 border-none hover:bg-emerald-600 flex items-center justify-center"
+                    />
+                  </Tooltip>
+                )}
+                {onDelete && (
+                  <Popconfirm
+                    title="Delete Lead"
+                    description="Are you sure you want to delete this lead?"
+                    onConfirm={() => { onDelete(localLead.id); onClose(); }}
+                    okText="Yes"
+                    cancelText="No"
+                  >
+                    <Tooltip title="Delete Lead">
+                      <Button 
+                        danger 
+                        shape="circle"
+                        icon={<DeleteOutlined />} 
+                        className="flex items-center justify-center"
+                      />
+                    </Tooltip>
+                  </Popconfirm>
+                )}
+                <Tooltip title="Close">
+                  <Button 
+                    type="text" 
+                    icon={<X size={20} />} 
+                    onClick={onClose}
+                    className="hover:bg-gray-100 rounded-full flex items-center justify-center h-10 w-10 text-gray-400"
+                  />
+                </Tooltip>
               </div>
-            </div>
           </div>
 
           {/* Pipeline Stepper / Sales Guide */}
@@ -146,28 +210,50 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
             <Tabs defaultActiveKey="details" className="lead-tabs">
               <TabPane tab={<span className="font-semibold text-[14px]">Details</span>} key="details">
                 <div className="grid grid-cols-2 gap-6 mt-4">
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Email Address</div>
-                    <div className="font-medium text-gray-800 flex items-center gap-2">
-                      <MailOutlined className="text-blue-500" /> {lead.email || "N/A"}
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div>
+                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Email Address</div>
+                      <div className="font-medium text-gray-800 flex items-center gap-2">
+                        <MailOutlined className="text-blue-500" /> {localLead.email || "N/A"}
+                      </div>
                     </div>
+                    {localLead.email && (
+                      <Button 
+                        type="text" 
+                        size="small" 
+                        icon={<CopyOutlined className="text-gray-400" />} 
+                        onClick={() => handleCopy(localLead.email, 'Email')}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    )}
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Phone Number</div>
-                    <div className="font-medium text-gray-800 flex items-center gap-2">
-                      <PhoneOutlined className="text-green-500" /> {lead.phone || "N/A"}
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between group hover:border-green-200 transition-colors">
+                    <div>
+                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Phone Number</div>
+                      <div className="font-medium text-gray-800 flex items-center gap-2">
+                        <PhoneOutlined className="text-green-500" /> {localLead.phone || "N/A"}
+                      </div>
                     </div>
+                    {localLead.phone && (
+                      <Button 
+                        type="text" 
+                        size="small" 
+                        icon={<CopyOutlined className="text-gray-400" />} 
+                        onClick={() => handleCopy(localLead.phone, 'Phone')}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    )}
                   </div>
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Lead Source</div>
                     <div className="font-medium text-gray-800 flex items-center gap-2">
-                      <LinkOutlined className="text-purple-500" /> {lead.source || "N/A"}
+                      <LinkOutlined className="text-purple-500" /> {localLead.source || "N/A"}
                     </div>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Date Created</div>
                     <div className="font-medium text-gray-800">
-                      {new Date(lead.created_at).toLocaleDateString()}
+                      {new Date(localLead.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -178,33 +264,43 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
                   {loadingConfig ? (
                     <div className="flex justify-center items-center h-full"><Spin /></div>
                   ) : timelineItems.length > 0 ? (
-                    <Timeline className="mt-4">
-                      {timelineItems.map((item, index) => (
-                        <Timeline.Item key={index} color={item.type === 'note' ? 'blue' : 'green'}>
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="text-xs text-gray-500 m-0">{item.date.toLocaleString()}</p>
-                            {item.data.creator && (
-                              <span className="text-[10px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                {item.data.creator.name}
-                              </span>
+                    <Timeline 
+                      className="mt-4"
+                      items={timelineItems.map(item => ({
+                        color: item.type === 'note' ? 'blue' : 'green',
+                        children: (
+                          <div className="mb-2">
+                            <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                              {item.type === 'note' ? <FileTextOutlined /> : <CheckCircleOutlined />}
+                              {item.date.toLocaleString()}
+                              {item.data.creator && (
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
+                                  {item.data.creator.name}
+                                </span>
+                              )}
+                              {item.data.User && !item.data.creator && (
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-500 uppercase">
+                                  {item.data.User.name}
+                                </span>
+                              )}
+                            </div>
+                            {item.type === 'note' ? (
+                              <div className="text-gray-800 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50 shadow-sm text-[13px] leading-relaxed mt-2">
+                                {item.data.note}
+                              </div>
+                            ) : (
+                              <div className="bg-green-50/50 p-3 rounded-lg border border-green-100/50 shadow-sm text-[13px] mt-2">
+                                <p className="font-bold text-green-800 m-0">{item.data.title}</p>
+                                {item.data.description && <p className="text-green-700 mt-1 mb-0 leading-relaxed">{item.data.description}</p>}
+                                <p className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
+                                  <CheckCircle2 size={12} /> Due: {new Date(item.data.due_date).toLocaleString()}
+                                </p>
+                              </div>
                             )}
                           </div>
-                          {item.type === 'note' ? (
-                            <div className="text-gray-800 bg-blue-50/50 p-3 rounded-lg border border-blue-100/50 shadow-sm text-[13px] leading-relaxed">
-                              {item.data.note}
-                            </div>
-                          ) : (
-                            <div className="bg-green-50/50 p-3 rounded-lg border border-green-100/50 shadow-sm text-[13px]">
-                              <p className="font-bold text-green-800 m-0">{item.data.title}</p>
-                              {item.data.description && <p className="text-green-700 mt-1 mb-0 leading-relaxed">{item.data.description}</p>}
-                              <p className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
-                                <CheckCircle2 size={12} /> Due: {new Date(item.data.due_date).toLocaleString()}
-                              </p>
-                            </div>
-                          )}
-                        </Timeline.Item>
-                      ))}
-                    </Timeline>
+                        )
+                      }))}
+                    />
                   ) : (
                     <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
                       <FileTextOutlined style={{ fontSize: 32, color: '#d1d5db', marginBottom: 12 }} />
@@ -228,8 +324,8 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate }) 
             <div className="flex items-center gap-3">
               <Avatar size={36} style={{ backgroundColor: '#ff8a00' }} icon={<UserOutlined />} />
               <div>
-                <div className="font-bold text-gray-900 text-[14px]">{lead.assignedTo?.name || "Unassigned"}</div>
-                {lead.assignedTo && <div className="text-xs text-gray-500">{lead.assignedTo.email}</div>}
+                <div className="font-bold text-gray-900 text-[14px]">{localLead.assignedTo?.name || "Unassigned"}</div>
+                {localLead.assignedTo && <div className="text-xs text-gray-500">{localLead.assignedTo.email}</div>}
               </div>
             </div>
           </div>
