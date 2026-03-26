@@ -702,7 +702,9 @@ export default function Dashboard() {
                           padding: "12px 16px",
                           borderRadius: 12,
                           border: "1px solid #f1f5f9",
+                          cursor: "pointer",
                         }}
+                        onClick={() => navigate("/activities")}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
 
@@ -715,6 +717,7 @@ export default function Dashboard() {
                               background: backgrounds[activity.type] || '#f3f4f6',
                               display: "flex",
                               alignItems: "center",
+                              flexShrink: "0",
                               justifyContent: "center",
                               fontSize: 18,
                             }}
@@ -724,12 +727,14 @@ export default function Dashboard() {
 
                           {/* Content */}
                           <div>
-                            <div style={{ fontWeight: 500 }}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div style={{ fontWeight: 500 }}>
                               {activity.type} - {activity.related_type} #{activity.related_id}
                             </div>
 
                             <div style={{ fontSize: 12, color: "gray" }}>
                               {dayjs(activity.activity_date).format("DD MMM, hh:mm A")}
+                            </div>
                             </div>
 
                             {activity.notes && (
