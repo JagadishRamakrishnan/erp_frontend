@@ -5,13 +5,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 //import { useTheme } from "../../context/ThemeContext";
 import { Popover, Tooltip, Grid } from "antd";
-import { Megaphone, MessageSquare } from "lucide-react";
+import { Megaphone, MessageSquare,BadgeIndianRupee } from "lucide-react";
 //import { MessageSquare } from "lucide-react";
 // Ant Design Icons
 import {
   DashboardOutlined,
   AppstoreOutlined,
-  DollarOutlined,
   PercentageOutlined,
   UserOutlined,
   ShoppingCartOutlined,
@@ -101,7 +100,7 @@ const Sidebar = ({
         },
         // {
         //   key: "opportunities",
-        //   icon: <DollarOutlined style={{ fontSize: 18 }} />,
+        //   icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
         //   label: "Opportunities",
         // },
         {
@@ -116,7 +115,7 @@ const Sidebar = ({
         },
         {
           key: "invoices",
-          icon: <DollarOutlined style={{ fontSize: 18 }} />,
+          icon: <BadgeIndianRupee style={{ fontSize: 16 }} />,
           label: "Invoices",
         },
       ],
@@ -129,15 +128,15 @@ const Sidebar = ({
     },
     {
       key: "deals",
-      icon: <DollarOutlined style={{ fontSize: 18 }} />,
+      icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
       label: "Deals",
     },
     // TASKS
-    {
-      key: "tasks",
-      icon: <FileText size={18} />,
-      label: "Tasks",
-    },
+    // {
+    //   key: "tasks",
+    //   icon: <FileText size={18} />,
+    //   label: "Tasks",
+    // },
     // REPORTS
     {
       key: "reports",
@@ -193,7 +192,7 @@ const Sidebar = ({
         },
         {
           key: "payments",
-          icon: <DollarOutlined style={{ fontSize: 18 }} />,
+          icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
           label: "Payments",
         },
         {

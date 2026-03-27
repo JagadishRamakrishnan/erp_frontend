@@ -99,6 +99,7 @@ const BulkUploadModal = ({
       onCancel={handleClose}
       width={700}
       footer={null}
+      centered
     >
       <div style={{ padding: '20px 0' }}>
         

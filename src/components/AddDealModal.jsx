@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 
 const { Option } = Select;
 
-export default function AddDealModal({ open, onClose, onAdd }) {
+export default function AddDealModal({ open, onClose, onAdd, deal = null }) {
   const [form] = Form.useForm();
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]);
@@ -15,8 +15,16 @@ export default function AddDealModal({ open, onClose, onAdd }) {
     if (open) {
       fetchCustomers();
       fetchUsers();
+      if (deal) {
+        form.setFieldsValue({
+          ...deal,
+          expected_close_date: deal.expected_close_date ? dayjs(deal.expected_close_date) : null
+        });
+      } else {
+        form.resetFields();
+      }
     }
-  }, [open]);
+  }, [open, deal, form]); // Added form to deps to avoid size change warnings and be safe
 
   const fetchCustomers = async () => {
     try {
@@ -43,8 +51,7 @@ export default function AddDealModal({ open, onClose, onAdd }) {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
-      // Format the data for backend
+
       const dealData = {
         deal_name: values.deal_name,
         customer_id: values.customer_id,
@@ -52,118 +59,172 @@ export default function AddDealModal({ open, onClose, onAdd }) {
         stage: values.stage,
         probability: values.probability,
         expected_close_date: values.expected_close_date ? values.expected_close_date.format('YYYY-MM-DD') : null,
-        assigned_to: values.assigned_to
+        assigned_to: values.assigned_to,
+        priority: values.priority,
+        deal_type: values.deal_type,
+        source: values.source,
+        description: values.description
       };
 
       await onAdd(dealData);
-      form.resetFields();
     } catch (error) {
       console.error('Validation failed:', error);
     }
   };
 
+  const DEAL_STAGES = [
+    'Qualification',
+    'Needs Analysis',
+    'Value Proposition',
+    'Id. Decision Makers',
+    'Perception Analysis',
+    'Proposal/Price Quote',
+    'Negotiation/Review',
+    'Closed Won',
+    'Closed Lost'
+  ];
+
   return (
     <Modal
-      title="Create Deal"
+      title={deal ? "Edit Deal" : "Create Deal"}
       open={open}
       onCancel={() => {
         form.resetFields();
         onClose();
       }}
       onOk={handleSubmit}
-      okText="Create Deal"
+      okText={deal ? "Update Deal" : "Create Deal"}
       cancelText="Cancel"
-      width={500}
+      width={800}
+      centered
     >
       <Form
         form={form}
         layout="vertical"
         initialValues={{
-          stage: 'Lead',
-          probability: 50
+          stage: 'Qualification',
+          probability: 10,
+          priority: 'Medium',
+          deal_type: 'New Business'
         }}
       >
-        <Form.Item
-          label="Deal Name"
-          name="deal_name"
-          rules={[{ required: true, message: 'Please enter deal name' }]}
-        >
-          <Input placeholder="Enter deal name" />
-        </Form.Item>
+        <div className="grid grid-cols-3 gap-x-4">
+          <Form.Item
+            label="Deal Name"
+            name="deal_name"
+            rules={[{ required: true, message: 'Please enter deal name' }]}
+            className="col-span-3"
+          >
+            <Input placeholder="Enter deal name" />
+          </Form.Item>
 
-        <Form.Item
-          label="Customer"
-          name="customer_id"
-          rules={[{ required: true, message: 'Please select customer' }]}
-        >
-          <Select placeholder="Select customer" showSearch optionFilterProp="children">
-            {customers.map(customer => (
-              <Option key={customer.id} value={customer.id}>
-                {customer.name} {customer.company ? `(${customer.company})` : ''}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Form.Item
+            label="Customer"
+            name="customer_id"
+            rules={[{ required: true, message: 'Please select customer' }]}
+          >
+            <Select placeholder="Select customer" showSearch optionFilterProp="children">
+              {customers.map(customer => (
+                <Option key={customer.id} value={customer.id}>
+                  {customer.name} {customer.company ? `(${customer.company})` : ''}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-        <Form.Item
-          label="Deal Value"
-          name="value"
-          rules={[{ required: true, message: 'Please enter deal value' }]}
-        >
-          <InputNumber
-            placeholder="Enter value"
-            style={{ width: '100%' }}
-            min={0}
-            prefix="₹"
-          />
-        </Form.Item>
+          <Form.Item
+            label="Deal Value"
+            name="value"
+            rules={[{ required: true, message: 'Please enter deal value' }]}
+          >
+            <InputNumber
+              placeholder="Enter value"
+              style={{ width: '100%' }}
+              min={0}
+              prefix="₹"
+            />
+          </Form.Item>
 
-        <Form.Item
-          label="Stage"
-          name="stage"
-          rules={[{ required: true, message: 'Please select stage' }]}
-        >
-          <Select placeholder="Select stage">
-            <Option value="Lead">Lead</Option>
-            <Option value="Qualified">Qualified</Option>
-            <Option value="Proposal">Proposal</Option>
-            <Option value="Negotiation">Negotiation</Option>
-            <Option value="Won">Won</Option>
-            <Option value="Lost">Lost</Option>
-          </Select>
-        </Form.Item>
+          <Form.Item
+            label="Stage"
+            name="stage"
+            rules={[{ required: true, message: 'Please select stage' }]}
+          >
+            <Select placeholder="Select stage">
+              {DEAL_STAGES.map(s => (
+                <Option key={s} value={s}>{s}</Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-        <Form.Item
-          label="Probability (%)"
-          name="probability"
-        >
-          <InputNumber
-            placeholder="Enter probability"
-            style={{ width: '100%' }}
-            min={0}
-            max={100}
-          />
-        </Form.Item>
+          <Form.Item
+            label="Probability (%)"
+            name="probability"
+          >
+            <InputNumber
+              placeholder="Enter probability"
+              style={{ width: '100%' }}
+              min={0}
+              max={100}
+            />
+          </Form.Item>
 
-        <Form.Item
-          label="Expected Close Date"
-          name="expected_close_date"
-        >
-          <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-        </Form.Item>
+          <Form.Item
+            label="Priority"
+            name="priority"
+          >
+            <Select>
+              <Option value="Low">Low</Option>
+              <Option value="Medium">Medium</Option>
+              <Option value="High">High</Option>
+            </Select>
+          </Form.Item>
 
-        <Form.Item
-          label="Assigned To"
-          name="assigned_to"
-        >
-          <Select placeholder="Select user" showSearch optionFilterProp="children">
-            {users.map(user => (
-              <Option key={user.id} value={user.id}>
-                {user.name} ({user.role})
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Form.Item
+            label="Deal Type"
+            name="deal_type"
+          >
+            <Select>
+              <Option value="New Business">New Business</Option>
+              <Option value="Existing Business">Existing Business</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Source"
+            name="source"
+          >
+            <Input placeholder="Referred, Website, etc." />
+          </Form.Item>
+
+          <Form.Item
+            label="Expected Close Date"
+            name="expected_close_date"
+          >
+            <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+          </Form.Item>
+
+          <Form.Item
+            label="Assigned To"
+            name="assigned_to"
+          >
+            <Select placeholder="Select user" showSearch optionFilterProp="children">
+              {users.map(user => (
+                <Option key={user.id} value={user.id}>
+                  {user.name} ({user.role})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Description"
+            name="description"
+            className="col-span-3"
+          >
+            <Input.TextArea rows={3} placeholder="Additional deal details..." />
+          </Form.Item>
+        </div>
       </Form>
     </Modal>
   );

@@ -33,8 +33,9 @@ const CopyButton = ({ text, tooltip }) => {
   );
 };
 
-export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, currentUser }) {
+export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, onUnassign, currentUser }) {
   const [draggedLead, setDraggedLead] = useState(null);
+  const isAdmin = currentUser?.role === 'Admin';
 
   const columns = [
     { title: "New", value: "New", color: "#f0ceeeff", textColor: "#634b63ff" },
@@ -58,8 +59,9 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
   }, [leads]);
 
   const handleDragStart = (e, lead) => {
-    // Cannot drag if it's assigned to someone else
-    if (lead.assigned_to && lead.assigned_to !== currentUser?.id) {
+    // Cannot drag if it's assigned to someone else (unless Admin)
+    const isAssignedToOther = lead.assigned_to && lead.assigned_to !== currentUser?.id;
+    if (isAssignedToOther && !isAdmin) {
       e.preventDefault();
       return;
     }
@@ -107,21 +109,22 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
             <div className="flex-1 overflow-y-auto py-3 px-1 space-y-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
               {columnLeads.map((lead) => {
                 const isAssignedToOther = lead.assigned_to && lead.assigned_to !== currentUser?.id;
+                const canDrag = !isAssignedToOther || isAdmin;
 
                 return (
                   <div
                     key={lead.id}
-                    draggable={!isAssignedToOther}
+                    draggable={canDrag}
                     onDragStart={(e) => handleDragStart(e, lead)}
                     onClick={() => onLeadClick(lead)}
-                    className={`bg-white p-2 rounded-xl shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer ${isAssignedToOther ? 'opacity-70 grayscale-[20%]' : 'cursor-grab active:cursor-grabbing'}`}
+                    className={`bg-white p-2 rounded-xl shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer ${!canDrag ? 'opacity-70 grayscale-[20%]' : 'cursor-grab active:cursor-grabbing'}`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-gray-900 text-[15px] truncate pr-2" title={lead.name}>
                         {lead.name}
                       </h4>
                       {isAssignedToOther && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-400 mt-1" title="Assigned to another user" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-400 mt-1" title={isAdmin ? "Assigned (Admin can drag)" : "Assigned to another user"} />
                       )}
                     </div>
 
@@ -151,8 +154,23 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, curren
                       <div className="text-[10px] font-bold tracking-wide text-gray-400 uppercase truncate">
                         {lead.source || "No Source"}
                       </div>
-                      <div className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200 truncate w-max max-w-full">
-                        {lead.assignedTo?.name || "Unassigned"}
+                      <div className="flex items-center gap-1 max-w-[65%]">
+                        <div className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200 truncate" title={lead.assignedTo?.name || "Unassigned"}>
+                          {lead.assignedTo?.name || "Unassigned"}
+                        </div>
+                        {isAdmin && lead.assigned_to && (
+                          <Tooltip title="Unassign / Clear User">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUnassign(lead);
+                              }}
+                              className="p-1 hover:bg-red-50 text-red-400 hover:text-red-500 rounded transition-colors"
+                            >
+                              <XCircle size={14} />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   </div>

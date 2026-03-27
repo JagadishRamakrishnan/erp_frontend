@@ -302,6 +302,20 @@ export default function Leads() {
     }
   };
 
+  const handleUnassign = async (lead) => {
+    try {
+      const response = await leadService.update(lead.id, {
+        assigned_to: null
+      });
+      if (response.success) {
+        message.success('Lead unassigned successfully');
+        fetchLeads();
+      }
+    } catch (error) {
+      message.error('Failed to unassign lead');
+    }
+  };
+
   const handleConvert = (lead) => {
     setPendingStageChange({ lead, newStage: 'Won' }); // Default target for conversion
     setIsConverting(true);
@@ -553,6 +567,13 @@ export default function Leads() {
       title: "Assigned To",
       dataIndex: "assigned_to",
       align: "center",
+      sorter: (a, b) => {
+        // Unassigned leads first
+        const aVal = a.assignedTo ? 1 : 0;
+        const bVal = b.assignedTo ? 1 : 0;
+        if (aVal !== bVal) return aVal - bVal;
+        return (a.assignedTo?.name || "").localeCompare(b.assignedTo?.name || "");
+      },
       render: (_, record) => (
         <span>
           {record.assignedTo?.name || "Unassigned"}
@@ -564,41 +585,52 @@ export default function Leads() {
       title: "Actions",
       key: "actions",
       align: "center",
-      render: (_, record) => (
-        <div style={{ display: "flex", alignItems:"center", justifyContent: "center", gap: 5 }}>
-          {record.status !== "Won" && (
+      render: (_, record) => {
+        const isAssignedToOther = record.assigned_to && record.assigned_to !== currentUser?.id;
+        const isAdmin = currentUser?.role === 'Admin';
+        const canEdit = !isAssignedToOther || isAdmin;
+
+        return (
+          <div style={{ display: "flex", alignItems:"center", justifyContent: "center", gap: 5 }}>
+            {record.status !== "Won" && (
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleConvert(record)}
+                style={{ background: "#52c41a", borderColor: "#52c41a" }}
+                disabled={!canEdit}
+                title={!canEdit ? "Assigned to another user" : ""}
+              >
+                Convert
+              </Button>
+            )}
+
+            <Button
+              icon={<EyeOutlined />}
+              type=""
+              onClick={() => handleView(record)}
+            >
+            </Button>
+
             <Button
               type="primary"
-              size="small"
-              onClick={() => handleConvert(record)}
-              style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+              disabled={!canEdit}
+              title={!canEdit ? "Assigned to another user" : ""}
             >
-              Convert
             </Button>
-          )}
 
-          <Button
-            icon={<EyeOutlined />}
-            type=""
-            onClick={() => handleView(record)}
-          >
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-          </Button>
-
-          <Popconfirm
-            title="Delete lead"
-            onConfirm={() => handleDelete(record.id)}
-          >
-            <Button danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </div>
-      ),
+            <Popconfirm
+              title="Delete lead"
+              onConfirm={() => handleDelete(record.id)}
+              disabled={!canEdit}
+            >
+              <Button danger icon={<DeleteOutlined />} disabled={!canEdit} title={!canEdit ? "Assigned to another user" : ""} />
+            </Popconfirm>
+          </div>
+        );
+      },
     },
   ];
 
@@ -761,6 +793,7 @@ export default function Leads() {
               leads={filteredLeads}
               onLeadDrop={handleLeadDrop}
               onLeadClick={handleView}
+              onUnassign={handleUnassign}
               currentUser={currentUser}
             />
           ) : (
@@ -835,43 +868,56 @@ export default function Leads() {
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      {record.status !== 'Won' && (
-                        <Button
-                          type="primary"
-                          size="small"
-                          onClick={() => handleConvert(record)}
-                          style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                        >
-                          Convert
-                        </Button>
-                      )}
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                      >
-                        Edit
-                      </Button>
-                      <Popconfirm
-                        title="Delete lead"
-                        description="Are you sure?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                          Delete
-                        </Button>
-                      </Popconfirm>
+                      {(() => {
+                        const isAssignedToOther = record.assigned_to && record.assigned_to !== currentUser?.id;
+                        const isAdmin = currentUser?.role === 'Admin';
+                        const canEdit = !isAssignedToOther || isAdmin;
+
+                        return (
+                          <>
+                            {record.status !== 'Won' && (
+                              <Button
+                                type="primary"
+                                size="small"
+                                onClick={() => handleConvert(record)}
+                                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                disabled={!canEdit}
+                              >
+                                Convert
+                              </Button>
+                            )}
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<EyeOutlined />}
+                              onClick={() => handleView(record)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEdit(record)}
+                              disabled={!canEdit}
+                            >
+                              Edit
+                            </Button>
+                            <Popconfirm
+                              title="Delete lead"
+                              description="Are you sure?"
+                              onConfirm={() => handleDelete(record.id)}
+                              okText="Yes"
+                              cancelText="No"
+                              disabled={!canEdit}
+                            >
+                              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled={!canEdit}>
+                                Delete
+                              </Button>
+                            </Popconfirm>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from "recharts";
-import { Target, DollarSign, TrendingUp, Users } from "lucide-react";
+import { Target, TrendingUp, Users, IndianRupee } from "lucide-react";
 import { motion } from "framer-motion";
 import { Typography, Spin, message } from "antd";
 import { reportsService } from "../services";
@@ -76,10 +76,10 @@ const { Title, Text } = Typography;
   </Text>
 </div>
       {/* ================= KPI CARDS (Animated) ================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 my-6">
         {[
           { title: "Win Rate", value: kpiMetrics.winRate || "0%", growth: "+5%", growthColor: "text-[#10b981]", icon: <Target size={22} className="text-[#10b981]"/>, bg: "bg-[#d1fae5]" },
-          { title: "Avg Deal Size", value: kpiMetrics.avgDealSize || "₹0K", growth: "+12%", growthColor: "text-[#10b981]", icon: <DollarSign size={22} className="text-[#7c3aed]"/>, bg: "bg-[#f3e8ff]" },
+          { title: "Avg Deal Size", value: kpiMetrics.avgDealSize || "₹0K", growth: "+12%", growthColor: "text-[#10b981]", icon: <IndianRupee size={22} className="text-[#7c3aed]"/>, bg: "bg-[#f3e8ff]" },
           { title: "Sales Cycle", value: kpiMetrics.salesCycle || "0 days", growth: "-3 days", growthColor: "text-[#10b981]", icon: <TrendingUp size={22} className="text-[#3b82f6]"/>, bg: "bg-[#dbeafe]" },
           { title: "Active Leads", value: kpiMetrics.activeLeads || "0", growth: "+18%", growthColor: "text-[#10b981]", icon: <Users size={22} className="text-[#f59e0b]"/>, bg: "bg-[#fef3c7]" }
         ].map((item, i) => (

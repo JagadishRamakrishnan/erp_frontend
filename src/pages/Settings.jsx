@@ -3,6 +3,7 @@ import { Card, Row, Col, Input, Button, Switch, Form, Spin, message, Avatar, Upl
 import { UserOutlined, LockOutlined, BellOutlined, HomeOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import companyService from "../services/companyService";
+import authService from "../services/authService";
 
 
 export default function Settings() {
@@ -12,6 +13,8 @@ export default function Settings() {
   const [companySaving, setCompanySaving] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'Admin';
 
   useEffect(() => {
     fetchCompany();
@@ -108,7 +111,7 @@ export default function Settings() {
     <div style={styles.page}>
 
       {/* ================= HEADER ================= */}
-      <div style={{ marginBottom: 24, paddingLeft: 4 }}>
+      <div style={{ marginBottom: 24 }} className={isAdmin ? "" : "mx-auto max-w-3xl"}>
         <div style={{ fontSize: 26, fontWeight: 700, color: "#111827", letterSpacing: "-0.5px", fontFamily: '"Inter", sans-serif' }}>
           Settings
         </div>
@@ -120,7 +123,8 @@ export default function Settings() {
       <Row gutter={[24, 24]}>
 
         {/* ================= COMPANY SETTINGS (LEFT) ================= */}
-        <Col xs={24} lg={16}>
+        {isAdmin && (
+          <Col xs={24} lg={16}>
           <motion.div custom={0} initial="hidden" animate="visible" variants={cardAnimation}>
             <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -236,9 +240,10 @@ export default function Settings() {
             </Card>
           </motion.div>
         </Col>
+      )}
 
         {/* ================= RIGHT COLUMN ================= */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={isAdmin ? 8 : 18} className={isAdmin ? "" : "mx-auto"}>
           <Row gutter={[0, 24]}>
 
             {/* PROFILE SETTINGS */}
