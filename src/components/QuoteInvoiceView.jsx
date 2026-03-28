@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Modal, Button } from "antd";
-import { PrinterOutlined, MailOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { Modal, Button, message } from "antd";
+import { PrinterOutlined, MailOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, SwapOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import companyService from "../services/companyService";
+import invoiceService from "../services/invoiceService";
 
 const STATUS_CONFIG = {
   Draft:    { color: "#6b7280", bg: "#f3f4f6", icon: <ClockCircleOutlined /> },
@@ -17,6 +18,7 @@ const STATUS_CONFIG = {
 export default function QuoteInvoiceView({ open, onClose, record, type = "quote", directPrint = false }) {
   const printRef = useRef();
   const [company, setCompany] = useState(null);
+  const [isConverting, setIsConverting] = useState(false);
 
   useEffect(() => {
     companyService.getAll().then((res) => {
@@ -50,6 +52,23 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 300);
+  };
+
+  const handleConvertToInvoice = async () => {
+    setIsConverting(true);
+    try {
+      const resp = await invoiceService.generateFromQuotation(record.id);
+      if (resp.success) {
+        message.success("Invoice generated successfully!");
+        onClose();
+      } else {
+        message.error(resp.message || "Conversion failed");
+      }
+    } catch (err) {
+      message.error("Conversion failed");
+    } finally {
+      setIsConverting(false);
+    }
   };
 
   if (!record) return null;
@@ -165,7 +184,7 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
                 <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>{i + 1}</td>
                 <td style={{ padding: "11px 16px", fontSize: 13, borderBottom: "1px solid #f0f0f0" }}>
                   <div style={{ fontWeight: 600, color: "#111827" }}>
-                    {item ? (item.item_name || item.description || "Service") : `${isInvoice ? "Invoice" : "Quotation"} — ${record.deal?.deal_name || "Professional Services"}`}
+                    {item ? (item.item_name || item.product_name || "Service") : `${isInvoice ? "Invoice" : "Quotation"} — ${record.deal?.deal_name || "Professional Services"}`}
                   </div>
                   {item?.description && item?.item_name && (
                     <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{item.description}</div>
@@ -267,6 +286,17 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Button onClick={onClose} size="small" style={{ borderRadius: 8 }}>Close</Button>
+          {!isInvoice && status === 'Approved' && (
+            <Button 
+              type="primary" 
+              size="small" 
+              icon={<SwapOutlined />} 
+              loading={isConverting}
+              onClick={handleConvertToInvoice}
+              style={{ borderRadius: 8, background: "#7c3aed", borderColor: "#7c3aed" }}>
+              Convert to Invoice
+            </Button>
+          )}
           <Button type="primary" size="small" icon={<PrinterOutlined />} onClick={handlePrint}
             style={{ borderRadius: 8, background: accentColor, borderColor: accentColor }}>
             Print / PDF

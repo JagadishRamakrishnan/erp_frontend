@@ -34,6 +34,14 @@ const quotationService = {
       method: 'DELETE',
     });
   },
+
+  // Generate quotation from service template
+  generateFromTemplate: async (data) => {
+    return await apiCall('/quotations/generate-from-template', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 export default quotationService;

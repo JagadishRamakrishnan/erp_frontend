@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message, Popconfirm, Tooltip } from "antd";
+import { Modal, Tabs, Steps, Avatar, Tag, Card, Row, Col, Divider, Timeline, Spin, Button, Input, message, Popconfirm, Tooltip, Collapse, Table } from "antd";
 import { leadService, noteService, taskService } from "../services";
 import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined, FileTextOutlined, EditOutlined, SaveOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, TrophyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { Briefcase, Info, CheckCircle2, X } from "lucide-react";
@@ -318,6 +318,72 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
                         <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
                           <FileTextOutlined style={{ fontSize: 32, color: '#d1d5db', marginBottom: 12 }} />
                           <p>No notes or activities recorded yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'services',
+                  label: <span className="font-semibold text-[14px]">Interested Services</span>,
+                  children: (
+                    <div className="mt-4 px-2 h-[400px] overflow-y-auto">
+                      {localLead.interestedServices && localLead.interestedServices.length > 0 ? (
+                        <Collapse accordion expandIconPosition="end" ghost className="service-accordion">
+                          {localLead.interestedServices.map(service => (
+                            <Collapse.Panel 
+                              header={
+                                <div className="flex justify-between items-center w-full pr-4">
+                                  <div className="flex items-center gap-2">
+                                    <Briefcase size={16} className="text-blue-500" />
+                                    <span className="font-bold text-gray-800">{service.name}</span>
+                                  </div>
+                                  <Tag color="blue" className="border-none rounded-full px-3">{service.category}</Tag>
+                                </div>
+                              } 
+                              key={service.id}
+                              className="mb-3 bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm"
+                            >
+                              <div className="p-2">
+                                <p className="text-gray-600 text-sm mb-4 italic px-2">
+                                  {service.description || "No description available."}
+                                </p>
+                                <Table
+                                  dataSource={service.lineItems || []}
+                                  pagination={false}
+                                  size="small"
+                                  rowKey="id"
+                                  className="border border-gray-50 rounded-lg overflow-hidden"
+                                  columns={[
+                                    { title: 'Item', dataIndex: 'item_name', key: 'item', className: 'text-[12px] font-semibold' },
+                                    { title: 'Qty', dataIndex: 'qty', key: 'qty', width: 60, align: 'center', className: 'text-[12px]' },
+                                    { 
+                                      title: 'Price', 
+                                      dataIndex: 'unit_price', 
+                                      key: 'price',
+                                      align: 'right',
+                                      className: 'text-[12px]',
+                                      render: (val) => `₹${val.toLocaleString()}`
+                                    },
+                                    { 
+                                      title: 'Tax', 
+                                      dataIndex: 'tax_percent', 
+                                      key: 'tax',
+                                      width: 60,
+                                      align: 'center',
+                                      className: 'text-[12px]',
+                                      render: (val) => `${val}%`
+                                    }
+                                  ]}
+                                />
+                              </div>
+                            </Collapse.Panel>
+                          ))}
+                        </Collapse>
+                      ) : (
+                        <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
+                          <Briefcase size={40} className="text-gray-200 mb-3" />
+                          <p>No interested services associated with this lead.</p>
                         </div>
                       )}
                     </div>

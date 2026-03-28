@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Card, Row, Col, Input, Button, Switch, Form, Spin, message, Avatar, Upload } from "antd";
-import { UserOutlined, LockOutlined, BellOutlined, HomeOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, BellOutlined, HomeOutlined, EditOutlined, PlusOutlined, UploadOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import companyService from "../services/companyService";
 import authService from "../services/authService";
+import ServiceCatalog from "./settings/ServiceCatalog";
 
 
 export default function Settings() {
@@ -326,6 +327,27 @@ export default function Settings() {
         </Col>
 
       </Row>
+
+      {/* ================= SERVICE CATALOG (Admin only) ================= */}
+      {isAdmin && (
+        <motion.div custom={3} initial="hidden" animate="visible" variants={cardAnimation} style={{ marginTop: 24 }}>
+          <Card
+            variant="borderless"
+            style={styles.card}
+            styles={{ body: { padding: 24 } }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+              <div style={styles.iconWrap('#eff6ff', '#3b82f6')}>
+                <AppstoreOutlined />
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#111827', fontFamily: '"Inter", sans-serif' }}>
+                Service & Product Catalog
+              </span>
+            </div>
+            <ServiceCatalog />
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }

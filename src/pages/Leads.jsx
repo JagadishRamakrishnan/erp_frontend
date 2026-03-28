@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined, CalendarOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import { leadService, userService, noteService, taskService, activityService } from "../services";
+import { leadService, userService, noteService, taskService, activityService, serviceCatalogService } from "../services";
 import authService from "../services/authService";
 import { useNavigate, useLocation } from "react-router-dom";
 import BulkUploadModal from "../components/BulkUploadModal";
@@ -58,6 +58,7 @@ export default function Leads() {
   const [editingLead, setEditingLead] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [users, setUsers] = useState([]);
+  const [services, setServices] = useState([]);
   const [form] = Form.useForm();
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -83,6 +84,7 @@ export default function Leads() {
   useEffect(() => {
     fetchLeads();
     fetchUsers();
+    fetchServices();
   }, []);
 
   const fetchLeads = async () => {
@@ -107,6 +109,15 @@ export default function Leads() {
       }
     } catch (error) {
       console.error('Failed to load users');
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const response = await serviceCatalogService.getAll({ is_active: 'true' });
+      if (response.success) setServices(response.data || []);
+    } catch (error) {
+      console.error('Failed to load services');
     }
   };
 
@@ -149,7 +160,8 @@ export default function Leads() {
       company: lead.company,
       source: lead.source,
       status: lead.status,
-      assigned_to: lead.assigned_to
+      assigned_to: lead.assigned_to,
+      service_ids: lead.interestedServices?.map(s => s.id) || []
     });
     setModalOpen(true);
   };
@@ -206,9 +218,9 @@ export default function Leads() {
         }
       }
 
-      const updateData = { 
-        status: finalStage, 
-        last_outcome: values.outcome || null 
+      const updateData = {
+        status: finalStage,
+        last_outcome: values.outcome || null
       };
 
       if (pendingLeadValues) {
@@ -238,7 +250,7 @@ export default function Leads() {
       const notePrefix = isConverting ? 'conversion' : 'stage change';
       const outcomeText = selectedOutcome ? ` (Outcome: ${selectedOutcome.label})` : '';
       const finalNote = `Moved to ${finalStage} during ${notePrefix}${outcomeText}. Notes: ${values.note}`;
-      
+
       await noteService.create({
         related_type: 'Lead',
         related_id: lead.id,
@@ -333,14 +345,14 @@ export default function Leads() {
     if (leads.length > 0 && location.state?.autoAction && location.state?.autoLeadId) {
       const { autoAction, autoLeadId } = location.state;
       const targetLead = leads.find(l => l.id === autoLeadId);
-      
+
       if (targetLead) {
         if (autoAction === 'edit') {
           handleEdit(targetLead);
         } else if (autoAction === 'convert') {
           handleConvert(targetLead);
         }
-        
+
         // Clear state to prevent re-opening on manual refresh
         navigate(location.pathname, { replace: true, state: {} });
       }
@@ -400,7 +412,7 @@ export default function Leads() {
         const aVal = a.assigned_to ? 1 : 0;
         const bVal = b.assigned_to ? 1 : 0;
         if (aVal !== bVal) return aVal - bVal;
-        
+
         // Secondary sort by date (newest first)
         return new Date(b.created_at) - new Date(a.created_at);
       });
@@ -432,14 +444,16 @@ export default function Leads() {
                 : null
             }
             style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
-            icon={<UserOutlined />}
+            // icon={<UserOutlined />}
+            className="cursor-pointer"
+             onClick={() => handleView(record)}
           >
-            {!record.email && text?.charAt(0)}
+            {record.name?.charAt(0)}
           </Avatar>
 
           <div>
-            <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.lead_code}</div>
+            <div style={{ fontWeight: 600, color: "#111827" }} className="cursor-pointer" onClick={() => handleView(record)} >{text}</div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }} className="cursor-pointer" onClick={() => handleView(record)} >{record.lead_code}</div>
           </div>
         </div>
       ),
@@ -452,9 +466,9 @@ export default function Leads() {
       render: (_, record) => (
         <div>
           {record.email && (
-            <div style={{ fontSize: 13, marginBottom:"5px" }}>
-              <Typography.Text 
-                copyable={{ 
+            <div style={{ fontSize: 13, marginBottom: "5px" }}>
+              <Typography.Text
+                copyable={{
                   text: record.email,
                   icon: [<ClipboardCopy size={14} className="text-gray-400 hover:text-blue-500 ml-1" key="copy" />, <CheckCircle2 size={14} className="text-green-500 ml-1" key="copied" />],
                   tooltips: ['Copy', 'Copied!']
@@ -467,8 +481,8 @@ export default function Leads() {
 
           {record.phone && (
             <div style={{ fontSize: 13 }}>
-              <Typography.Text 
-                copyable={{ 
+              <Typography.Text
+                copyable={{
                   text: record.phone,
                   icon: [<ClipboardCopy size={14} className="text-gray-400 hover:text-blue-500 ml-1" key="copy" />, <CheckCircle2 size={14} className="text-green-500 ml-1" key="copied" />],
                   tooltips: ['Copy', 'Copied!']
@@ -589,28 +603,33 @@ export default function Leads() {
         const isAssignedToOther = record.assigned_to && record.assigned_to !== currentUser?.id;
         const isAdmin = currentUser?.role === 'Admin';
         const canEdit = !isAssignedToOther || isAdmin;
+        const isClosed = record.status === 'Won' || record.status === 'Lost';
 
         return (
-          <div style={{ display: "flex", alignItems:"center", justifyContent: "center", gap: 5 }}>
-            {record.status !== "Won" && (
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => handleConvert(record)}
-                style={{ background: "#52c41a", borderColor: "#52c41a" }}
-                disabled={!canEdit}
-                title={!canEdit ? "Assigned to another user" : ""}
-              >
-                Convert
-              </Button>
-            )}
-
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
             <Button
+              type="primary"
+              size="small"
+              onClick={() => handleConvert(record)}
+              style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              disabled={!canEdit || isClosed}
+              title={
+                !canEdit
+                  ? "Assigned to another user"
+                  : isClosed
+                    ? `Lead is already ${record.status}`
+                    : "Convert to Opportunity"
+              }
+            >
+              Convert
+            </Button>
+
+            {/* <Button
               icon={<EyeOutlined />}
               type=""
               onClick={() => handleView(record)}
             >
-            </Button>
+            </Button> */}
 
             <Button
               type="primary"
@@ -714,13 +733,13 @@ export default function Leads() {
                             <span className="text-gray-400 ml-1.5">vs last 30 days</span>
                           </div>
                         </div>
-                        <div style={{ 
-                          width: 44, 
-                          height: 44, 
-                          borderRadius: 12, 
-                          backgroundColor: `${item.color}15`, 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <div style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          backgroundColor: `${item.color}15`,
+                          display: 'flex',
+                          alignItems: 'center',
                           justifyContent: 'center',
                           color: item.color
                         }}>
@@ -797,7 +816,7 @@ export default function Leads() {
               currentUser={currentUser}
             />
           ) : (
-            <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)",padding:"10px" }}>
+            <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)", padding: "10px" }}>
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
                 <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
                   Lead Directory ({filteredLeads.length})
@@ -808,27 +827,28 @@ export default function Leads() {
                 dataSource={filteredLeads}
                 rowKey="id"
                 loading={loading}
-                pagination={{ 
+                pagination={{
                   defaultPageSize: 10,
-                  showSizeChanger: true, 
+                  showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total) => `Total ${total} leads`
                 }}
                 renderMobileCard={(record) => (
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     {/* Header with Avatar and Name */}
-                    <div style={{ display: 'flex', alignItems: 'center'}}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                       <Avatar
                         style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
                         icon={<UserOutlined />}
+                        onClick={() => handleView(record)}
                       >
                         {record.name?.charAt(0)}
                       </Avatar>
-                      <div style={{ flex: 1 , paddingLeft: 10 }}>
+                      <div style={{ flex: 1, paddingLeft: 10 }} onClick={() => handleView(record)}>
                         <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
                           {record.name}
                         </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }} onClick={() => handleView(record)}>
                           {record.lead_code}
                         </div>
                       </div>
@@ -873,27 +893,27 @@ export default function Leads() {
                         const isAdmin = currentUser?.role === 'Admin';
                         const canEdit = !isAssignedToOther || isAdmin;
 
+                        const isClosed = record.status === 'Won' || record.status === 'Lost';
+
                         return (
                           <>
-                            {record.status !== 'Won' && (
-                              <Button
-                                type="primary"
-                                size="small"
-                                onClick={() => handleConvert(record)}
-                                style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                                disabled={!canEdit}
-                              >
-                                Convert
-                              </Button>
-                            )}
                             <Button
-                              type="link"
+                              type="primary"
                               size="small"
-                              icon={<EyeOutlined />}
-                              onClick={() => handleView(record)}
+                              onClick={() => handleConvert(record)}
+                              style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                              disabled={!canEdit || isClosed}
+                              title={
+                                !canEdit
+                                  ? "Assigned to another user"
+                                  : isClosed
+                                    ? `Lead is already ${record.status}`
+                                    : "Convert to Opportunity"
+                              }
                             >
-                              View
+                              Convert
                             </Button>
+
                             <Button
                               type="link"
                               size="small"
@@ -980,6 +1000,16 @@ export default function Leads() {
           </Row>
 
           <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item label="Interested Service / Product" name="service_ids">
+                <Select placeholder="Select services of interest (optional)" mode="multiple" allowClear showSearch optionFilterProp="label"
+                  options={services.map(s => ({ label: `${s.name}${s.category ? ` — ${s.category}` : ''}`, value: s.id }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 label="Status"
@@ -1060,9 +1090,9 @@ export default function Leads() {
               shouldUpdate={(prevValues, currentValues) => prevValues.selectedStatus !== currentValues.selectedStatus}
             >
               {() => (
-                <Form.Item 
-                  label="Select final stage for this conversion" 
-                  name="selectedStatus" 
+                <Form.Item
+                  label="Select final stage for this conversion"
+                  name="selectedStatus"
                   rules={[{ required: true }]}
                 >
                   <div className="flex flex-wrap gap-3 mt-2">
@@ -1125,15 +1155,15 @@ export default function Leads() {
           </Form.Item>
           <Form.Item
             noStyle
-            shouldUpdate={(prevValues, currentValues) => 
-              prevValues.selectedStatus !== currentValues.selectedStatus || 
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.selectedStatus !== currentValues.selectedStatus ||
               prevValues.outcome !== currentValues.outcome
             }
           >
             {({ getFieldValue }) => {
               const currentStage = isConverting ? getFieldValue('selectedStatus') : pendingStageChange?.newStage;
               const outcomes = STAGE_OUTCOMES[currentStage] || [];
-              
+
               return (
                 <>
                   {outcomes.length > 0 && (
@@ -1149,7 +1179,7 @@ export default function Leads() {
                               <span>{o.label}</span>
                               {o.offset && (
                                 <Tag color="blue" className="mr-0">
-                                  {o.offset < 24 ? `+${o.offset}h` : `+${Math.round(o.offset/24)}d`}
+                                  {o.offset < 24 ? `+${o.offset}h` : `+${Math.round(o.offset / 24)}d`}
                                 </Tag>
                               )}
                             </div>
@@ -1166,8 +1196,8 @@ export default function Leads() {
                     </Form.Item>
                   )}
 
-                  {((getFieldValue('outcome') === 'Other' || outcomes.length === 0) && getFieldValue('requiresFollowUp')) || 
-                   (outcomes.find(o => o.value === getFieldValue('outcome'))?.requiresDate) ? (
+                  {((getFieldValue('outcome') === 'Other' || outcomes.length === 0) && getFieldValue('requiresFollowUp')) ||
+                    (outcomes.find(o => o.value === getFieldValue('outcome'))?.requiresDate) ? (
                     <Form.Item
                       label="Follow-up Date & Time"
                       name="followUpDate"

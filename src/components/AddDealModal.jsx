@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Modal, Form, Input, Select, InputNumber, DatePicker, message } from "antd";
-import { customerService, userService } from "../services";
+import { customerService, userService, serviceCatalogService } from "../services";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -9,12 +9,14 @@ export default function AddDealModal({ open, onClose, onAdd, deal = null }) {
   const [form] = Form.useForm();
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchCustomers();
       fetchUsers();
+      fetchServices();
       if (deal) {
         form.setFieldsValue({
           ...deal,
@@ -48,6 +50,15 @@ export default function AddDealModal({ open, onClose, onAdd, deal = null }) {
     }
   };
 
+  const fetchServices = async () => {
+    try {
+      const response = await serviceCatalogService.getAll({ is_active: 'true' });
+      if (response.success) setServices(response.data || []);
+    } catch (error) {
+      console.error('Failed to load services');
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -63,6 +74,7 @@ export default function AddDealModal({ open, onClose, onAdd, deal = null }) {
         priority: values.priority,
         deal_type: values.deal_type,
         source: values.source,
+        service_id: values.service_id || null,
         description: values.description
       };
 
@@ -202,6 +214,15 @@ export default function AddDealModal({ open, onClose, onAdd, deal = null }) {
             name="expected_close_date"
           >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+          </Form.Item>
+
+          <Form.Item
+            label="Service / Product"
+            name="service_id"
+          >
+            <Select placeholder="Select service (optional)" allowClear showSearch optionFilterProp="label"
+              options={services.map(s => ({ label: `${s.name}${s.category ? ` — ${s.category}` : ''}`, value: s.id }))}
+            />
           </Form.Item>
 
           <Form.Item

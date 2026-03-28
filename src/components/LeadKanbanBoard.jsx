@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ClipboardCopy, Mail, Phone } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Mail, Phone, XCircle } from "lucide-react";
 import { Typography, message, Tooltip } from "antd";
 
 // Lightweight Copy Button Component to replace heavy Typography.Text
@@ -154,7 +154,7 @@ export default function LeadKanbanBoard({ leads, onLeadDrop, onLeadClick, onUnas
                       <div className="text-[10px] font-bold tracking-wide text-gray-400 uppercase truncate">
                         {lead.source || "No Source"}
                       </div>
-                      <div className="flex items-center gap-1 max-w-[65%]">
+                      <div className="flex items-center gap-1 max-w-[80%]">
                         <div className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200 truncate" title={lead.assignedTo?.name || "Unassigned"}>
                           {lead.assignedTo?.name || "Unassigned"}
                         </div>

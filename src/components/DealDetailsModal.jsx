@@ -1,4 +1,7 @@
 import authService from "../services/authService";
+import { quotationService } from "../services";
+import { message } from "antd";
+import { useState } from "react";
 
 export default function DealDetailsModal({ open, onClose, deal, onEdit }) {
 
@@ -6,8 +9,36 @@ export default function DealDetailsModal({ open, onClose, deal, onEdit }) {
 
   const currentUser = authService.getCurrentUser();
   const isAdmin = currentUser?.role === 'Admin';
+  const [generatingQuote, setGeneratingQuote] = useState(false);
+  
   // Check if current user is the owner or an admin
   const canEdit = isAdmin || deal.assignedTo?.id === currentUser?.id || deal.assigned_to === currentUser?.id;
+
+  const handleGenerateQuote = async () => {
+    if (!deal.service_id) {
+      return message.warning("Please link a service template to this deal first.");
+    }
+    
+    setGeneratingQuote(true);
+    try {
+      const resp = await quotationService.generateFromTemplate({
+        serviceId: deal.service_id,
+        customerId: deal.customer_id,
+        dealId: deal.id
+      });
+      
+      if (resp.success) {
+        message.success("Quotation generated successfully!");
+        // We could navigate to quotes or just stay here
+      } else {
+        message.error(resp.message || "Failed to generate quotation");
+      }
+    } catch (err) {
+      message.error("Failed to generate quotation");
+    } finally {
+      setGeneratingQuote(false);
+    }
+  };
 
   const getStageColor = (stage) => {
     switch (stage) {
@@ -113,6 +144,15 @@ export default function DealDetailsModal({ open, onClose, deal, onEdit }) {
                 className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-200"
               >
                 Edit Deal
+              </button>
+            )}
+            {deal.service_id && (
+              <button
+                onClick={handleGenerateQuote}
+                disabled={generatingQuote}
+                className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-200"
+              >
+                {generatingQuote ? 'Generating...' : 'Generate Quote'}
               </button>
             )}
             <button

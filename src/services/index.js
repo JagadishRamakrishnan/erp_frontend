@@ -14,3 +14,4 @@ export { default as noteService } from './noteService';
 export { default as metaService } from './metaService';
 export { default as dashboardService } from './dashboardService';
 export { default as reportsService } from './reportsService';
+export { default as serviceCatalogService } from './serviceCatalogService';

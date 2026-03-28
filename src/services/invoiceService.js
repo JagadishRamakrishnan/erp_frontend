@@ -34,6 +34,14 @@ const invoiceService = {
       method: 'DELETE',
     });
   },
+
+  // Generate invoice from quotation
+  generateFromQuotation: async (quotationId) => {
+    return await apiCall('/invoices/generate-from-quotation', {
+      method: 'POST',
+      body: JSON.stringify({ quotationId }),
+    });
+  },
 };
 
 export default invoiceService;

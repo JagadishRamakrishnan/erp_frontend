@@ -18,6 +18,7 @@ import {
 
 import { dashboardService } from "../services";
 import ResponsiveTable from "../components/ResponsiveTable";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 const { Text } = Typography;
 const cardAnimation = {
@@ -105,6 +106,33 @@ const getStatusColor = (status) => {
   };
   return colors[status] || 'default';
 };
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        padding: '12px 16px',
+        border: '1px solid #f1f5f9',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(4px)'
+      }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+          {payload[0].name}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: payload[0].payload.fill || payload[0].color }} />
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#3b82f6' }}>
+            {payload[0].value} <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 500 }}>Leads</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { useBreakpoint } = Grid;
@@ -856,10 +884,10 @@ export default function Dashboard() {
             whileHover={{ y: -6 }}
           >
             <Card
-              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Lead Sources</span>}
+              title={<span style={{ fontSize: 16, fontWeight: 600 }}>Lead Progress</span>}
               variant="borderless"
               style={styles.roundedCard}
-              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" }, body: { display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
+              styles={{ header: { borderBottom: "1px solid #f0f0f0", padding: "16px 24px" }, body: { display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' } }}
             >
               <div
                 style={{
@@ -867,38 +895,84 @@ export default function Dashboard() {
                   alignItems: "center",
                   justifyContent: "center",
                   flexDirection: screens.xs ? "column" : "row",
-                  gap: 60,
+                  flexWrap: "wrap",
+                  gap: 40,
                   padding: "10px 0"
                 }}
               >
-                {/* Donut Chart */}
-                <Progress
-                  type="circle"
-                  percent={stats.breakdown?.leadsByStatus?.length > 0 ? 100 : 0}
-                  strokeWidth={12}
-                  strokeColor="#3b82f6"
-                  format={() => stats.overview?.totalLeads || 0}
-                  size={160}
-                />
+                {/* Multi-color Donut Chart */}
+                <div style={{ width: 220, height: 220, position: 'relative' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.breakdown?.leadsByStatus?.map((lead, index) => ({
+                          name: lead.status,
+                          value: lead.count
+                        })) || []}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={85}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {stats.breakdown?.leadsByStatus?.map((entry, index) => {
+                          const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+                          return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                        })}
+                      </Pie>
+                      <RechartsTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Center Text */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none'
+                  }}>
+                    <div style={{ fontSize: 28, fontWeight: '800', color: '#111827', lineHeight: 1 }}>
+                      {stats.overview?.totalLeads || 0}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Leads
+                    </div>
+                  </div>
+                </div>
+
                 {/* Legend */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: 12,
+                    gap: 10,
                     fontSize: 14,
-                    justifyContent: "center"
+                    justifyContent: "center",
+                    minWidth: 160
                   }}
                 >
                   {stats.breakdown?.leadsByStatus?.map((lead, index) => {
-                    const colors = ['#3b82f6', '#ec4899', '#6366f1', '#f59e0b', '#10b981'];
+                    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
                     const totalLeads = stats.overview?.totalLeads || 1;
                     const percent = Math.round((lead.count / totalLeads) * 100);
 
                     return (
-                      <div key={lead.status}>
-                        <span style={{ color: colors[index % colors.length], marginRight: 8, fontSize: 18 }}>●</span>
-                        {lead.status} ({percent}%)
+                      <div key={lead.status} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          width: 12, 
+                          height: 12, 
+                          borderRadius: '50%', 
+                          background: colors[index % colors.length],
+                          boxShadow: `0 0 10px ${colors[index % colors.length]}40`
+                        }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, gap: 12 }}>
+                          <span style={{ color: '#4b5563', fontWeight: 600 }}>{lead.status}</span>
+                          <span style={{ color: '#9ca3af', fontWeight: 500 }}>{percent}%</span>
+                        </div>
                       </div>
                     );
                   })}
