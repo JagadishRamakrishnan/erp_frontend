@@ -213,67 +213,141 @@ export default function Deals() {
               </div>
           </div>
 
-          <div className="space-y-4">
-            {filteredDeals.map((deal, i) => (
-              <motion.div
-                key={deal.id}
-                custom={i}
-                initial="hidden"
-                animate="visible"
-                variants={listAnimation}
-                className="bg-white p-5 lg:px-6 rounded-[14px] shadow-[0_4px_15px_rgba(15,23,42,0.05)] border border-gray-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:border-blue-200 hover:shadow-[0_8px_25px_rgba(2,6,23,0.08)] transition-all cursor-pointer group"
-                onClick={() => {
-                  setSelectedDeal(deal);
-                  setShowDetails(true);
-                }}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-[17px] font-bold text-[#111827] group-hover:text-blue-600 transition-colors uppercase tracking-tight">{deal.deal_name}</h3>
-                    {deal.priority && <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getPriorityColor(deal.priority)}`}>{deal.priority}</span>}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <ResponsiveTable 
+              columns={[
+                {
+                  title: "Deal Name",
+                  dataIndex: "deal_name",
+                  render: (text, record) => (
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-900">{text}</span>
+                      <span className="text-[11px] text-gray-400">{record.customer?.name || 'No Customer'}</span>
+                    </div>
+                  )
+                },
+                {
+                  title: "Stage",
+                  dataIndex: "stage",
+                  render: (stage) => (
+                    <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-bold tracking-[0.5px] uppercase ${getStageColor(stage)}`}>
+                      {stage}
+                    </span>
+                  )
+                },
+                {
+                  title: "Value",
+                  dataIndex: "value",
+                  align: "right",
+                  render: (v) => <span className="font-bold text-gray-900">₹{parseFloat(v || 0).toLocaleString()}</span>
+                },
+                {
+                  title: "Prob.",
+                  dataIndex: "probability",
+                  align: "center",
+                  render: (p) => (
+                    <div className="flex items-center gap-2">
+                       <div className="w-12 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${p > 70 ? 'bg-green-500' : p > 30 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${p}%` }} />
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-400">{p}%</span>
+                    </div>
+                  )
+                },
+                {
+                  title: "Expected Close",
+                  dataIndex: "expected_close_date",
+                  render: (d) => <span className="text-gray-500 text-[12px]">{d ? dayjs(d).format('MMM DD, YYYY') : '-'}</span>
+                },
+                {
+                  title: "Actions",
+                  align: "right",
+                  render: (_, record) => (
+                    <button className="text-blue-600 font-semibold text-[13px] hover:underline" onClick={() => { setSelectedDeal(record); setShowDetails(true); }}>Manage</button>
+                  )
+                }
+              ]}
+              dataSource={filteredDeals}
+              rowKey="id"
+              loading={loading}
+              pagination={{ pageSize: 12 }}
+              onRow={(record) => ({
+                onClick: () => { setSelectedDeal(record); setShowDetails(true); }
+              })}
+              renderMobileCard={(deal) => (
+                <div className="flex flex-col gap-4">
+                  {/* Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-[16px] font-bold text-gray-900 truncate leading-tight uppercase">{deal.deal_name}</h3>
+                        {deal.priority && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${getPriorityColor(deal.priority)}`}>
+                            {deal.priority}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-gray-500 font-medium">
+                        {deal.customer?.name || 'No Customer'}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-[6px] text-[10px] font-bold tracking-[0.5px] uppercase ${getStageColor(deal.stage)}`}>
+                      {deal.stage}
+                    </span>
                   </div>
-                  <p className="text-[#6b7280] text-[13px] mt-1 font-medium flex items-center gap-2">
-                    <span className="text-[#4b5563] font-semibold">{deal.customer?.name || 'No Customer'}</span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-[#6b7280]">Owner: {deal.assignedTo?.name || 'Unassigned'}</span>
-                  </p>
-                  <div className="flex flex-wrap items-center gap-4 mt-4">
-                    <span className={`px-3 py-1 rounded-[6px] text-[11px] font-bold tracking-[0.5px] uppercase ${getStageColor(deal.stage)}`}>{deal.stage}</span>
-                    {deal.expected_close_date && (
-                      <span className="flex items-center text-[#6b7280] text-[13px] font-medium">
-                        <Calendar size={15} className="mr-1.5 text-[#9ca3af]" /> {new Date(deal.expected_close_date).toLocaleDateString()}
-                      </span>
-                    )}
-                    {deal.probability && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${deal.probability > 70 ? 'bg-green-500' : deal.probability > 30 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${deal.probability}%` }} />
+
+                  {/* Financials & Progress */}
+                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div className="flex justify-between items-end mb-3">
+                      <div>
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Weighted Value</div>
+                        <div className="text-[15px] font-bold text-indigo-600 leading-none">
+                          ₹{parseFloat(deal.weighted_value || (deal.value * (deal.probability || 0) / 100) || 0).toLocaleString()}
                         </div>
-                        <span className="text-[#4b5563] text-[12px] font-bold">{deal.probability}%</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Total Deal Value</div>
+                        <div className="text-[20px] font-extrabold text-gray-900 leading-none">₹{parseFloat(deal.value || 0).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    
+                    {deal.probability && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-bold text-gray-400">
+                          <span>WIN PROBABILITY</span>
+                          <span>{deal.probability}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${deal.probability > 70 ? 'bg-green-500' : deal.probability > 30 ? 'bg-amber-500' : 'bg-red-500'}`} 
+                            style={{ width: `${deal.probability}%` }} 
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="md:text-right flex flex-col items-start md:items-end border-t md:border-none border-gray-50 pt-4 md:pt-0 mt-2 md:mt-0">
-                  <div className="flex gap-x-8 mb-3">
-                    <div className="text-right">
-                      <p className="text-[#9ca3af] text-[10px] uppercase tracking-wide font-bold mb-0.5">Weighted Value</p>
-                      <div className="text-[#6366f1] font-[700] text-[16px] leading-none">₹{parseFloat(deal.weighted_value || (deal.value * (deal.probability || 0) / 100) || 0).toLocaleString()}</div>
+
+                  {/* Footer Stats */}
+                  <div className="flex items-center justify-between text-[12px] text-gray-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={14} className="text-gray-300" />
+                      <span>{deal.expected_close_date ? dayjs(deal.expected_close_date).format('MMM DD, YYYY') : 'No Date'}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[#9ca3af] text-[10px] uppercase tracking-wide font-bold mb-0.5">Total Value</p>
-                      <div className="text-[#111827] font-[800] text-[22px] leading-none">₹{parseFloat(deal.value || 0).toLocaleString()}</div>
+                    <div className="flex items-center gap-1.5">
+                       <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                       <span className="font-medium text-gray-600">{deal.assignedTo?.name || 'Unassigned'}</span>
                     </div>
                   </div>
-                  <button className="flex items-center justify-center border border-[#d1d5db] bg-white text-[#4b5563] group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 px-4 h-9 rounded-lg text-[13px] font-semibold transition-all shadow-sm">Manage Deal</button>
+
+                  {/* Action Button */}
+                  <div className="pt-2">
+                    <button className="w-full h-10 bg-white border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm uppercase tracking-wider">
+                      Manage Opportunity
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
-            {filteredDeals.length === 0 && (
-              <div className="text-center py-12 bg-white rounded-[14px] border border-dashed border-gray-300">
-                <p className="text-[#6b7280] font-medium text-[14px]">No deals found matching your search.</p>
-              </div>
-            )}
+              )}
+            />
           </div>
         </>
       )}

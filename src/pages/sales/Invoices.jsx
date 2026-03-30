@@ -13,11 +13,15 @@ import {
   Spin,
   Tag,
   InputNumber,
-  Avatar
+  Avatar,
+  Divider,
+  Switch,
+  Tooltip
 } from "antd";  
 import { 
   SearchOutlined, DownloadOutlined, SendOutlined, EyeOutlined, 
-  PlusOutlined, FileTextOutlined, EditOutlined, DeleteOutlined
+  PlusOutlined, FileTextOutlined, EditOutlined, DeleteOutlined,
+  BellOutlined, RetweetOutlined
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
@@ -43,6 +47,7 @@ export default function Invoices() {
 const [viewOpen, setViewOpen] = useState(false);
 const [selectedInvoice, setSelectedInvoice] = useState(null);
 const [bulkModalOpen, setBulkModalOpen] = useState(false);
+const [reminding, setReminding] = useState(false);
   useEffect(() => {
     fetchInvoices();
     fetchCustomers();
@@ -140,7 +145,10 @@ const row = {
       quotation_id: invoice.quotation_id,
       total_amount: invoice.total_amount,
       paid_amount: invoice.paid_amount,
-      status: invoice.status
+      status: invoice.status,
+      is_recurring: invoice.is_recurring,
+      recurring_interval: invoice.recurring_interval,
+      items: invoice.items?.length > 0 ? invoice.items : [{ description: "", quantity: 1, unit_price: 0, tax_percent: 0, total: 0 }]
     });
     setModalOpen(true);
   };
@@ -163,7 +171,28 @@ const handleView = (invoice) => {
   const handleAddNew = () => {
     setEditingInvoice(null);
     form.resetFields();
+    form.setFieldsValue({
+      items: [{ description: "", quantity: 1, unit_price: 0, tax_percent: 0, total: 0 }],
+      status: 'Pending',
+      paid_amount: 0,
+      is_recurring: false
+    });
     setModalOpen(true);
+  };
+
+  const handleSendReminder = async (id) => {
+    setReminding(true);
+    try {
+      const res = await invoiceService.sendReminder(id);
+      if (res.success) {
+        message.success("Reminder sent successfully!");
+        fetchInvoices();
+      }
+    } catch (err) {
+      message.error("Failed to send reminder");
+    } finally {
+      setReminding(false);
+    }
   };
 
   const filteredInvoices = invoices.filter(inv => {
@@ -210,10 +239,11 @@ const handleView = (invoice) => {
     title: "Invoice ID",
     dataIndex: "invoice_number",
     align: "center",
-    render: (text) => (
+    render: (text, record) => (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
         <FileTextOutlined style={{ color: "#1677ff" }} />
         <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
+        {record.is_recurring && <Tooltip title={`Recurring: ${record.recurring_interval}`}><RetweetOutlined style={{ color: '#7c3aed' }} /></Tooltip>}
       </div>
     )
   },
@@ -288,30 +318,29 @@ const handleView = (invoice) => {
     align: "center",
     render: (_, record) => (
       <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => handleView(record)}
-        >
-          View
-        </Button>
+        <Tooltip title="View Details">
+          <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)} />
+        </Tooltip>
+        
+        {record.status !== 'Paid' && (
+          <Tooltip title="Send Reminder">
+            <Button 
+              type="link" 
+              icon={<BellOutlined />} 
+              onClick={() => handleSendReminder(record.id)} 
+              loading={reminding && selectedInvoice?.id === record.id}
+            />
+          </Tooltip>
+        )}
 
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => handleEdit(record)}
-        >
-          Edit
-        </Button>
+        <Tooltip title="Edit">
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+        </Tooltip>
 
-        <Popconfirm
-          title="Delete invoice"
-          description="Are you sure you want to delete this invoice?"
-          onConfirm={() => handleDelete(record.id)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            Delete
-          </Button>
+        <Popconfirm title="Delete invoice" onConfirm={() => handleDelete(record.id)}>
+          <Tooltip title="Delete">
+            <Button type="link" danger icon={<DeleteOutlined />} />
+          </Tooltip>
         </Popconfirm>
       </div>
     ),
@@ -463,82 +492,75 @@ const pending = invoices
                   'Partial': 'processing',
                   'Paid': 'success'
                 };
+                const dueAmount = record.total_amount - record.paid_amount;
                 
                 return (
-                  <div>
-                    {/* Header with Invoice ID and Status */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FileTextOutlined style={{ color: "#1677ff", fontSize: 18 }} />
-                        <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                          {record.invoice_number}
-                        </span>
+                  <div className="flex flex-col gap-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                          <FileTextOutlined style={{ fontSize: 20 }} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-[15px] text-gray-900 leading-tight">{record.invoice_number}</div>
+                          <div className="text-[12px] text-gray-400">{dayjs(record.created_at).format('MMM DD, YYYY')}</div>
+                        </div>
                       </div>
-                      <Tag color={statusColors[record.status] || 'default'}>
+                      <Tag color={statusColors[record.status] || 'default'} style={{ borderRadius: 6, margin: 0 }}>
                         {record.status}
                       </Tag>
                     </div>
 
-                    {/* Customer Info */}
-                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                      <div style={{ fontWeight: 600, color: "#111827", marginBottom: 4 }}>
-                        {record.customer?.name || 'N/A'}
+                    {/* Financials Grid */}
+                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-gray-100">
+                      <div className="text-center">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Total</div>
+                        <div className="text-[14px] font-bold text-gray-900">₹{record.total_amount?.toLocaleString() || 0}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-                        {record.customer?.email || ''}
+                      <div className="text-center border-x border-gray-100 px-2">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Paid</div>
+                        <div className="text-[14px] font-bold text-green-600">₹{record.paid_amount?.toLocaleString() || 0}</div>
                       </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Total:</strong>{' '}
-                        <span style={{ fontWeight: 700, color: "#111827" }}>
-                          ₹{record.total_amount?.toLocaleString("en-IN") || 0}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Paid:</strong>{' '}
-                        <span style={{ color: "#10b981", fontWeight: 600 }}>
-                          ₹{record.paid_amount?.toLocaleString("en-IN") || 0}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Due:</strong>{' '}
-                        <span style={{ color: "#ef4444", fontWeight: 600 }}>
-                          ₹{record.due_amount?.toLocaleString("en-IN") || 0}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563" }}>
-                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY') : 'N/A'}
+                      <div className="text-center">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Due</div>
+                        <div className="text-[14px] font-bold text-red-500">₹{dueAmount?.toLocaleString() || 0}</div>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
+                    {/* Customer Info */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar size={24} style={{ backgroundColor: '#f3f4f6', color: '#6b7280' }} icon={<UserOutlined />} />
+                        <span className="text-[13px] font-medium text-gray-700">{record.customer?.name || 'N/A'}</span>
+                      </div>
+                      {record.is_recurring && (
+                        <Tag icon={<RetweetOutlined />} color="purple" style={{ margin: 0, fontSize: 10 }}>Recurring</Tag>
+                      )}
+                    </div>
+
+                    {/* Quick Access Bar */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button 
+                        type="primary" 
+                        variant="soft" 
+                        block 
+                        icon={<EyeOutlined />} 
+                        onClick={(e) => { e.stopPropagation(); handleView(record); }}
+                        className="h-10 rounded-lg font-semibold bg-gray-100 text-gray-700 border-none hover:bg-gray-200"
                       >
-                        View
+                        View Details
                       </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                      >
-                        Edit
-                      </Button>
-                      <Popconfirm
-                        title="Delete invoice"
-                        description="Are you sure?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                          Delete
-                        </Button>
-                      </Popconfirm>
+                      <div className="flex gap-2">
+                        <Button 
+                           icon={<EditOutlined />} 
+                           onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                           className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200"
+                        />
+                        <Popconfirm title="Delete invoice?" onConfirm={(e) => { e.stopPropagation(); handleDelete(record.id); }}>
+                          <Button danger icon={<DeleteOutlined />} className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80" />
+                        </Popconfirm>
+                      </div>
                     </div>
                   </div>
                 );
@@ -561,7 +583,19 @@ const pending = invoices
         centered
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form 
+          form={form} 
+          layout="vertical" 
+          onFinish={handleSubmit}
+          onValuesChange={(changed, all) => {
+            if (changed.items) {
+              const total = (all.items || []).reduce((sum, item) => {
+                return sum + ((Number(item.quantity) || 0) * (Number(item.unit_price) || 0));
+              }, 0);
+              form.setFieldsValue({ total_amount: total });
+            }
+          }}
+        >
           <Form.Item 
             label="Customer" 
             name="customer_id" 
@@ -601,18 +635,67 @@ const pending = invoices
             </Col>
           </Row>
 
+          <Divider orientation="left" style={{ margin: '12px 0' }}>Line Items</Divider>
+          
+          <Form.List name="items">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <div key={key} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'start' }}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'description']}
+                      rules={[{ required: true, message: 'Missing description' }]}
+                      style={{ flex: 3, marginBottom: 0 }}
+                    >
+                      <Input placeholder="Description (e.g. Consulting)" />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'quantity']}
+                      rules={[{ required: true }]}
+                      style={{ flex: 1, marginBottom: 0 }}
+                    >
+                      <InputNumber placeholder="Qty" min={1} style={{ width: '100% '}} />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'unit_price']}
+                      rules={[{ required: true }]}
+                      style={{ flex: 2, marginBottom: 0 }}
+                    >
+                      <InputNumber placeholder="Price" min={0} prefix="₹" style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Button 
+                      type="text" 
+                      danger 
+                      icon={<DeleteOutlined />} 
+                      onClick={() => remove(name)} 
+                      disabled={fields.length === 1}
+                    />
+                  </div>
+                ))}
+                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} style={{ marginBottom: 16 }}>
+                  Add Item
+                </Button>
+              </>
+            )}
+          </Form.List>
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item 
                 label="Total Amount" 
                 name="total_amount" 
                 rules={[{ required: true, message: 'Please enter amount' }]}
+                tooltip="Calculated from items above"
               >
                 <InputNumber 
                   style={{ width: '100%' }} 
                   placeholder="Enter amount" 
                   min={0}
                   prefix="₹"
+                  onChange={() => {}} // User can override or we can auto-calc
                 />
               </Form.Item>
             </Col>
@@ -628,16 +711,42 @@ const pending = invoices
             </Col>
           </Row>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item 
+                label="Status" 
+                name="status" 
+                rules={[{ required: true, message: 'Please select status' }]}
+              >
+                <Select placeholder="Select status">
+                  <Option value="Pending">Pending</Option>
+                  <Option value="Partial">Partial</Option>
+                  <Option value="Paid">Paid</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Is Recurring?" name="is_recurring" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item 
-            label="Status" 
-            name="status" 
-            rules={[{ required: true, message: 'Please select status' }]}
+            noStyle 
+            shouldUpdate={(prev, curr) => prev.is_recurring !== curr.is_recurring}
           >
-            <Select placeholder="Select status">
-              <Option value="Pending">Pending</Option>
-              <Option value="Partial">Partial</Option>
-              <Option value="Paid">Paid</Option>
-            </Select>
+            {({ getFieldValue }) => 
+              getFieldValue('is_recurring') ? (
+                <Form.Item label="Recurrence Interval" name="recurring_interval" rules={[{ required: true }]}>
+                  <Select placeholder="Select interval">
+                    <Option value="Monthly">Monthly</Option>
+                    <Option value="Quarterly">Quarterly</Option>
+                    <Option value="Yearly">Yearly</Option>
+                  </Select>
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
 
           <Row gutter={10}>

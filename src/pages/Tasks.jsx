@@ -560,81 +560,91 @@ const handleUpload = async (file) => {
               rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
-              renderMobileCard={(record) => (
-                <div>
-                  {/* Task Header with Complete Button */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-                    <Button
-                      type={record.status === 'Completed' ? 'default' : 'primary'}
-                      shape="circle"
-                      size="small"
-                      icon={record.status === 'Completed' ? <CheckCircleOutlined /> : null}
-                      onClick={() => handleToggleComplete(record)}
-                      style={{
-                        background: record.status === 'Completed' ? '#10b981' : '#fff',
-                        borderColor: record.status === 'Completed' ? '#10b981' : '#d9d9d9',
-                        color: record.status === 'Completed' ? '#fff' : '#666',
-                        flexShrink: 0
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        fontWeight: 600, 
-                        fontSize: 15,
-                        color: "#111827",
-                        textDecoration: record.status === 'Completed' ? 'line-through' : 'none',
-                        opacity: record.status === 'Completed' ? 0.6 : 1,
-                        marginBottom: 4
-                      }}>
-                        {record.title}
+              renderMobileCard={(record) => {
+                const isOverdue = dayjs(record.due_date).isBefore(dayjs(), 'day') && record.status !== 'Completed';
+                const isToday = dayjs(record.due_date).isSame(dayjs(), 'day') && record.status !== 'Completed';
+                
+                return (
+                  <div className="flex flex-col gap-4">
+                    {/* Header with Completion Toggle */}
+                    <div className="flex items-start gap-4">
+                      <div 
+                        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-300 shrink-0 ${
+                          record.status === 'Completed' 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'bg-white border-gray-300 text-transparent hover:border-blue-500'
+                        }`}
+                        onClick={(e) => { e.stopPropagation(); handleToggleComplete(record); }}
+                      >
+                        <CheckCircleOutlined style={{ fontSize: 16 }} />
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
-                        {record.description || 'No description'}
+                      <div className="flex-1">
+                        <div className={`font-bold text-[15px] leading-tight mb-1 ${record.status === 'Completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                          {record.title}
+                        </div>
+                        <div className="text-[12px] text-gray-500 line-clamp-2">
+                          {record.description || 'No description provided'}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Task Details */}
-                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <Tag color={getPriorityColor(record.priority)}>{record.priority}</Tag>
-                      <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
+                    {/* Metadata & Progress */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="text-[9px] text-gray-400 uppercase font-bold mb-1">Due Date</div>
+                        <div className={`text-[12px] font-bold flex items-center gap-1.5 ${isOverdue ? 'text-red-500' : isToday ? 'text-amber-500' : 'text-gray-700'}`}>
+                          <ClockCircleOutlined size={12} />
+                          {record.due_date ? dayjs(record.due_date).format('MMM DD, YYYY') : 'No Date'}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="text-[9px] text-gray-400 uppercase font-bold mb-1">Priority</div>
+                        <Tag color={getPriorityColor(record.priority)} style={{ margin: 0, borderRadius: 4, fontSize: 10 }}>
+                          {record.priority}
+                        </Tag>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                      <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                      <strong>Related:</strong> {record.related_type ? `${record.related_type} #${record.related_id}` : 'N/A'}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#4b5563" }}>
-                      <strong>Due:</strong> {record.due_date ? dayjs(record.due_date).format('MMM DD, YYYY') : 'N/A'}
-                    </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEdit(record)}
-                    >
-                      Edit
-                    </Button>
-                    <Popconfirm
-                      title="Delete task"
-                      description="Are you sure?"
-                      onConfirm={() => handleDelete(record.id)}
-                      okText="Yes"
-                      cancelText="No"
-                    >
-                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                        Delete
+                    {/* Context & Assignment */}
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                          <UserOutlined style={{ fontSize: 12 }} />
+                        </div>
+                        <span className="text-[12px] text-gray-600 font-medium">{record.assignedTo?.name || 'Unassigned'}</span>
+                      </div>
+                      {record.related_type && (
+                        <div className="text-[11px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-tighter">
+                          {record.related_type}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                      <Button 
+                        type="text" 
+                        size="small" 
+                        icon={<EditOutlined />} 
+                        onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                        className="text-gray-500 font-bold"
+                      >
+                        Edit Task
                       </Button>
-                    </Popconfirm>
+                      <div className="flex-1" />
+                      <Popconfirm title="Delete task?" onConfirm={(e) => { e.stopPropagation(); handleDelete(record.id); }}>
+                        <Button 
+                          type="text" 
+                          danger 
+                          size="small" 
+                          icon={<DeleteOutlined />} 
+                          onClick={(e) => e.stopPropagation()} 
+                        />
+                      </Popconfirm>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              }}
             />
           </Card>
         </>

@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
-import { quotationService, customerService, dealService, leadService } from "../../services";
+import { quotationService, customerService, dealService, leadService, serviceCatalogService } from "../../services";
 import dayjs from "dayjs";
 import ResponsiveTable from "../../components/ResponsiveTable";
 import QuoteInvoiceView from "../../components/QuoteInvoiceView";
@@ -41,6 +41,9 @@ export default function Quotes() {
   const [selectedLeadForQuote, setSelectedLeadForQuote] = useState(null);
   const [directPrintActive, setDirectPrintActive] = useState(false);
   const [downloadRecord, setDownloadRecord] = useState(null);
+  const [services, setServices] = useState([]);         // catalog services
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]); // multi-select
+  const [serviceTotal, setServiceTotal] = useState(0);  // live computed total
   const location = useLocation();
 
   useEffect(() => {
@@ -48,8 +51,8 @@ export default function Quotes() {
     fetchCustomers();
     fetchDeals();
     fetchLeads();
+    fetchServices();
 
-    // Check for redirected state to activate specific tab
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
@@ -103,6 +106,34 @@ export default function Quotes() {
     }
   };
 
+  const fetchServices = async () => {
+    try {
+      const resp = await serviceCatalogService.getAll();
+      if (resp.success) setServices((resp.data || []).filter(s => s.is_active !== false));
+    } catch (err) {
+      console.error('Failed to load services', err);
+    }
+  };
+
+  // When services are selected, compute total automatically
+  const handleServiceChange = (ids) => {
+    setSelectedServiceIds(ids);
+    const selected = services.filter(s => ids.includes(s.id));
+    const total = selected.reduce((sum, s) => {
+      const sub = parseFloat(s.unit_price || 0);
+      const tax = (sub * parseFloat(s.tax_percent || 0)) / 100;
+      return sum + sub + tax;
+    }, 0);
+    setServiceTotal(total);
+    form.setFieldsValue({
+      total_amount: parseFloat(total.toFixed(2)),
+      tax_amount: parseFloat(selected.reduce((sum, s) => {
+        const sub = parseFloat(s.unit_price || 0);
+        return sum + (sub * parseFloat(s.tax_percent || 0)) / 100;
+      }, 0).toFixed(2))
+    });
+  };
+
   const handleDownload = (quote) => {
     setDownloadRecord(quote);
     setDirectPrintActive(true);
@@ -132,18 +163,32 @@ export default function Quotes() {
 
   const handleSubmit = async (values) => {
     try {
-      const response = editingQuote
-        ? await quotationService.update(editingQuote.id, values)
-        : await quotationService.create(values);
+      let response;
+
+      if (!editingQuote && selectedServiceIds.length > 0) {
+        // Generate from multiple services — gets full itemized lines
+        response = await quotationService.generateFromMultipleServices({
+          serviceIds: selectedServiceIds,
+          customerId: values.customer_id,
+          dealId: values.deal_id || null,
+        });
+        // Override status if needed
+        if (response.success && values.status && values.status !== 'Draft') {
+          await quotationService.update(response.data.id, { status: values.status });
+        }
+      } else {
+        response = editingQuote
+          ? await quotationService.update(editingQuote.id, values)
+          : await quotationService.create(values);
+      }
 
       if (response.success) {
         message.success(editingQuote ? 'Quotation updated successfully' : 'Quotation created successfully');
 
-        // If we were creating this quote for a specific lead, clear its "Needs Quote" status
         if (!editingQuote && selectedLeadForQuote) {
           try {
             await leadService.update(selectedLeadForQuote.id, { last_outcome: 'Quote_Created' });
-            fetchLeads(); // Refresh leads list
+            fetchLeads();
           } catch (err) {
             console.error('Failed to update lead status after quote creation', err);
           }
@@ -153,6 +198,8 @@ export default function Quotes() {
         setModalOpen(false);
         setEditingQuote(null);
         setSelectedLeadForQuote(null);
+        setSelectedServiceIds([]);
+        setServiceTotal(0);
         form.resetFields();
       }
     } catch (error) {
@@ -191,7 +238,11 @@ export default function Quotes() {
 
   const handleAddNew = () => {
     setEditingQuote(null);
+    setSelectedLeadForQuote(null);
+    setSelectedServiceIds([]);
+    setServiceTotal(0);
     form.resetFields();
+    form.setFieldsValue({ status: 'Draft' });
     setModalOpen(true);
   };
 
@@ -363,7 +414,93 @@ export default function Quotes() {
             </div>
           </div>
           <Card variant="borderless" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-            <Table columns={columns} dataSource={filteredQuotes} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
+            <ResponsiveTable 
+              columns={columns} 
+              dataSource={filteredQuotes} 
+              rowKey="id" 
+              loading={loading} 
+              pagination={{ pageSize: 12 }} 
+              renderMobileCard={(record) => (
+                <div className="flex flex-col gap-4">
+                  {/* Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                        <FileTextOutlined style={{ fontSize: 20 }} />
+                      </div>
+                      <div>
+                        <div className="font-bold text-[15px] text-gray-900 leading-tight">{record.quotation_number}</div>
+                        <div className="text-[12px] text-gray-400">{dayjs(record.created_at).format('MMM DD, YYYY')}</div>
+                      </div>
+                    </div>
+                    <Tag color={getStatusColor(record.status)} style={{ borderRadius: 6, margin: 0 }}>
+                      {record.status}
+                    </Tag>
+                  </div>
+
+                  {/* Customer Info */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Avatar 
+                        size={32} 
+                        style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb' }} 
+                        src={record.customer?.email ? `https://logo.clearbit.com/${record.customer.email.split('@')[1]}` : null}
+                      >
+                        <UserOutlined className="text-gray-400" />
+                      </Avatar>
+                      <div>
+                        <div className="text-[13px] font-bold text-gray-800">{record.customer?.name || 'N/A'}</div>
+                        <div className="text-[11px] text-gray-400 truncate w-32">{record.customer?.email || ''}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       {record.customer?.phone && (
+                         <a href={`https://wa.me/${record.customer.phone}`} target="_blank" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center border border-gray-100">
+                           <WhatsAppOutlined className="text-green-500 text-[14px]" />
+                         </a>
+                       )}
+                    </div>
+                  </div>
+
+                  {/* Financials */}
+                  <div className="flex justify-between items-center px-1">
+                    <div>
+                      <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Total Quote Value</div>
+                      <div className="text-[18px] font-extrabold text-emerald-600">₹{record.total_amount?.toLocaleString() || 0}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Tax (GST)</div>
+                      <div className="text-[13px] font-bold text-gray-600">₹{record.tax_amount?.toLocaleString() || 0}</div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    <Button 
+                      type="primary" 
+                      block 
+                      icon={<EyeOutlined />} 
+                      onClick={(e) => { e.stopPropagation(); handleView(record); }}
+                      className="h-10 rounded-lg font-semibold shadow-sm"
+                    >
+                      Preview Quote
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                         icon={<FilePdfOutlined />} 
+                         onClick={(e) => { e.stopPropagation(); handleDownload(record); }}
+                         className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200 text-rose-500"
+                      />
+                      <Button 
+                         icon={<EditOutlined />} 
+                         onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                         className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
           </Card>
         </>
       ) : (
@@ -377,21 +514,32 @@ export default function Quotes() {
               {
                 title: "Action", render: (_, r) => <Button type="primary" icon={<PlusOutlined />} onClick={async () => {
                   setEditingQuote(null);
-                  setSelectedLeadForQuote(r); // 👈 TRACK WHICH LEAD THIS IS FOR
-                  
-                  // Find matching customer by email or name
+                  setSelectedLeadForQuote(r);
+
+                  // Auto-select this lead's interested services
+                  const leadServiceIds = (r.services || []).map(s => s.id);
+                  setSelectedServiceIds(leadServiceIds);
+                  if (leadServiceIds.length > 0) {
+                    // Compute total from services
+                    const selected = services.filter(s => leadServiceIds.includes(s.id));
+                    const total = selected.reduce((sum, s) => {
+                      const sub = parseFloat(s.unit_price || 0);
+                      return sum + sub + (sub * parseFloat(s.tax_percent || 0)) / 100;
+                    }, 0);
+                    setServiceTotal(total);
+                  }
+
+                  // Find or create customer
                   let match = customers.find(c => (c.email && c.email === r.email) || c.name === r.name);
-                  
+
                   if (!match) {
                     const hide = message.loading(`Creating customer record for ${r.name}...`, 0);
                     try {
                       const res = await leadService.convertToCustomer(r.id);
                       if (res.success) {
-                        // The backend returns { lead, customer } or { alreadyConverted, lead }
                         const newCustomer = res.data.customer;
                         if (newCustomer) {
                           match = newCustomer;
-                          // Refresh customers list in background
                           fetchCustomers();
                         }
                         hide();
@@ -399,18 +547,20 @@ export default function Quotes() {
                       }
                     } catch (err) {
                       hide();
-                      message.error("Auto-conversion failed. Please select/create customer manually.");
+                      message.error("Auto-conversion failed. Please select customer manually.");
                     }
                   }
 
+                  // Pre-fill the form
+                  const leadServiceIds2 = (r.services || []).map(s => s.id);
                   form.setFieldsValue({
-                    customer_id: match ? (match.id || match.id) : null,
-                    status: 'Draft'
+                    customer_id: match ? match.id : null,
+                    status: 'Draft',
+                    service_ids: leadServiceIds2.length > 0 ? leadServiceIds2 : undefined,
                   });
+
                   setModalOpen(true);
-                  if (match) {
-                    message.info(`Preparing quote for ${match.name}`);
-                  }
+                  if (match) message.info(`Preparing quote for ${match.name}`);
                 }}>Create Quote</Button>
               }
             ]}
@@ -420,38 +570,127 @@ export default function Quotes() {
         </Card>
       )}
 
-      <Modal title={editingQuote ? "Edit Quotation" : "Create Quotation"} open={modalOpen} onCancel={() => setModalOpen(false)} footer={null} centered width={600}>
+      <Modal
+        title={editingQuote ? "Edit Quotation" : "Create Quotation"}
+        open={modalOpen}
+        onCancel={() => {
+          setModalOpen(false);
+          setSelectedServiceIds([]);
+          setServiceTotal(0);
+        }}
+        footer={null}
+        centered
+        width={640}
+      >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item label="Customer" name="customer_id" rules={[{ required: true }]}>
             <Select showSearch placeholder="Select customer" optionFilterProp="children">
               {customers.map(c => <Option key={c.id} value={c.id}>{c.name} ({c.email})</Option>)}
             </Select>
           </Form.Item>
-          <Form.Item label="Deal" name="deal_id">
-            <Select allowClear showSearch placeholder="Select deal (Optional)">
-              {deals.map(d => <Option key={d.id} value={d.id}>{d.deal_name} - {d.stage}</Option>)}
-            </Select>
-          </Form.Item>
+
+          {/* Services multi-select — replaces Deal field */}
+          {!editingQuote && (
+            <Form.Item
+              label={
+                <span>
+                  Interested Services / Products
+                  {selectedServiceIds.length > 0 && (
+                    <span style={{ marginLeft: 8, color: "#10b981", fontSize: 12 }}>
+                      ({selectedServiceIds.length} selected)
+                    </span>
+                  )}
+                </span>
+              }
+              name="service_ids"
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select services (auto-fills line items & amount)"
+                onChange={handleServiceChange}
+                value={selectedServiceIds}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                options={services.map(s => ({
+                  value: s.id,
+                  label: `${s.name} — ₹${Number(s.unit_price || 0).toLocaleString('en-IN')}`,
+                }))}
+              />
+            </Form.Item>
+          )}
+
+          {/* Live service price preview */}
+          {!editingQuote && selectedServiceIds.length > 0 && (
+            <div style={{
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              borderRadius: 10, padding: "12px 16px", marginBottom: 16
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#166534", marginBottom: 8 }}>Selected Services Preview</div>
+              {services.filter(s => selectedServiceIds.includes(s.id)).map(s => {
+                const sub = parseFloat(s.unit_price || 0);
+                const tax = (sub * parseFloat(s.tax_percent || 0)) / 100;
+                return (
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                    <span style={{ color: "#374151" }}>{s.name}</span>
+                    <span style={{ fontWeight: 600, color: "#059669" }}>
+                      ₹{(sub + tax).toLocaleString('en-IN')}
+                      {s.tax_percent > 0 && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>+{s.tax_percent}% GST</span>}
+                    </span>
+                  </div>
+                );
+              })}
+              <div style={{ borderTop: "1px solid #bbf7d0", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 15 }}>
+                <span>Total</span>
+                <span style={{ color: "#059669" }}>₹{serviceTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Deal linkage (optional, only for edit or manual quote) */}
+          {editingQuote && (
+            <Form.Item label="Deal" name="deal_id">
+              <Select allowClear showSearch placeholder="Link to deal (optional)">
+                {deals.map(d => <Option key={d.id} value={d.id}>{d.deal_name} - {d.stage}</Option>)}
+              </Select>
+            </Form.Item>
+          )}
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Total Amount" name="total_amount" rules={[{ required: true }]}>
-                <InputNumber prefix="₹" style={{ width: '100%' }} onChange={v => form.setFieldsValue({ tax_amount: v ? (v * 0.18).toFixed(2) : 0 })} />
+                <InputNumber
+                  prefix="₹" style={{ width: '100%' }}
+                  disabled={selectedServiceIds.length > 0}
+                  onChange={v => form.setFieldsValue({ tax_amount: v ? parseFloat((v * 0.18).toFixed(2)) : 0 })}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Tax (18% GST)" name="tax_amount"><InputNumber prefix="₹" style={{ width: '100%' }} /></Form.Item>
+              <Form.Item label="Tax (GST)" name="tax_amount">
+                <InputNumber prefix="₹" style={{ width: '100%' }} disabled={selectedServiceIds.length > 0} />
+              </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="Status" name="status" rules={[{ required: true }]}><Select><Option value="Draft">Draft</Option><Option value="Sent">Sent</Option><Option value="Approved">Approved</Option><Option value="Rejected">Rejected</Option></Select></Form.Item>
+
+          <Form.Item label="Status" name="status" rules={[{ required: true }]}>
+            <Select>
+              <Option value="Draft">Draft</Option>
+              <Option value="Sent">Sent</Option>
+              <Option value="Approved">Approved</Option>
+              <Option value="Rejected">Rejected</Option>
+            </Select>
+          </Form.Item>
+
           <div className="flex justify-end gap-2 mt-4">
-            <Button 
-              icon={<FilePdfOutlined />} 
+            <Button
+              icon={<FilePdfOutlined />}
               onClick={handlePreviewBeforeSave}
               style={{ border: '1px solid #E11D48', color: '#E11D48' }}
             >
               Preview & Share
             </Button>
-            <Button onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setModalOpen(false); setSelectedServiceIds([]); setServiceTotal(0); }}>Cancel</Button>
             <Button type="primary" htmlType="submit">Save Quote</Button>
           </div>
         </Form>

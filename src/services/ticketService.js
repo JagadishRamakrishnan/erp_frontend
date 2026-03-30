@@ -34,6 +34,13 @@ const ticketService = {
       method: 'DELETE',
     });
   },
+
+  addComment: async (id, commentData) => {
+    return await apiCall(`/tickets/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(commentData),
+    });
+  },
 };
 
 export default ticketService;

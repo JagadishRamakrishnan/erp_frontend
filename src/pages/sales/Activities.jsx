@@ -11,7 +11,11 @@ import {
   message,
   Spin,
   Popconfirm,
-  Tag
+  Tag,
+  Calendar,
+  Badge,
+  Drawer,
+  Tabs
 } from "antd";
 import {
   SearchOutlined,
@@ -36,6 +40,8 @@ import { useNavigate } from "react-router-dom";
 import { UploadOutlined } from "@ant-design/icons";
 import ResponsiveTable from "../../components/ResponsiveTable";
 import LeadDetailsModal from "../../components/LeadDetailsModal";
+import { CalendarDays, ListTree, Clock } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -43,6 +49,7 @@ const { TextArea } = Input;
 
 export default function Activities() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const [searchText, setSearchText] = useState("");
@@ -62,13 +69,23 @@ export default function Activities() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [selectedLeadForModal, setSelectedLeadForModal] = useState(null);
   const [leadLoading, setLeadLoading] = useState(false);
+  const [viewMode, setViewMode] = useState("table"); // 'table' | 'calendar'
+  const [calendarDrawerOpen, setCalendarDrawerOpen] = useState(false);
+  const [calendarDayActivities, setCalendarDayActivities] = useState([]);
+  const [calendarDayLabel, setCalendarDayLabel] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     fetchActivities();
     fetchLeads();
     fetchCustomers();
     fetchDeals();
-  }, []);
+
+    // Check for incoming tab state (e.g., from Dashboard)
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -299,11 +316,19 @@ export default function Activities() {
   };
 
   const filteredActivities = activities.filter((item) => {
+    const now = dayjs();
+    const itemDate = dayjs(item.activity_date);
+    const isOverdue = itemDate.isBefore(now, 'minute');
+
+    const matchTab = activeTab === "all" || (activeTab === "overdue" && isOverdue);
     const matchSearch = item.notes?.toLowerCase().includes(searchText.toLowerCase()) ||
       item.type?.toLowerCase().includes(searchText.toLowerCase());
     const matchType = filterType === "All" || item.type === filterType;
-    return matchSearch && matchType;
+
+    return matchTab && matchSearch && matchType;
   });
+
+  const overdueCount = activities.filter(a => dayjs(a.activity_date).isBefore(dayjs(), 'minute')).length;
 
   const columns = [
     {
@@ -366,6 +391,21 @@ export default function Activities() {
               <Text type="secondary">Track and manage your daily tasks and meetings</Text>
             </Col>
             <Col style={{ display: "flex", gap: 10 }}>
+              {/* View Toggle */}
+              <div style={{ display: "flex", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+                <Button
+                  type={viewMode === "table" ? "primary" : "default"}
+                  style={{ borderRadius: 0, border: "none" }}
+                  className="h-full"
+                  onClick={() => setViewMode("table")}
+                ><ListTree size={14} /> List</Button>
+                <Button
+                  type={viewMode === "calendar" ? "primary" : "default"}
+                  style={{ borderRadius: 0, border: "none" }}
+                  onClick={() => setViewMode("calendar")}
+                  className="h-full"
+                ><CalendarDays size={14} /> Calendar</Button>
+              </div>
               <Button type="primary" icon={<PlusOutlined />} style={styles.primaryBtn} onClick={handleAddNew}>Add Activity</Button>
               <Button icon={<UploadOutlined />} style={styles.secondaryBtn} onClick={() => setBulkOpen(true)}>Bulk Upload</Button>
             </Col>
@@ -379,7 +419,8 @@ export default function Activities() {
               { title: "Meetings", count: activities.filter(a => a.type === 'Meeting').length, color: "#f59e0b", bg: "#f59e0b" },
             ].map((item, index) => (
               <Col xs={24} sm={12} md={6} key={index}>
-                <motion.div custom={index} initial="hidden" animate="visible" whileHover={{ y: -6 }} variants={cardAnimation} style={{ ...styles.kpiCard, borderTop: `4px solid ${item.bg}` }}>
+                <motion.div custom={index} initial="hidden" animate="visible" whileHover={{ y: -6 }} variants={cardAnimation}
+                  style={{ ...styles.kpiCard, borderTop: `4px solid ${item.bg}` }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>{item.title}</div>
                   <div style={{ fontSize: 32, fontWeight: 800, marginTop: 10, color: item.color }}>{item.count}</div>
                 </motion.div>
@@ -387,24 +428,168 @@ export default function Activities() {
             ))}
           </Row>
 
-          <Card variant="borderless" style={styles.filterCard}>
-            <Row justify="space-between" align="middle">
-              <Col>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  {["All", "Call", "Email", "Meeting", "WhatsApp"].map((type) => (
-                    <Button key={type} style={{ ...styles.secondaryBtn, ...(filterType === type ? { color: "#1677ff", background: "#f0f5ff" } : {}) }} onClick={() => setFilterType(type)}>{type}</Button>
-                  ))}
-                </div>
-              </Col>
-              <Col><Input prefix={<SearchOutlined />} placeholder="Search activities..." value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{ width: 280, height: 40 }} /></Col>
-            </Row>
-          </Card>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            className="mb-4"
+            items={[
+              {
+                key: "all",
+                label: (
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 10px" }}>
+                    <ListTree size={16} /> All Activities
+                  </span>
+                )
+              },
+              {
+                key: "overdue",
+                label: (
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 10px" }}>
+                    <Clock size={16} color={overdueCount > 0 ? "#ef4444" : "inherit"} />
+                     Overdue
+                    {overdueCount > 0 && (
+                      <Badge count={overdueCount} overflowCount={99} style={{ backgroundColor: '#ef4444' }} />
+                    )}
+                  </span>
+                )
+              }
+            ]}
+          />
 
-          <motion.div variants={layoutAnimation} initial="hidden" animate="visible">
-            <Card variant="borderless" style={styles.roundedCard}>
-              <ResponsiveTable columns={columns} dataSource={filteredActivities} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
+          {viewMode === "table" && (
+            <>
+              <Card variant="borderless" style={styles.filterCard}>
+                <Row justify="space-between" align="middle">
+                  <Col>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      {["All", "Call", "Email", "Meeting", "WhatsApp"].map((type) => (
+                        <Button key={type} style={{ ...styles.secondaryBtn, ...(filterType === type ? { color: "#1677ff", background: "#f0f5ff" } : {}) }} onClick={() => setFilterType(type)}>{type}</Button>
+                      ))}
+                    </div>
+                  </Col>
+                  <Col><Input prefix={<SearchOutlined />} placeholder="Search activities..." value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{ width: 280, height: 40 }} /></Col>
+                </Row>
+              </Card>
+              <motion.div variants={layoutAnimation} initial="hidden" animate="visible">
+                <Card variant="borderless" style={styles.roundedCard}>
+                  <ResponsiveTable 
+                    columns={columns} 
+                    dataSource={filteredActivities} 
+                    rowKey="id" 
+                    loading={loading} 
+                    pagination={{ pageSize: 12 }} 
+                    onRow={(record) => ({
+                      onClick: () => handleView(record)
+                    })}
+                    renderMobileCard={(item) => (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: bgMap[item.type] || '#f3f4f6' }}>
+                              {iconMap[item.type] || <FileTextOutlined style={{ color: '#9ca3af' }} />}
+                            </div>
+                            <div>
+                              <div className="font-bold text-[15px] text-gray-900">{item.type}</div>
+                              <div className="text-[12px] text-gray-400 flex items-center gap-1">
+                                <Clock size={12} />
+                                {dayjs(item.activity_date).format("MMM DD, hh:mm A")}
+                              </div>
+                            </div>
+                          </div>
+                          {dayjs(item.activity_date).isBefore(dayjs()) && (
+                            <Tag color="error" style={{ borderRadius: 6, margin: 0, fontSize: 10 }}>OVERDUE</Tag>
+                          )}
+                        </div>
+
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-[13px] text-gray-600 line-clamp-2 italic">
+                          "{item.notes || 'No notes provided'}"
+                        </div>
+
+                        {item.related_type && (
+                          <div className="flex items-center gap-2 text-[12px] text-gray-400">
+                            <span className="font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
+                              {item.related_type} #{item.related_id}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                          <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<EyeOutlined />} 
+                            onClick={(e) => { e.stopPropagation(); handleView(item); }}
+                            className="text-gray-500 font-medium"
+                          >
+                            Details
+                          </Button>
+                          <div className="flex-1" />
+                          <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<EditOutlined />} 
+                            onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                            className="text-blue-600"
+                          >
+                            Edit
+                          </Button>
+                          <Popconfirm 
+                            title="Delete activity?" 
+                            onConfirm={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                            onCancel={(e) => e.stopPropagation()}
+                          >
+                            <Button 
+                              type="text" 
+                              danger 
+                              size="small" 
+                              icon={<DeleteOutlined />} 
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </Popconfirm>
+                        </div>
+                      </div>
+                    )}
+                  />
+                </Card>
+              </motion.div>
+            </>
+          )}
+
+          {viewMode === "calendar" && (
+            <Card variant="borderless" style={{ ...styles.roundedCard, borderRadius: 14 }}>
+              <Calendar
+                fullscreen
+                cellRender={(date, info) => {
+                  if (info.type !== 'date') return info.originNode;
+                  const dateStr = date.format("YYYY-MM-DD");
+                  const dayItems = activities.filter(a => dayjs(a.activity_date).format("YYYY-MM-DD") === dateStr);
+                  if (dayItems.length === 0) return null;
+                  return (
+                    <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                      {dayItems.slice(0, 2).map((a, i) => (
+                        <li key={i}>
+                          <Badge
+                            status={a.type === 'Call' ? 'success' : a.type === 'Email' ? 'processing' : a.type === 'Meeting' ? 'warning' : 'default'}
+                            text={<span style={{ fontSize: 11 }}>{a.type}</span>}
+                          />
+                        </li>
+                      ))}
+                      {dayItems.length > 2 && <li><span style={{ fontSize: 10, color: "#9ca3af" }}>+{dayItems.length - 2} more</span></li>}
+                    </ul>
+                  );
+                }}
+                onSelect={(date) => {
+                  const dateStr = date.format("YYYY-MM-DD");
+                  const dayItems = activities.filter(a => dayjs(a.activity_date).format("YYYY-MM-DD") === dateStr);
+                  if (dayItems.length > 0) {
+                    setCalendarDayActivities(dayItems);
+                    setCalendarDayLabel(date.format("DD MMMM YYYY"));
+                    setCalendarDrawerOpen(true);
+                  }
+                }}
+              />
             </Card>
-          </motion.div>
+          )}
         </>
       )}
 
@@ -453,6 +638,41 @@ export default function Activities() {
         onEdit={(lead) => handleActionRedirect(lead, 'edit')}
         onConvert={(lead) => handleActionRedirect(lead, 'convert')}
       />
+
+      {/* Calendar Day Drawer */}
+      <Drawer
+        title={`Activities on ${calendarDayLabel}`}
+        open={calendarDrawerOpen}
+        onClose={() => setCalendarDrawerOpen(false)}
+        width={380}
+      >
+        {calendarDayActivities.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#9ca3af", padding: 40 }}>No activities</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {calendarDayActivities.map((a, i) => (
+              <div key={i} style={{
+                background: "#f9fafb", borderRadius: 12, padding: "12px 16px",
+                border: "1px solid #e5e7eb"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Tag color={
+                    a.type === "Call" ? "green" : a.type === "Email" ? "blue" :
+                      a.type === "Meeting" ? "gold" : a.type === "WhatsApp" ? "lime" : "default"
+                  } style={{ borderRadius: 8 }}>{a.type}</Tag>
+                  <span style={{ fontSize: 12, color: "#9ca3af" }}>{dayjs(a.activity_date).format("hh:mm A")}</span>
+                </div>
+                {a.notes && <div style={{ fontSize: 13, color: "#4b5563", marginTop: 8 }}>{a.notes}</div>}
+                {a.related_type && (
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                    Related: {a.related_type} #{a.related_id}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

@@ -42,6 +42,12 @@ const invoiceService = {
       body: JSON.stringify({ quotationId }),
     });
   },
+
+  sendReminder: async (id) => {
+    return await apiCall(`/invoices/${id}/reminder`, {
+      method: 'POST'
+    });
+  },
 };
 
 export default invoiceService;

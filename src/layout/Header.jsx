@@ -43,7 +43,7 @@ export default function AppHeader({ collapsed, setCollapsed }) {
     >
       {/* LEFT SIDE - Sidebar Toggle */}
       <div
-        className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="cursor-pointer opacity-0 md:opacity-100 p-2 rounded-lg hover:bg-gray-100 transition-colors"
         onClick={() => setCollapsed(!collapsed)}
         style={{ color: "#000", display: "flex", alignItems: "center" }}
       >

@@ -35,9 +35,17 @@ const quotationService = {
     });
   },
 
-  // Generate quotation from service template
+  // Generate quotation from a SINGLE service template
   generateFromTemplate: async (data) => {
     return await apiCall('/quotations/generate-from-template', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Generate quotation from MULTIPLE service templates (merges all line items)
+  generateFromMultipleServices: async (data) => {
+    return await apiCall('/quotations/generate-from-multiple-services', {
       method: 'POST',
       body: JSON.stringify(data),
     });

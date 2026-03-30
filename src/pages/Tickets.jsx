@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { 
   Card, Input, Button, Modal, Form, Select, message, 
-  Popconfirm, Row, Col, Spin, Tag 
+  Popconfirm, Row, Col, Spin, Tag, List, Checkbox, Divider, Tooltip
 } from "antd";
 import { 
   SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
-  CustomerServiceOutlined
+  CustomerServiceOutlined, MessageOutlined, ClockCircleOutlined,
+  AlertOutlined, CheckCircleOutlined, UserOutlined, SendOutlined
 } from "@ant-design/icons";
 import { WhatsAppOutlined, FacebookOutlined, InstagramOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Typography } from "antd";
 import { ticketService, customerService, userService } from "../services";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Option } = Select;
@@ -25,6 +29,11 @@ export default function Tickets() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState(null);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [isInternal, setIsInternal] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [form] = Form.useForm();
@@ -98,20 +107,47 @@ export default function Tickets() {
       subject: ticket.subject,
       description: ticket.description,
       status: ticket.status,
+      priority: ticket.priority,
       assigned_to: ticket.assigned_to
     });
     setModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleViewDetail = async (ticket) => {
+    setLoading(true);
     try {
-      const response = await ticketService.delete(id);
-      if (response.success) {
-        message.success('Ticket deleted successfully');
-        fetchTickets();
+      const res = await ticketService.getById(ticket.id);
+      if (res.success) {
+        setSelectedTicket(res.data);
+        setDetailVisible(true);
       }
-    } catch (error) {
-      message.error('Delete failed');
+    } catch (err) {
+      message.error("Failed to load ticket details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const res = await ticketService.addComment(selectedTicket.id, {
+        comment: commentText,
+        is_internal: isInternal
+      });
+      if (res.success) {
+        message.success("Comment added");
+        setCommentText("");
+        // Reload details
+        const update = await ticketService.getById(selectedTicket.id);
+        setSelectedTicket(update.data);
+        fetchTickets(); 
+      }
+    } catch (err) {
+      message.error("Failed to add comment");
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -137,6 +173,16 @@ export default function Tickets() {
       'Closed': 'success'
     };
     return colors[status] || 'default';
+  };
+
+  const getPriorityColor = (priority) => {
+    const colors = {
+      'Low': 'blue',
+      'Medium': 'orange',
+      'High': 'volcano',
+      'Urgent': 'magenta'
+    };
+    return colors[priority] || 'default';
   };
 
   const columns = [
@@ -223,18 +269,38 @@ export default function Tickets() {
   ),
 },
     {
-      title: "Status",
-      dataIndex: "status",
-      render: (status) => <Tag color={getStatusColor(status)}>{status}</Tag>,
+      title: "Priority",
+      dataIndex: "priority",
+      render: (priority) => <Tag color={getPriorityColor(priority)}>{priority}</Tag>,
     },
     {
       title: "Assigned To",
       key: "assigned",
       render: (_, record) => (
-        <span style={{ color: "#4b5563" }}>
-          {record.assignedTo?.name || 'Unassigned'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <UserOutlined style={{ color: record.assignedTo ? '#1677ff' : '#9ca3af' }} />
+          <span style={{ color: "#4b5563" }}>
+            {record.assignedTo?.name || 'Unassigned'}
+          </span>
+        </div>
       ),
+    },
+    {
+      title: "SLA",
+      key: "sla",
+      render: (_, record) => {
+        if (record.status === 'Closed') return <Tag icon={<CheckCircleOutlined />} color="success">Resolved</Tag>;
+        const now = dayjs();
+        const due = dayjs(record.resolution_due_at);
+        const isOverdue = now.isAfter(due);
+        return (
+          <Tooltip title={`Due by: ${due.format('MMM DD, HH:mm')}`}>
+            <Tag icon={<ClockCircleOutlined />} color={isOverdue ? 'error' : 'warning'}>
+              {isOverdue ? 'Overdue' : due.fromNow(true) + ' left'}
+            </Tag>
+          </Tooltip>
+        );
+      }
     },
     {
       title: "Created",
@@ -252,21 +318,21 @@ export default function Tickets() {
         <div style={{ display: 'flex', gap: 8 }}>
           <Button
             type="link"
+            icon={<MessageOutlined />}
+            onClick={() => handleViewDetail(record)}
+          >
+            Reply
+          </Button>
+          <Button
+            type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          />
           <Popconfirm
             title="Delete ticket"
-            description="Are you sure you want to delete this ticket?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
+            <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </div>
       ),
@@ -383,83 +449,79 @@ export default function Tickets() {
                   'In Progress': 'processing',
                   'Closed': 'success'
                 };
+                const now = dayjs();
+                const due = dayjs(record.resolution_due_at);
+                const isOverdue = now.isAfter(due) && record.status !== 'Closed';
                 
                 return (
-                  <div>
-                    {/* Ticket Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <CustomerServiceOutlined style={{ color: "#1677ff", fontSize: 18 }} />
-                        <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                          {record.ticket_number}
-                        </span>
+                  <div className="flex flex-col gap-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                          <CustomerServiceOutlined style={{ fontSize: 20 }} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-[15px] text-gray-900 leading-tight">{record.ticket_number}</div>
+                          <Tag color={statusColors[record.status] || 'default'} style={{ margin: '4px 0 0 0', borderRadius: 4, fontSize: 10 }}>
+                            {record.status}
+                          </Tag>
+                        </div>
                       </div>
-                      <Tag color={statusColors[record.status] || 'default'}>
-                        {record.status}
+                      <Tag color={getPriorityColor(record.priority)} style={{ borderRadius: 6, margin: 0 }}>
+                        {record.priority}
                       </Tag>
                     </div>
 
-                    {/* Subject & Description */}
-                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                      <div style={{ fontWeight: 600, color: "#111827", marginBottom: 4 }}>
-                        {record.subject}
+                    {/* Subject */}
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div className="font-semibold text-[14px] text-gray-800 mb-1">{record.subject}</div>
+                      <div className="text-[12px] text-gray-500 line-clamp-2">
+                        {record.description || 'No description'}
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-                        {record.description ? record.description.substring(0, 50) + '...' : 'No description'}
-                      </div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Customer:</strong> {record.customer?.name || 'N/A'}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
-                        {record.customer?.email || ''}
-                      </div>
-                      {/* ✅ ADD THIS BLOCK HERE */}
-<div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
-  
-  {/* WhatsApp */}
-  <a href={`https://wa.me/${record.customer?.phone || ""}`} target="_blank">
-    <WhatsAppOutlined style={{ color: "#25D366", fontSize: 18 }} />
-  </a>
+                    </div>
 
-  {/* Facebook */}
-  <a href="#" target="_blank">
-    <FacebookOutlined style={{ color: "#1877F2", fontSize: 18 }} />
-  </a>
-
-  {/* Instagram */}
-  <a href="#" target="_blank">
-    <InstagramOutlined style={{ color: "#E1306C", fontSize: 18 }} />
-  </a>
-
-</div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
+                    {/* Meta Info */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white p-2 rounded-lg border border-gray-100">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Customer</div>
+                        <div className="text-[12px] font-medium truncate">{record.customer?.name || 'N/A'}</div>
+                        <div className="flex gap-2 mt-1">
+                          {record.customer?.phone && (
+                            <a href={`https://wa.me/${record.customer.phone}`} target="_blank" className="text-green-500"><WhatsAppOutlined size={14}/></a>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 13, color: "#4b5563" }}>
-                        <strong>Created:</strong> {record.created_at ? dayjs(record.created_at).format('MMM DD, YYYY') : 'N/A'}
+                      <div className="bg-white p-2 rounded-lg border border-gray-100">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">SLA Status</div>
+                        {record.status === 'Closed' ? (
+                          <div className="text-[12px] text-green-600 font-medium">Resolved</div>
+                        ) : (
+                          <div className={`text-[12px] font-bold ${isOverdue ? 'text-red-500' : 'text-amber-500'}`}>
+                            {isOverdue ? 'OVERDUE' : due.fromNow(true) + ' left'}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                      <Button 
+                        type="primary" 
+                        block 
+                        icon={<MessageOutlined />} 
+                        onClick={(e) => { e.stopPropagation(); handleViewDetail(record); }}
+                        className="h-10 rounded-lg font-semibold shadow-sm"
                       >
-                        Edit
+                        Reply & View
                       </Button>
-                      <Popconfirm
-                        title="Delete ticket"
-                        description="Are you sure?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                          Delete
-                        </Button>
+                      <Button 
+                         icon={<EditOutlined />} 
+                         onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                         className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200"
+                      />
+                      <Popconfirm title="Delete ticket?" onConfirm={(e) => { e.stopPropagation(); handleDelete(record.id); }}>
+                        <Button danger icon={<DeleteOutlined />} className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80" />
                       </Popconfirm>
                     </div>
                   </div>
@@ -511,7 +573,7 @@ export default function Tickets() {
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item 
                 label="Status" 
                 name="status" 
@@ -524,12 +586,26 @@ export default function Tickets() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item 
+                label="Priority" 
+                name="priority" 
+                rules={[{ required: true }]}
+              >
+                <Select>
+                  <Option value="Low">Low</Option>
+                  <Option value="Medium">Medium</Option>
+                  <Option value="High">High</Option>
+                  <Option value="Urgent">Urgent</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item label="Assigned To" name="assigned_to">
                 <Select placeholder="Select user" showSearch optionFilterProp="children" allowClear>
                   {users.map(user => (
                     <Option key={user.id} value={user.id}>
-                      {user.name} ({user.role})
+                      {user.name}
                     </Option>
                   ))}
                 </Select>
@@ -557,6 +633,95 @@ export default function Tickets() {
             </Col>
           </Row>
         </Form>
+      </Modal>
+
+      {/* TICKET DETAIL DRAWER / MODAL */}
+      <Modal
+        title={selectedTicket ? `Ticket Details: ${selectedTicket.ticket_number}` : 'Loading...'}
+        open={detailVisible}
+        onCancel={() => setDetailVisible(false)}
+        footer={null}
+        width={750}
+        centered
+        style={{ borderRadius: 16 }}
+      >
+        {selectedTicket && (
+          <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'start' }}>
+              <div>
+                <Title level={4} style={{ margin: 0 }}>{selectedTicket.subject}</Title>
+                <div style={{ marginTop: 8 }}>
+                  <Tag color={getStatusColor(selectedTicket.status)}>{selectedTicket.status}</Tag>
+                  <Tag color={getPriorityColor(selectedTicket.priority)}>{selectedTicket.priority}</Tag>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <Text type="secondary">Customer</Text>
+                <div style={{ fontWeight: 600 }}>{selectedTicket.customer?.name}</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 24 }}>
+              <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedTicket.description || 'No description provided'}</Text>
+            </div>
+
+            <Divider orientation="left">Conversation</Divider>
+
+            <div style={{ marginBottom: 24 }}>
+              {selectedTicket.comments?.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 20, color: '#9ca3af' }}>No comments yet.</div>
+              ) : (
+                selectedTicket.comments.map((comment, i) => (
+                  <div 
+                    key={comment.id} 
+                    style={{ 
+                      marginBottom: 16, 
+                      padding: 12, 
+                      borderRadius: 12, 
+                      background: comment.is_internal ? '#fff7ed' : '#fff',
+                      border: comment.is_internal ? '1px solid #ffedd5' : '1px solid #e5e7eb',
+                      marginLeft: 0,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>
+                        {comment.user?.name || 'Automated'} 
+                        {comment.is_internal && <Tag color="orange" style={{ marginLeft: 8, fontSize: 10 }}>Internal</Tag>}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#9ca3af' }}>{dayjs(comment.created_at).fromNow()}</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: '#374151' }}>{comment.comment}</div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+              <TextArea 
+                placeholder="Type your reply here..." 
+                rows={3} 
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                style={{ marginBottom: 12, borderRadius: 8 }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Checkbox checked={isInternal} onChange={e => setIsInternal(e.target.checked)}>
+                  Internal Note
+                </Checkbox>
+                <Button 
+                  type="primary" 
+                  icon={<SendOutlined />} 
+                  onClick={handleAddComment}
+                  loading={submittingComment}
+                  disabled={!commentText.trim()}
+                >
+                  Post Reply
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

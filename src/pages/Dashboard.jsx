@@ -4,9 +4,11 @@ import {
   Card, Row, Col, Tag, Spin, message, Button,
   Avatar, Progress, Typography, Grid
 } from "antd";
-import { Phone, Users, IndianRupee, Percent, Mail, MessageCircle, FileText } from "lucide-react";
+import { Phone, Users, IndianRupee, Percent, Mail, MessageCircle, FileText, BadgeAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 import {
   UserOutlined,
   ShoppingOutlined,
@@ -16,7 +18,7 @@ import {
   CheckCircleOutlined
 } from "@ant-design/icons";
 
-import { dashboardService } from "../services";
+import { activityService, dashboardService, taskService } from "../services";
 import ResponsiveTable from "../components/ResponsiveTable";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
@@ -141,6 +143,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [todayTasks, setTodayTasks] = useState([]);
   const [todayActivities, setTodayActivities] = useState([]);
+  const [overdueTasks, setOverdueTasks] = useState([]);
+  const [overdueActivities, setOverdueActivities] = useState([]);
 
 
   // Fetch today tasks from backend
@@ -164,7 +168,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardStats();
     fetchTodayActivities();
-    fetchTodayTasks(); // fetch today tasks
+    fetchTodayTasks();
+    fetchOverdueItems();
   }, []);
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -178,6 +183,32 @@ export default function Dashboard() {
       message.error('Failed to load dashboard statistics');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOverdueItems = async () => {
+    try {
+      const now = dayjs();
+      const [tasksRes, activitiesRes] = await Promise.allSettled([
+        taskService.getAll(),
+        activityService.getAll(),
+      ]);
+
+      if (tasksRes.status === 'fulfilled' && tasksRes.value.success) {
+        const overdue = (tasksRes.value.data || []).filter(t =>
+          t.due_date && dayjs(t.due_date).isBefore(now, 'minute') && t.status !== 'Completed'
+        );
+        setOverdueTasks(overdue);
+      }
+
+      if (activitiesRes.status === 'fulfilled' && activitiesRes.value.success) {
+        const overdue = (activitiesRes.value.data || []).filter(a =>
+          a.activity_date && dayjs(a.activity_date).isBefore(now, 'minute')
+        );
+        setOverdueActivities(overdue);
+      }
+    } catch (err) {
+      console.error('Failed to load overdue items', err);
     }
   };
 
@@ -330,13 +361,13 @@ export default function Dashboard() {
     {
       title: "Open Tickets",
       value: `₹${(stats.revenue?.totalRevenue || 0).toLocaleString('en-IN')}`,
-      icon: <DollarOutlined style={{ fontSize: 24, color: "#f5222d" }} />,
+      icon: <IndianRupee style={{ fontSize: 24, color: "#f5222d" }} />,
       color: "#f5222d"
     }
   ];
   const data = stats?.recent?.deals || [];
   return (
-    <div style={{ padding: "24px 32px", background: "#f5f6f8", minHeight: "100vh" }}>
+    <div  className="min-h-screen bg-[#f5f6f8] py-4 px-2 md:px-6">
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>Dashboard</h1>
 
 
@@ -615,33 +646,25 @@ export default function Dashboard() {
                   };
 
                   return (
-                    <div>
-                      {/* Deal Name */}
-                      <div style={{ fontWeight: 600, fontSize: 12, color: "#111827", marginBottom: 8 }}>
-                        {record.deal_name}
-                      </div>
-
-                      {/* Customer */}
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4, textTransform: "capitalize" }}>
-                        <strong>Customer:</strong> {record.customer?.name ? record.customer.name.charAt(0).toUpperCase() + record.customer.name.slice(1).toLowerCase() : 'N/A'}
-                      </div>
-
-                      {/* Value */}
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                        <strong>Value:</strong> ₹{(record.value || 0).toLocaleString('en-IN')}
-                      </div>
-
-                      {/* Stage */}
-                      <div style={{ marginBottom: 4 }}>
-                        <strong style={{ fontSize: 13, color: "#4b5563" }}>Stage:</strong>{' '}
-                        <Tag variant="filled" color={colors[record.stage] || 'default'} style={{ marginLeft: 4 }}>
-                          {record.stage}
+                    <div className="flex flex-col gap-3 py-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-bold text-[14px] text-gray-900 leading-tight uppercase mb-0.5">{record.deal_name}</div>
+                          <div className="text-[12px] text-gray-400 font-medium">{record.customer?.name || 'No Customer'}</div>
+                        </div>
+                        <Tag variant="filled" color={colors[record.stage] || 'default'} style={{ borderRadius: 6, margin: 0, fontSize: 10 }}>
+                          {record.stage?.toUpperCase()}
                         </Tag>
                       </div>
-
-                      {/* Assigned To */}
-                      <div style={{ fontSize: 13, color: "#4b5563" }}>
-                        <strong>Assigned To:</strong> {record.assignedTo?.name || 'Unassigned'}
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-2">
+                          <Avatar size={24} icon={<UserOutlined />} className="bg-gray-100 text-gray-400" />
+                          <span className="text-[12px] text-gray-600 font-semibold">{record.assignedTo?.name || 'Unassigned'}</span>
+                        </div>
+                        <div className="text-[16px] font-extrabold text-indigo-600">
+                          ₹{(record.value || 0).toLocaleString('en-IN')}
+                        </div>
                       </div>
                     </div>
                   );
@@ -982,8 +1005,78 @@ export default function Dashboard() {
           </motion.div>
         </Col>
       </Row>
+      {/* OVERDUE ALERTS */}
+      {(overdueTasks.length > 0 || overdueActivities.length > 0) && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24}>
+            <motion.div variants={cardAnimation} initial="hidden" animate="visible">
+              <Card
+                variant="borderless"
+                style={{
+                  borderRadius: 14, border: '1px solid #ffffffff',
+                  background: 'linear-gradient(135deg, #fff5f5 0%, #fff 100%)',
+                  boxShadow: '0 4px 20px rgba(239,68,68,0.08)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: '#fef2f2', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <BadgeAlert style={{ color: '#ef4444', fontSize: 18 }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>
+                       Overdue Follow-ups
+                      <span style={{
+                        marginLeft: 10, background: '#ef4444', color: '#fff',
+                        borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700
+                      }}>{overdueTasks.length + overdueActivities.length}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}> {overdueActivities.length} activities and {overdueTasks.length} tasks need your attention</div>
+                  </div>
+                  <Button
+                    size="small"
+                    type="link"
+                    style={{ marginLeft: 'auto', color: '#ef4444' }}
+                    onClick={() => navigate('/activities', { state: { activeTab: 'overdue' } })}
+                  >
+                    View All →
+                  </Button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {overdueActivities.slice(0, 3).map(act => (
+                    <div key={act.id} style={{
+                      background: '#fff', border: '1px solid #fca5a5',
+                      borderRadius: 10, padding: '8px 14px', fontSize: 13
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#111827' }}><Tag color="red" style={{ fontSize: 10, height: 18, lineHeight: '16px' }}>Act</Tag> {act.type}</div>
+                      <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
+                        {dayjs(act.activity_date).fromNow()}
+                      </div>
+                    </div>
+                  ))}
+                  {overdueTasks.slice(0, 3).map(task => (
+                    <div key={task.id} style={{
+                      background: '#fff', border: '1px solid #fca5af', // slightly different border for tasks
+                      borderRadius: 10, padding: '8px 14px', fontSize: 13
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#111827' }}><Tag color="orange" style={{ fontSize: 10, height: 18, lineHeight: '16px' }}>Task</Tag> {task.title}</div>
+                      <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
+                        {dayjs(task.due_date).fromNow()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          </Col>
+        </Row>
+      )}
+
       {/* Stats Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24, marginTop: 44 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24, marginTop: 16 }}>
         {cardData.map((card, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
             <Card

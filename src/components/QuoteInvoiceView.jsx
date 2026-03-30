@@ -169,32 +169,50 @@ export default function QuoteInvoiceView({ open, onClose, record, type = "quote"
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#111827" }}>
-              {["#", "Description", "Amount"].map((h, i) => (
+              {["#", "Description", "Qty", "Unit Price", "Tax %", "Amount"].map((h, i) => (
                 <th key={i} style={{
                   padding: "11px 16px", fontSize: 11, color: "#9ca3af",
                   fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
-                  textAlign: i === 2 ? "right" : "left", width: i === 0 ? 40 : "auto"
+                  textAlign: i === 0 ? "left" : i >= 2 ? "right" : "left",
+                  width: i === 0 ? 36 : i === 2 ? 60 : i === 3 ? 100 : i === 4 ? 70 : "auto"
                 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {(record.items?.length > 0 ? record.items : [null]).map((item, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>{i + 1}</td>
-                <td style={{ padding: "11px 16px", fontSize: 13, borderBottom: "1px solid #f0f0f0" }}>
-                  <div style={{ fontWeight: 600, color: "#111827" }}>
-                    {item ? (item.item_name || item.product_name || "Service") : `${isInvoice ? "Invoice" : "Quotation"} — ${record.deal?.deal_name || "Professional Services"}`}
-                  </div>
-                  {item?.description && item?.item_name && (
-                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{item.description}</div>
-                  )}
+            {record.items?.length > 0 ? record.items.map((item, i) => {
+              const qty = Number(item.quantity || item.qty || 1);
+              const unitPrice = Number(item.price || item.unit_price || 0);
+              const taxPct = Number(item.tax_percent || 0);
+              const lineTotal = Number(item.total || item.amount || (qty * unitPrice));
+              const name = item.product_name || item.item_name || "Service";
+              const desc = item.description;
+              return (
+                <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>{i + 1}</td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ fontWeight: 600, color: "#111827" }}>{name}</div>
+                    {desc && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{desc}</div>}
+                  </td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", color: "#4b5563", borderBottom: "1px solid #f0f0f0" }}>{qty}</td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", color: "#4b5563", borderBottom: "1px solid #f0f0f0" }}>₹{unitPrice.toLocaleString("en-IN")}</td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", color: "#4b5563", borderBottom: "1px solid #f0f0f0" }}>{taxPct > 0 ? `${taxPct}%` : "—"}</td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#111827", borderBottom: "1px solid #f0f0f0" }}>
+                    ₹{lineTotal.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              );
+            }) : (
+              <tr style={{ background: "#fff" }}>
+                <td style={{ padding: "11px 16px", fontSize: 13, color: "#9ca3af", borderBottom: "1px solid #f0f0f0" }}>1</td>
+                <td colSpan={4} style={{ padding: "11px 16px", fontSize: 13, fontWeight: 600, color: "#111827", borderBottom: "1px solid #f0f0f0" }}>
+                  {isInvoice ? "Invoice" : "Quotation"} — {record.deal?.deal_name || "Professional Services"}
                 </td>
                 <td style={{ padding: "11px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#111827", borderBottom: "1px solid #f0f0f0" }}>
-                  ₹{Number(item ? (item.amount || item.total || 0) : subtotal).toLocaleString("en-IN")}
+                  ₹{subtotal.toLocaleString("en-IN")}
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

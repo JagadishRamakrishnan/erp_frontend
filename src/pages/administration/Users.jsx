@@ -255,36 +255,35 @@ export default function Users() {
               loading={loading}
               pagination={{ pageSize: 10 }}
               renderMobileCard={(record) => (
-                <div>
-                  {/* User Header */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <Avatar 
-                      style={{ backgroundColor: "#6366f1", color: "#fff" }} 
-                      icon={<UserOutlined />}
-                    >
-                      {record.name?.charAt(0)}
-                    </Avatar>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                        {record.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                        <MailOutlined style={{ marginRight: 4 }} />
-                        {record.email}
+                <div className="flex flex-col gap-4">
+                  {/* User Profile Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar 
+                        size={48}
+                        className="shadow-sm border-2 border-white ring-1 ring-gray-100"
+                        style={{ backgroundColor: record.role === 'Admin' ? '#ef4444' : '#6366f1', color: '#fff' }} 
+                        icon={<UserOutlined />}
+                      >
+                        {record.name?.charAt(0)}
+                      </Avatar>
+                      <div>
+                        <div className="font-bold text-[16px] text-gray-900 leading-tight">{record.name}</div>
+                        <div className="text-[12px] text-gray-400 mt-0.5">{record.email}</div>
                       </div>
                     </div>
-                    <Tag color={record.status ? 'success' : 'error'}>
-                      {record.status ? 'Active' : 'Inactive'}
+                    <Tag 
+                      color={record.status ? 'success' : 'error'} 
+                      style={{ borderRadius: 6, margin: 0, padding: '2px 8px', fontSize: 10 }}
+                    >
+                      {record.status ? 'ACTIVE' : 'INACTIVE'}
                     </Tag>
                   </div>
 
-                  {/* User Details */}
-                  <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                    <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                      <strong>Phone:</strong> {record.phone || 'N/A'}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#4b5563" }}>
-                      <strong>Role:</strong>{' '}
+                  {/* Role & Details */}
+                  <div className="grid grid-cols-2 gap-3 py-3 border-y border-gray-100">
+                    <div className="bg-gray-50 p-2 rounded-lg text-center">
+                      <div className="text-[9px] text-gray-400 uppercase font-bold mb-1">Assigned Role</div>
                       <Tag 
                         icon={<SafetyOutlined />}
                         color={
@@ -292,32 +291,36 @@ export default function Users() {
                           record.role === 'Manager' ? 'blue' :
                           record.role === 'Executive' ? 'green' : 'default'
                         }
+                        style={{ margin: 0, borderRadius: 4, fontSize: 10 }}
                       >
                         {record.role}
                       </Tag>
                     </div>
+                    <div className="bg-gray-50 p-2 rounded-lg text-center">
+                      <div className="text-[9px] text-gray-400 uppercase font-bold mb-1">Contact No.</div>
+                      <div className="text-[12px] font-bold text-gray-700">{record.phone || 'N/A'}</div>
+                    </div>
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEdit(record)}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button 
+                      type="primary" 
+                      variant="soft"
+                      block 
+                      icon={<EditOutlined />} 
+                      onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                      className="h-10 rounded-lg font-semibold bg-blue-50 text-blue-600 border-none hover:bg-blue-100"
                     >
-                      Edit
+                      Edit Profile
                     </Button>
-                    <Popconfirm
-                      title="Delete user"
-                      description="Are you sure?"
-                      onConfirm={() => handleDelete(record.id)}
-                      okText="Yes"
-                      cancelText="No"
-                    >
-                      <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                        Delete
-                      </Button>
+                    <Popconfirm title="Remove user?" onConfirm={(e) => { e.stopPropagation(); handleDelete(record.id); }}>
+                      <Button 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80" 
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </Popconfirm>
                   </div>
                 </div>

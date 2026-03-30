@@ -833,114 +833,99 @@ export default function Leads() {
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total) => `Total ${total} leads`
                 }}
-                renderMobileCard={(record) => (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    {/* Header with Avatar and Name */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar
-                        style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
-                        icon={<UserOutlined />}
-                        onClick={() => handleView(record)}
-                      >
-                        {record.name?.charAt(0)}
-                      </Avatar>
-                      <div style={{ flex: 1, paddingLeft: 10 }} onClick={() => handleView(record)}>
-                        <div style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
-                          {record.name}
+                renderMobileCard={(record) => {
+                  const isAssignedToOther = record.assigned_to && record.assigned_to !== currentUser?.id;
+                  const isAdmin = currentUser?.role === 'Admin';
+                  const canEdit = !isAssignedToOther || isAdmin;
+                  const isClosed = record.status === 'Won' || record.status === 'Lost';
+                  
+                  return (
+                    <div className="flex flex-col gap-4">
+                      {/* Top Row: Avatar & Name */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            size={44}
+                            style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
+                            src={record.email ? `https://logo.clearbit.com/${record.email.split("@")[1]}` : null}
+                            onClick={(e) => { e.stopPropagation(); handleView(record); }}
+                          >
+                            {record.name?.charAt(0)}
+                          </Avatar>
+                          <div onClick={(e) => { e.stopPropagation(); handleView(record); }}>
+                            <div className="font-bold text-[15px] text-gray-900 leading-tight">{record.name}</div>
+                            <div className="text-[12px] text-gray-400">{record.lead_code}</div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }} onClick={() => handleView(record)}>
-                          {record.lead_code}
+                        <Tag color={getStatusColor(record.status)} style={{ borderRadius: 6, margin: 0 }}>
+                          {record.status}
+                        </Tag>
+                      </div>
+
+                      {/* Info Grid */}
+                      <div className="grid grid-cols-1 gap-2 text-[13px] text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        {record.email && (
+                          <div className="flex items-center gap-2 truncate">
+                            <MailOutlined className="text-gray-400" />
+                            <span className="truncate">{record.email}</span>
+                          </div>
+                        )}
+                        {record.phone && (
+                          <div className="flex items-center gap-2">
+                            <PhoneOutlined className="text-gray-400" />
+                            <span>{record.phone}</span>
+                          </div>
+                        )}
+                        {record.company && (
+                          <div className="flex items-center gap-2">
+                            <span className="bg-gray-200 w-1 h-1 rounded-full"></span>
+                            <span className="font-medium">{record.company}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                          <UserOutlined className="text-gray-400" />
+                          <span className="text-[12px]">Assigned: <span className="font-semibold">{record.assignedTo?.name || 'Unassigned'}</span></span>
                         </div>
                       </div>
-                      <Tag color={getStatusColor(record.status)}>
-                        {record.status}
-                      </Tag>
-                    </div>
 
-                    {/* Contact Info */}
-                    <div style={{ marginBottom: 12, paddingLeft: 8 }}>
-                      {record.email && (
-                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                          <MailOutlined style={{ marginRight: 6 }} />
-                          {record.email}
+                      {/* Action Bar */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        <Button
+                          type="primary"
+                          size="middle"
+                          block
+                          onClick={(e) => { e.stopPropagation(); handleConvert(record); }}
+                          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 border-none rounded-lg h-10 font-semibold"
+                          disabled={!canEdit || isClosed}
+                        >
+                          Convert Lead
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            icon={<EditOutlined />} 
+                            onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
+                            className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200"
+                            disabled={!canEdit}
+                          />
+                          <Popconfirm
+                            title="Delete lead"
+                            onConfirm={(e) => { e.stopPropagation(); handleDelete(record.id); }}
+                            onCancel={(e) => e.stopPropagation()}
+                            disabled={!canEdit}
+                          >
+                            <Button 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80"
+                              disabled={!canEdit}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </Popconfirm>
                         </div>
-                      )}
-                      {record.phone && (
-                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                          <PhoneOutlined style={{ marginRight: 6 }} />
-                          {record.phone}
-                        </div>
-                      )}
-                      {record.company && (
-                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                          <strong>Company:</strong> {record.company}
-                        </div>
-                      )}
-                      {record.source && (
-                        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 4 }}>
-                          <strong>Source:</strong> {record.source}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 13, color: "#4b5563" }}>
-                        <strong>Assigned:</strong> {record.assignedTo?.name || 'Unassigned'}
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      {(() => {
-                        const isAssignedToOther = record.assigned_to && record.assigned_to !== currentUser?.id;
-                        const isAdmin = currentUser?.role === 'Admin';
-                        const canEdit = !isAssignedToOther || isAdmin;
-
-                        const isClosed = record.status === 'Won' || record.status === 'Lost';
-
-                        return (
-                          <>
-                            <Button
-                              type="primary"
-                              size="small"
-                              onClick={() => handleConvert(record)}
-                              style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                              disabled={!canEdit || isClosed}
-                              title={
-                                !canEdit
-                                  ? "Assigned to another user"
-                                  : isClosed
-                                    ? `Lead is already ${record.status}`
-                                    : "Convert to Opportunity"
-                              }
-                            >
-                              Convert
-                            </Button>
-
-                            <Button
-                              type="link"
-                              size="small"
-                              icon={<EditOutlined />}
-                              onClick={() => handleEdit(record)}
-                              disabled={!canEdit}
-                            >
-                              Edit
-                            </Button>
-                            <Popconfirm
-                              title="Delete lead"
-                              description="Are you sure?"
-                              onConfirm={() => handleDelete(record.id)}
-                              okText="Yes"
-                              cancelText="No"
-                              disabled={!canEdit}
-                            >
-                              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled={!canEdit}>
-                                Delete
-                              </Button>
-                            </Popconfirm>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
+                  );
+                }}
               />
             </Card>
           )}

@@ -12,6 +12,8 @@ import {
 } from "@ant-design/icons";
 import { customerService } from "../services";
 import BulkUploadModal from "../components/BulkUploadModal";
+import CustomerDetailModal from "../components/CustomerDetailModal";
+import ResponsiveTable from "../components/ResponsiveTable";
 const { Option } = Select;
 
 export default function Customer() {
@@ -24,6 +26,8 @@ export default function Customer() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   
   useEffect(() => {
     fetchCustomers();
@@ -195,16 +199,17 @@ page: {
     align: "left",
     width: 280,
     render: (text, record) => (
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+        onClick={() => { setSelectedCustomer(record); setProfileOpen(true); }}>
         <Avatar
-          style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}
-          icon={<UserOutlined />}
-        />
+          style={{ backgroundColor: "#2563eb", color: "#fff", flexShrink: 0 }}
+          src={record.email ? `https://logo.clearbit.com/${record.email.split("@")[1]}` : null}
+        >
+          {record.name?.charAt(0)}
+        </Avatar>
         <div>
           <div style={{ fontWeight: 600, color: "#111827" }}>{text}</div>
-          <div style={{ fontSize: 12, color: "#9ca3af" }}>
-            {record.customer_code}
-          </div>
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>{record.customer_code}</div>
         </div>
       </div>
     ),
@@ -287,9 +292,15 @@ page: {
     title: "Actions",
     key: "actions",
     align: "center",
-    width: 160,
+    width: 200,
     render: (_, record) => (
       <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <Button
+          type="link"
+          onClick={() => { setSelectedCustomer(record); setProfileOpen(true); }}
+        >
+          View
+        </Button>
         <Button
           type="link"
           icon={<EditOutlined />}
@@ -472,64 +483,69 @@ page: {
              </span>
           </div>
 
-          {/* DESKTOP + TABLET TABLE */}
-          {!screens.xs && (
-             <Table
-  columns={columns}
-  dataSource={filteredCustomers}
-  rowKey="id"
-  loading={loading}
-  pagination={{ pageSize: 10 }}
-  size="middle"
-  scroll={{ x: 900 }}
-/>
-          )}
-
-          {/* MOBILE CARD VIEW */}
-          {screens.xs && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
-              {filteredCustomers.map((item) => (
-                <div 
-                  key={item.id} 
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    padding: 16,
-                    borderRadius: 12,
-                    background: "#ffffff",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <Avatar style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }} icon={<UserOutlined />} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 15, color: "#111827", fontFamily: '"Inter", sans-serif' }}>{item.name}</div>
-                        <div style={{ fontSize: 13, color: "#6b7280", fontFamily: '"Inter", sans-serif' }}>{item.company || 'N/A'}</div>
-                      </div>
+          {/* RESPONSIVE TABLE (Replaces desktop/mobile split) */}
+          <ResponsiveTable
+            columns={columns}
+            dataSource={filteredCustomers}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 12 }}
+            size="middle"
+            renderMobileCard={(item) => (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar 
+                      size={44}
+                      style={{ backgroundColor: "#2563eb", color: "#fff" }} 
+                      src={item.email ? `https://logo.clearbit.com/${item.email.split("@")[1]}` : null}
+                    >
+                      {item.name?.charAt(0)}
+                    </Avatar>
+                    <div>
+                      <div className="font-bold text-[15px] text-gray-900 leading-tight">{item.name}</div>
+                      <div className="text-[12px] text-gray-400">{item.customer_code}</div>
                     </div>
                   </div>
-
-                  <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "#4b5563", fontFamily: '"Inter", sans-serif' }}>
-                    <div>📞 {item.phone || 'N/A'}</div>
-                    <div>📧 {item.email || 'N/A'}</div>
-                  </div>
-
-                  <div style={{ marginTop: 12, borderTop: "1px solid #f3f4f6", paddingTop: 12, display: "flex", gap: 8 }}>
-                    <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(item)}>Edit</Button>
-                    <Popconfirm
-                      title="Delete customer"
-                      description="Are you sure?"
-                      onConfirm={() => handleDelete(item.id)}
-                      okText="Yes"
-                      cancelText="No"
-                    >
-                      <Button size="small" danger icon={<DeleteOutlined />}>Delete</Button>
-                    </Popconfirm>
+                  <div className="flex gap-1.5">
+                    {/* Social Quick Links */}
+                    {item.phone && (
+                      <a href={`https://wa.me/${item.phone}`} target="_blank" className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
+                        <WhatsAppOutlined className="text-green-500 text-[14px]" />
+                      </a>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div className="grid grid-cols-1 gap-2 text-[13px] text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <div className="font-medium text-gray-800">{item.company || 'Private Customer'}</div>
+                  {item.email && <div className="truncate">📧 {item.email}</div>}
+                  {item.phone && <div>📞 {item.phone}</div>}
+                  {item.city && <div className="text-gray-400">📍 {item.city}</div>}
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                  <Button 
+                    type="primary" 
+                    variant="soft"
+                    block
+                    onClick={() => { setSelectedCustomer(item); setProfileOpen(true); }}
+                    className="h-9 rounded-lg font-semibold"
+                  >
+                    View Details
+                  </Button>
+                  <Button 
+                    icon={<EditOutlined />} 
+                    onClick={() => handleEdit(item)}
+                    className="w-10 h-9 rounded-lg flex items-center justify-center border-gray-200"
+                  />
+                  <Popconfirm title="Delete customer?" onConfirm={() => handleDelete(item.id)}>
+                    <Button danger icon={<DeleteOutlined />} className="w-10 h-9 rounded-lg flex items-center justify-center opacity-80" />
+                  </Popconfirm>
+                </div>
+              </div>
+            )}
+          />
         </Card>
       </motion.div>
         </>
@@ -613,6 +629,12 @@ page: {
         onDownloadTemplate={handleDownloadTemplate}
         moduleName="Customers"
         templateFields={['name', 'email', 'phone', 'company', 'address', 'city', 'state', 'country', 'postal_code']}
+      />
+
+      <CustomerDetailModal
+        open={profileOpen}
+        customer={selectedCustomer}
+        onClose={() => { setProfileOpen(false); setSelectedCustomer(null); }}
       />
     </div>
   );

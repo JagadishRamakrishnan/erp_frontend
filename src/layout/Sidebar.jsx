@@ -18,7 +18,10 @@ import {
   BarChartOutlined,
   SettingOutlined,
   RiseOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  HistoryOutlined,
+  ThunderboltOutlined,
+  AuditOutlined
 } from "@ant-design/icons";
 
 // Lucide Icons
@@ -177,6 +180,21 @@ const Sidebar = ({
           icon: <UserOutlined style={{ fontSize: 18 }} />,
           label: "Users",
         },
+        {
+          key: "roles",
+          icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
+          label: "Roles & Permissions",
+        },
+        {
+          key: "lead-automation",
+          icon: <ThunderboltOutlined style={{ fontSize: 18 }} />,
+          label: "Lead Automation",
+        },
+        {
+          key: "audit-logs",
+          icon: <HistoryOutlined style={{ fontSize: 18 }} />,
+          label: "Audit Logs",
+        },
       ],
     },
     // SUPPORT & FINANCE GROUP
@@ -206,7 +224,7 @@ const Sidebar = ({
 
   // Set the correct menu folder open on mount / navigate if it matches child keys
   useEffect(() => {
-    const adminMenu = ["contact", "users", "roles", "admin"];
+    const adminMenu = ["contact", "users", "roles", "audit-logs", "lead-automation", "admin"];
 
     const salesMenu = [
       "leads",
@@ -525,7 +543,7 @@ const Sidebar = ({
                 top: 0,
                 left: 0,
                 bottom: 0,
-                zIndex: 100,
+                zIndex: 2000,
               }}
             >
               {/* Top (Logo) */}

@@ -8,7 +8,15 @@ const getAuthToken = () => {
 };
 
 // Helper function to handle API responses
-const handleResponse = async (response) => {
+const handleResponse = async (response, type = 'json') => {
+  if (type === 'blob') {
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || 'Download failed');
+    }
+    return response.blob();
+  }
+
   const data = await response.json();
   
   if (!response.ok) {
@@ -21,6 +29,8 @@ const handleResponse = async (response) => {
 // Helper function to make API calls
 const apiCall = async (endpoint, options = {}) => {
   const token = getAuthToken();
+  const responseType = options.responseType || 'json';
+  delete options.responseType;
   
   const config = {
     headers: {
@@ -32,7 +42,7 @@ const apiCall = async (endpoint, options = {}) => {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  return handleResponse(response);
+  return handleResponse(response, responseType);
 };
 
 export default apiCall;
