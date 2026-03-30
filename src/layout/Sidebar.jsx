@@ -543,7 +543,7 @@ const Sidebar = ({
                 top: 0,
                 left: 0,
                 bottom: 0,
-                zIndex: 2000,
+                zIndex: isMobile ? 2000 : 100,
               }}
             >
               {/* Top (Logo) */}
