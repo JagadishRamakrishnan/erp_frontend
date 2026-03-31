@@ -169,23 +169,51 @@ export default function Leads() {
   };
   const handleView = (lead) => {
     if (!lead.assigned_to) {
+      let selectedToAssignId = currentUser.id;
       Modal.confirm({
-        title: 'Assign Lead',
-        content: 'This lead is currently unassigned. Would you like to assign it to yourself to manage it?',
-        okText: 'Assign to Me',
-        cancelText: 'Cancel',
+        title: <div className="flex items-center gap-2"><UserPlus size={20} className="text-blue-500" /> <span>Assign Lead</span></div>,
+        icon: null,
+        width: 450,
+        content: (
+          <div className="mt-4">
+            <Text type="secondary">This lead is currently unassigned. Please choose a user to manage this lead or just view the details.</Text>
+            <div className="mt-4">
+              <Text strong className="block mb-2">Select Team Member:</Text>
+              <Select 
+                placeholder="Choose user" 
+                style={{ width: '100%' }}
+                defaultValue={currentUser.id}
+                onChange={(val) => selectedToAssignId = val}
+              >
+                {users.map(user => (
+                  <Option key={user.id} value={user.id}>{user.name} ({user.role})</Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        ),
+        okText: 'Assign & View Lead',
+        cancelText: 'Just View (Wait)',
+        okButtonProps: { style: { background: '#1677ff' } },
+        cancelButtonProps: { type: 'default' },
         onOk: async () => {
           try {
-            const response = await leadService.update(lead.id, { assigned_to: currentUser.id });
+            const response = await leadService.update(lead.id, { assigned_to: selectedToAssignId });
             if (response.success) {
-              message.success('Lead assigned to you successfully!');
+              message.success(`Lead assigned successfully!`);
               fetchLeads();
-              setSelectedLead({ ...lead, assigned_to: currentUser.id, assignedTo: currentUser });
+              const assignedUser = users.find(u => u.id === selectedToAssignId);
+              setSelectedLead({ ...lead, assigned_to: selectedToAssignId, assignedTo: assignedUser });
               setViewModalOpen(true);
             }
           } catch (error) {
             message.error('Failed to assign lead');
           }
+        },
+        onCancel: () => {
+          // Just view without assigning
+          setSelectedLead(lead);
+          setViewModalOpen(true);
         }
       });
     } else if (lead.assigned_to !== currentUser?.id) {

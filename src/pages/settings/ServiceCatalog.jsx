@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Table, Button, Modal, Form, Input, InputNumber, Switch, Space,
+import { Table, Button, Modal, Form, Input, InputNumber, Switch, Space,
   Tag, Typography, message, Popconfirm, Select, Divider, Tooltip
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, AppstoreOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, AppstoreOutlined, PlusCircleOutlined, PullRequestOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { serviceCatalogService } from '../../services';
+import { useEffect, useState } from 'react';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -25,6 +25,7 @@ export default function ServiceCatalog() {
   const [lineItems, setLineItems] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchServices();
@@ -85,7 +86,10 @@ export default function ServiceCatalog() {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const payload = { ...values, line_items: lineItems.filter(li => li.item_name) };
+      const payload = { 
+        ...values, 
+        line_items: lineItems.filter(li => li.item_name)
+      };
       if (editingService) {
         await serviceCatalogService.update(editingService.id, payload);
         message.success('Service updated!');
@@ -182,6 +186,14 @@ export default function ServiceCatalog() {
         <Space>
           <Tooltip title="Edit Service">
             <Button icon={<EditOutlined />} size="small" onClick={() => openEdit(record)} />
+          </Tooltip>
+          <Tooltip title="View Action Plan">
+            <Button 
+              icon={<PullRequestOutlined />} 
+              size="small" 
+              onClick={() => navigate(`/action-plans?serviceId=${record.id}`)} 
+              style={{ color: '#722ed1', borderColor: '#722ed1' }}
+            />
           </Tooltip>
           <Popconfirm
             title="Delete this service?"
@@ -307,7 +319,7 @@ export default function ServiceCatalog() {
             <span />
           </div>
 
-          <Button icon={<PlusCircleOutlined />} size="small" onClick={addLineItem} type="dashed" style={{ width: '100%' }}>
+          <Button icon={<PlusCircleOutlined />} size="small" onClick={addLineItem} type="dashed" style={{ width: '100%', marginBottom: 24 }}>
             Add Line Item
           </Button>
         </Form>

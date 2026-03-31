@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 //import { useTheme } from "../../context/ThemeContext";
 import { Popover, Tooltip, Grid } from "antd";
-import { Megaphone, MessageSquare,BadgeIndianRupee } from "lucide-react";
+import { Megaphone, MessageSquare,BadgeIndianRupee, Waypoints, WaypointsIcon, Milestone } from "lucide-react";
 //import { MessageSquare } from "lucide-react";
 // Ant Design Icons
 import {
@@ -21,6 +21,7 @@ import {
   CalendarOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
+  PullRequestOutlined,
   AuditOutlined
 } from "@ant-design/icons";
 
@@ -191,6 +192,11 @@ const Sidebar = ({
           label: "Lead Automation",
         },
         {
+          key: "action-plans",
+          icon: <PullRequestOutlined style={{ fontSize: 18 }} />,
+          label: "Action Plans",
+        },
+        {
           key: "audit-logs",
           icon: <HistoryOutlined style={{ fontSize: 18 }} />,
           label: "Audit Logs",
@@ -224,7 +230,7 @@ const Sidebar = ({
 
   // Set the correct menu folder open on mount / navigate if it matches child keys
   useEffect(() => {
-    const adminMenu = ["contact", "users", "roles", "audit-logs", "lead-automation", "admin"];
+    const adminMenu = ["contact", "users", "roles", "audit-logs", "lead-automation", "action-plans", "admin"];
 
     const salesMenu = [
       "leads",

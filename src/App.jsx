@@ -24,6 +24,7 @@ import Tickets from "./pages/Tickets";
 import Notes from "./pages/Notes";
 import AuditLogs from "./pages/administration/AuditLogs";
 import LeadAutomation from "./pages/administration/LeadAutomation";
+import ActionPlans from "./pages/administration/ActionPlans";
 //marketing
 import MarketingDashboard from "./pages/marketing/MarketingDashboard";
 import CampaignsList from "./pages/marketing/CampaignsList";
@@ -70,6 +71,7 @@ function App() {
           <Route path="roles" element={<RolesPermissions />} />
           <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="lead-automation" element={<LeadAutomation />} />
+          <Route path="action-plans" element={<ActionPlans />} />
           <Route path="marketing-dashboard" element={<MarketingDashboard />} />
           <Route path="campaigns" element={<CampaignsList />} />
           <Route path="whatsapp-campaign" element={<WhatsAppCampaign />} />

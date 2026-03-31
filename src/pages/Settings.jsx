@@ -121,6 +121,8 @@ export default function Settings() {
         </div>
       </div>
 
+      {!isAdmin && <Form form={companyForm} style={{ display: 'none' }} />}
+      
       <Row gutter={[24, 24]}>
 
         {/* ================= COMPANY SETTINGS (LEFT) ================= */}
