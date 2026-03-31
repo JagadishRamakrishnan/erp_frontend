@@ -6,6 +6,7 @@ import BulkUploadModal from "../components/BulkUploadModal";
 import { motion } from "framer-motion";
 import { Typography, message, Spin } from "antd";
 import { dealService } from "../services";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 export default function Deals() {
   const tabs = [

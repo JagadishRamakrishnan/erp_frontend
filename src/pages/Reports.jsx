@@ -8,6 +8,7 @@ import { Target, TrendingUp, Users, IndianRupee, ArrowUp, Activity, Download, Ti
 import { motion } from "framer-motion";
 import { Typography, Spin, message, Tag, Progress, Button } from "antd";
 import { reportsService } from "../services";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const { Title, Text } = Typography;
 
