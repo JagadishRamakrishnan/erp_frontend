@@ -117,6 +117,16 @@ export default function ServiceCatalog() {
 
   const columns = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      render: (id, record) => (
+        <div>
+          <div style={{ fontWeight: 600, color: '#111827' }}>{id}</div>
+        </div>
+      )
+    },
+    {
       title: 'Service Name',
       dataIndex: 'name',
       key: 'name',

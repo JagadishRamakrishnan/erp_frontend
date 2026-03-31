@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio } from "antd";
+import { Card, Table, Input, Button, Modal, Form, Select, Tag, Avatar, message, Popconfirm, Row, Col, Spin, Switch, DatePicker, Typography, Radio, Tooltip } from "antd";
 import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined, EyeOutlined, UploadOutlined, CalendarOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { leadService, userService, noteService, taskService, activityService, serviceCatalogService } from "../services";
@@ -72,6 +72,8 @@ export default function Leads() {
   const [pendingLeadValues, setPendingLeadValues] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [stageForm] = Form.useForm();
+  const [myLeadsOnly, setMyLeadsOnly] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const handleViewTypeChange = (type) => {
     setViewTransitioning(true);
@@ -398,8 +400,19 @@ export default function Leads() {
     }
   };
 
+  const baseFilteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      if (currentUser?.role === 'Admin' && selectedUserId) {
+        return lead.assigned_to === selectedUserId;
+      } else if (myLeadsOnly) {
+        return lead.assigned_to === currentUser?.id || !lead.assigned_to;
+      }
+      return true;
+    });
+  }, [leads, myLeadsOnly, selectedUserId, currentUser]);
+
   const filteredLeads = useMemo(() => {
-    return leads
+    return baseFilteredLeads
       .filter(lead => {
         const searchMatch = (lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
           lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -416,7 +429,7 @@ export default function Leads() {
         // Secondary sort by date (newest first)
         return new Date(b.created_at) - new Date(a.created_at);
       });
-  }, [leads, searchText, activeTab]);
+  }, [baseFilteredLeads, searchText, activeTab]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -446,7 +459,7 @@ export default function Leads() {
             style={{ backgroundColor: "#ff8a00", color: "#fff", flexShrink: 0 }}
             // icon={<UserOutlined />}
             className="cursor-pointer"
-             onClick={() => handleView(record)}
+            onClick={() => handleView(record)}
           >
             {record.name?.charAt(0)}
           </Avatar>
@@ -556,7 +569,19 @@ export default function Leads() {
       title: "Company",
       dataIndex: "company",
       align: "center",
-      render: (text) => <span>{text || "N/A"}</span>,
+      render: (text) => (
+        <Tooltip title={text}>
+          <div style={{ 
+            maxWidth: 100, 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis', 
+            whiteSpace: 'nowrap',
+            margin: '0 auto' 
+          }}>
+            {text || "N/A"}
+          </div>
+        </Tooltip>
+      ),
     },
 
     {
@@ -704,10 +729,10 @@ export default function Leads() {
           {viewType === "list" && (
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {[
-                { title: "Total Leads", count: leads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
-                { title: "New Leads", count: leads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
-                { title: "Qualified", count: leads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
-                { title: "Deals Won", count: leads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
+                { title: "Total Leads", count: baseFilteredLeads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
+                { title: "New Leads", count: baseFilteredLeads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
+                { title: "Qualified", count: baseFilteredLeads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
+                { title: "Deals Won", count: baseFilteredLeads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
               ].map((item, index) => (
                 <Col xs={24} sm={12} lg={6} key={index}>
                   <motion.div
@@ -764,7 +789,37 @@ export default function Leads() {
                 onChange={(e) => setSearchText(e.target.value)}
               />
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* ROLE BASED FILTERS */}
+                <div className="flex items-center gap-3 bg-[#f9fafb] border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
+                  {currentUser?.role === 'Admin' ? (
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-gray-400" />
+                      <Select
+                        placeholder="All Users"
+                        style={{ width: 150 }}
+                        allowClear
+                        onChange={(val) => setSelectedUserId(val)}
+                        className="user-select-filter"
+                        variant="borderless"
+                      >
+                        {users.map(u => (
+                          <Option key={u.id} value={u.id}>{u.name}</Option>
+                        ))}
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-medium text-gray-600">My Leads Only</span>
+                      <Switch
+                        size="small"
+                        checked={myLeadsOnly}
+                        onChange={(val) => setMyLeadsOnly(val)}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* VIEW TOGGLE */}
                 <div className="flex bg-[#f3f4f6] p-1 rounded-lg">
                   <button
@@ -780,15 +835,13 @@ export default function Leads() {
                     <List size={16} /> Table
                   </button>
                 </div>
-
-
               </div>
             </div>
             {/* STATUS TABS - ONLY SHOW IN LIST VIEW */}
             {viewType === "list" && (
               <div className="flex items-center mt-3 gap-2 overflow-x-auto whitespace-nowrap hidden lg:flex">
                 {tabs.map((tab) => {
-                  const count = tab === "All" ? leads.length : leads.filter((d) => d.status === tab).length;
+                  const count = tab === "All" ? baseFilteredLeads.length : baseFilteredLeads.filter((d) => d.status === tab).length;
                   return (
                     <button
                       key={tab}
@@ -816,8 +869,8 @@ export default function Leads() {
               currentUser={currentUser}
             />
           ) : (
-            <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)", padding: "10px" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
+            <Card variant="borderless" style={{ borderRadius: 14, boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }} styles={{ body: { padding: '15px' } }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
                   Lead Directory ({filteredLeads.length})
                 </span>
@@ -838,7 +891,7 @@ export default function Leads() {
                   const isAdmin = currentUser?.role === 'Admin';
                   const canEdit = !isAssignedToOther || isAdmin;
                   const isClosed = record.status === 'Won' || record.status === 'Lost';
-                  
+
                   return (
                     <div className="flex flex-col gap-4">
                       {/* Top Row: Avatar & Name */}
@@ -901,8 +954,8 @@ export default function Leads() {
                           Convert Lead
                         </Button>
                         <div className="flex gap-2">
-                          <Button 
-                            icon={<EditOutlined />} 
+                          <Button
+                            icon={<EditOutlined />}
                             onClick={(e) => { e.stopPropagation(); handleEdit(record); }}
                             className="w-10 h-10 rounded-lg flex items-center justify-center border-gray-200"
                             disabled={!canEdit}
@@ -913,9 +966,9 @@ export default function Leads() {
                             onCancel={(e) => e.stopPropagation()}
                             disabled={!canEdit}
                           >
-                            <Button 
-                              danger 
-                              icon={<DeleteOutlined />} 
+                            <Button
+                              danger
+                              icon={<DeleteOutlined />}
                               className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80"
                               disabled={!canEdit}
                               onClick={(e) => e.stopPropagation()}

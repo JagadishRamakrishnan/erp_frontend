@@ -139,11 +139,17 @@ export default function Customer() {
     }
   };
   
+  const [sortBy, setSortBy] = useState("newest");
+  
   const filteredCustomers = customers.filter(customer =>
     customer.name?.toLowerCase().includes(searchText.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchText.toLowerCase()) ||
     customer.company?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  ).sort((a, b) => {
+    if (sortBy === "newest") return new Date(b.created_at) - new Date(a.created_at);
+    if (sortBy === "oldest") return new Date(a.created_at) - new Date(b.created_at);
+    return 0;
+  });
   // Dutch specific styles mapping 
   const styles = {
 page: { 
@@ -463,9 +469,10 @@ page: {
 
             <Col xs={24} md={6}>
               <Select 
-                defaultValue="newest" 
+                value={sortBy}
                 style={{ width: "100%", height: 40 }}
                 suffixIcon={<DownOutlined style={{ color: "#9ca3af" }}/>}
+                onChange={(val) => setSortBy(val)}
               >
                 <Option value="newest">Sort by: Newest</Option>
                 <Option value="oldest">Sort by: Oldest</Option>

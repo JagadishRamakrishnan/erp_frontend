@@ -15,7 +15,9 @@ import {
   Calendar,
   Badge,
   Drawer,
-  Tabs
+  Tabs,
+  Tooltip,
+  Space
 } from "antd";
 import {
   SearchOutlined,
@@ -36,6 +38,8 @@ import { Typography } from "antd";
 import { Modal, Form, DatePicker } from "antd";
 import { activityService, leadService, customerService, dealService } from "../../services";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 import { useNavigate } from "react-router-dom";
 import { UploadOutlined } from "@ant-design/icons";
 import ResponsiveTable from "../../components/ResponsiveTable";
@@ -351,19 +355,45 @@ export default function Activities() {
       title: "Notes",
       dataIndex: "notes",
       align: "center",
-      render: (text) => <span style={{ color: "#4b5563" }}>{text || "N/A"}</span>
+      render: (text) => (
+        <Tooltip title={text}>
+          <div style={{
+            maxWidth: 150,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            margin: '0 auto',
+            color: "#4b5563"
+          }}>
+            {text || "N/A"}
+          </div>
+        </Tooltip>
+      )
     },
     {
       title: "Related To",
       key: "related",
       align: "center",
-      render: (_, record) => <span style={{ color: "#4b5563" }}>{record.related_type ? `${record.related_type} #${record.related_id}` : "N/A"}</span>
+      render: (_, record) => <span className="text-[#4b5563] cursor-pointer hover:text-[#2e5c9d] hover:underline transition-all duration-1000" onClick={() => handleView(record)} >{record.related_type ? `${record.related_type} #${record.related_id}` : "N/A"}</span>
     },
     {
       title: "Date",
       dataIndex: "activity_date",
       align: "center",
-      render: (date) => <span style={{ color: "#4b5563" }}>{date ? dayjs(date).format("MMM DD, YYYY HH:mm") : "N/A"}</span>
+      render: (date) => {
+        if (!date) return "N/A";
+        const isOverdue = dayjs(date).isBefore(dayjs());
+        return (
+          <Space direction="vertical" size={0}>
+            <span style={{ color: "#4b5563" }}>{dayjs(date).format("MMM DD, YYYY HH:mm")}</span>
+            {isOverdue && (
+              <Tag color="error" style={{ fontSize: '10px', borderRadius: '4px', marginTop: '4px' }}>
+                overdue since {dayjs(date).fromNow(true)} ago
+              </Tag>
+            )}
+          </Space>
+        );
+      }
     },
     {
       title: "Actions",
@@ -371,9 +401,9 @@ export default function Activities() {
       align: "center",
       render: (_, record) => (
         <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}>View</Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>Edit</Button>
-          <Popconfirm title="Delete activity" description="Are you sure?" onConfirm={() => handleDelete(record.id)}><Button type="link" danger icon={<DeleteOutlined />}>Delete</Button></Popconfirm>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}></Button>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}></Button>
+          <Popconfirm title="Delete activity" description="Are you sure?" onConfirm={() => handleDelete(record.id)}><Button type="link" danger icon={<DeleteOutlined />}></Button></Popconfirm>
         </div>
       )
     }
@@ -446,7 +476,7 @@ export default function Activities() {
                 label: (
                   <span style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 10px" }}>
                     <Clock size={16} color={overdueCount > 0 ? "#ef4444" : "inherit"} />
-                     Overdue
+                    Overdue
                     {overdueCount > 0 && (
                       <Badge count={overdueCount} overflowCount={99} style={{ backgroundColor: '#ef4444' }} />
                     )}
@@ -472,15 +502,13 @@ export default function Activities() {
               </Card>
               <motion.div variants={layoutAnimation} initial="hidden" animate="visible">
                 <Card variant="borderless" style={styles.roundedCard}>
-                  <ResponsiveTable 
-                    columns={columns} 
-                    dataSource={filteredActivities} 
-                    rowKey="id" 
-                    loading={loading} 
-                    pagination={{ pageSize: 12 }} 
-                    onRow={(record) => ({
-                      onClick: () => handleView(record)
-                    })}
+                  <ResponsiveTable
+                    columns={columns}
+                    dataSource={filteredActivities}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{ pageSize: 12 }}
+
                     renderMobileCard={(item) => (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
@@ -514,35 +542,35 @@ export default function Activities() {
                         )}
 
                         <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                          <Button 
-                            type="text" 
-                            size="small" 
-                            icon={<EyeOutlined />} 
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
                             onClick={(e) => { e.stopPropagation(); handleView(item); }}
                             className="text-gray-500 font-medium"
                           >
                             Details
                           </Button>
                           <div className="flex-1" />
-                          <Button 
-                            type="text" 
-                            size="small" 
-                            icon={<EditOutlined />} 
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined />}
                             onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
                             className="text-blue-600"
                           >
                             Edit
                           </Button>
-                          <Popconfirm 
-                            title="Delete activity?" 
+                          <Popconfirm
+                            title="Delete activity?"
                             onConfirm={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                             onCancel={(e) => e.stopPropagation()}
                           >
-                            <Button 
-                              type="text" 
-                              danger 
-                              size="small" 
-                              icon={<DeleteOutlined />} 
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
                               onClick={(e) => e.stopPropagation()}
                             />
                           </Popconfirm>

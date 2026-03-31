@@ -195,10 +195,7 @@ export default function Dashboard() {
       ]);
 
       if (tasksRes.status === 'fulfilled' && tasksRes.value.success) {
-        const overdue = (tasksRes.value.data || []).filter(t =>
-          t.due_date && dayjs(t.due_date).isBefore(now, 'minute') && t.status !== 'Completed'
-        );
-        setOverdueTasks(overdue);
+        setOverdueTasks([]);
       }
 
       if (activitiesRes.status === 'fulfilled' && activitiesRes.value.success) {
@@ -1032,9 +1029,9 @@ export default function Dashboard() {
                       <span style={{
                         marginLeft: 10, background: '#ef4444', color: '#fff',
                         borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700
-                      }}>{overdueTasks.length + overdueActivities.length}</span>
+                      }}>{overdueActivities.length}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}> {overdueActivities.length} activities and {overdueTasks.length} tasks need your attention</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{overdueActivities.length} activities need your attention</div>
                   </div>
                   <Button
                     size="small"
@@ -1046,7 +1043,7 @@ export default function Dashboard() {
                   </Button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                  {overdueActivities.slice(0, 3).map(act => (
+                  {overdueActivities.slice(0, 6).map(act => (
                     <div key={act.id} style={{
                       background: '#fff', border: '1px solid #fca5a5',
                       borderRadius: 10, padding: '8px 14px', fontSize: 13
@@ -1054,17 +1051,6 @@ export default function Dashboard() {
                       <div style={{ fontWeight: 600, color: '#111827' }}><Tag color="red" style={{ fontSize: 10, height: 18, lineHeight: '16px' }}>Act</Tag> {act.type}</div>
                       <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
                         {dayjs(act.activity_date).fromNow()}
-                      </div>
-                    </div>
-                  ))}
-                  {overdueTasks.slice(0, 3).map(task => (
-                    <div key={task.id} style={{
-                      background: '#fff', border: '1px solid #fca5af', // slightly different border for tasks
-                      borderRadius: 10, padding: '8px 14px', fontSize: 13
-                    }}>
-                      <div style={{ fontWeight: 600, color: '#111827' }}><Tag color="orange" style={{ fontSize: 10, height: 18, lineHeight: '16px' }}>Task</Tag> {task.title}</div>
-                      <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
-                        {dayjs(task.due_date).fromNow()}
                       </div>
                     </div>
                   ))}

@@ -240,7 +240,7 @@ const handleView = (invoice) => {
     dataIndex: "invoice_number",
     align: "center",
     render: (text, record) => (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, cursor:"pointer" }} onClick={() => handleView(record)}>
         <FileTextOutlined style={{ color: "#1677ff" }} />
         <span style={{ fontWeight: 600, color: "#111827" }}>{text}</span>
         {record.is_recurring && <Tooltip title={`Recurring: ${record.recurring_interval}`}><RetweetOutlined style={{ color: '#7c3aed' }} /></Tooltip>}

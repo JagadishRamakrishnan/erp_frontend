@@ -128,23 +128,23 @@ export default function Login() {
       <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none" />
 
       {/* Login Card */}
-      <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/40 relative z-10">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 !pb-4 border border-white/40 relative z-10">
         {/* Logo */}
         <div className="text-center mb-6">
                     <div
-                    className="w-fit mx-auto p-4 mb-2 shadow-xl flex justify-center items-center rounded-lg"
+                    className="w-fit mx-auto p-4 mb-2 shadow-xl flex justify-center items-center rounded-xl"
                       style={{
-                        background: "#1C2244",
+                        background: "#815696ff",
                       }}
                     >
                       <RiseOutlined style={{ color: "#fff", fontSize: 24 }} />
                     </div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold mb-0 text-gray-800">
             Welcome Back
           </h1>
 
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 mt-1 mb-0 text-sm">
             Sign in to your account
           </p>
         </div>
@@ -207,14 +207,14 @@ export default function Login() {
         </button>
 
         {/* Footer */}
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-400">
+        <div className="mt-4 pt-6 border-t border-gray-200 text-center">
+          <p className="text-xs mb-0 text-gray-400">
             Application Developed and maintained by
           </p>
 
-          <p className="text-sm font-medium text-gray-600 mt-1">
+          <a href="https://ateliertechnologysolutions.com/"  target="_blank" className="text-sm font-medium text-gray-600 mt-0">
             Atelier Technology Solutions
-          </p>
+          </a>
         </div>
 
       </div>
