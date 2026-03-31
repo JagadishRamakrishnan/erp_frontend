@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Typography, message, Spin } from "antd";
 import { dealService } from "../services";
 import ResponsiveTable from "../components/ResponsiveTable";
+import dayjs from "dayjs";
 
 export default function Deals() {
   const tabs = [
