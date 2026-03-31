@@ -128,8 +128,8 @@ export default function Settings() {
         {/* ================= COMPANY SETTINGS (LEFT) ================= */}
         {isAdmin && (
           <Col xs={24} lg={16}>
-          <motion.div custom={0} initial="hidden" animate="visible" variants={cardAnimation}>
-            <Card variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
+          <motion.div className="h-full" custom={0} initial="hidden" animate="visible" variants={cardAnimation}>
+            <Card className="h-full" variant="borderless" style={styles.card} styles={{ body: { padding: 24 } }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <div style={styles.iconWrap("#f3e8ff", "#7c3aed")}>
@@ -234,6 +234,7 @@ export default function Settings() {
                       type="primary" htmlType="submit" block loading={companySaving}
                       icon={company ? <EditOutlined /> : <PlusOutlined />}
                       style={{ ...styles.primaryBtn, background: "#7c3aed", borderColor: "#7c3aed" }}
+                      className="mt-auto"
                     >
                       {company ? "Update Company" : "Add Company"}
                     </Button>

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Card, Row, Col, Tag, Spin, message, Button,
-  Avatar, Progress, Typography, Grid
+  Avatar, Progress, Typography, Grid,
+  Pagination
 } from "antd";
 import { Phone, Users, IndianRupee, Percent, Mail, MessageCircle, FileText, BadgeAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -145,7 +146,13 @@ export default function Dashboard() {
   const [todayActivities, setTodayActivities] = useState([]);
   const [overdueTasks, setOverdueTasks] = useState([]);
   const [overdueActivities, setOverdueActivities] = useState([]);
+  const [activityPage, setActivityPage] = useState(1);
+  const activityPageSize = 2;
 
+  const paginatedActivities = todayActivities?.slice(
+    (activityPage - 1) * activityPageSize,
+    activityPage * activityPageSize
+  );
 
   // Fetch today tasks from backend
   const fetchTodayTasks = async () => {
@@ -364,7 +371,7 @@ export default function Dashboard() {
   ];
   const data = stats?.recent?.deals || [];
   return (
-    <div  className="min-h-screen bg-[#f5f6f8] py-4 px-2 md:px-6">
+    <div className="min-h-screen bg-[#f5f6f8] py-4 px-2 md:px-6">
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>Dashboard</h1>
 
 
@@ -653,7 +660,7 @@ export default function Dashboard() {
                           {record.stage?.toUpperCase()}
                         </Tag>
                       </div>
-                      
+
                       <div className="flex items-center justify-between mt-1">
                         <div className="flex items-center gap-2">
                           <Avatar size={24} icon={<UserOutlined />} className="bg-gray-100 text-gray-400" />
@@ -724,77 +731,103 @@ export default function Dashboard() {
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {todayActivities && todayActivities.length > 0 ? (
-                  todayActivities.map((activity, index) => {
-                    const icons = {
-                      Call: <Phone size={18} />,
-                      Email: <Mail size={18} />,
-                      Meeting: <Users size={18} />,
-                      WhatsApp: <MessageCircle size={18} />
-                    };
+                  <>
+                    {paginatedActivities.map((activity, index) => {
+                      const icons = {
+                        Call: <Phone size={18} />,
+                        Email: <Mail size={18} />,
+                        Meeting: <Users size={18} />,
+                        WhatsApp: <MessageCircle size={18} />
+                      };
 
-                    const backgrounds = {
-                      Call: '#fee2e2',
-                      Email: '#e0f2fe',
-                      Meeting: '#fef9c3',
-                      WhatsApp: '#dcfce7'
-                    };
+                      const backgrounds = {
+                        Call: '#fee2e2',
+                        Email: '#e0f2fe',
+                        Meeting: '#fef9c3',
+                        WhatsApp: '#dcfce7'
+                      };
 
-                    return (
-                      <div
-                        key={activity.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          background: "#f9fafb",
-                          padding: "12px 16px",
-                          borderRadius: 12,
-                          border: "1px solid #f1f5f9",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => navigate("/activities")}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      return (
+                        <div
+                          key={activity.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            background: "#f9fafb",
+                            padding: "12px 16px",
+                            borderRadius: 12,
+                            border: "1px solid #f1f5f9",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => navigate("/activities")}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
 
-                          {/* Icon */}
-                          <div
-                            style={{
-                              height: 36,
-                              width: 36,
-                              borderRadius: 10,
-                              background: backgrounds[activity.type] || '#f3f4f6',
-                              display: "flex",
-                              alignItems: "center",
-                              flexShrink: "0",
-                              justifyContent: "center",
-                              fontSize: 18,
-                            }}
-                          >
-                            {icons[activity.type] || <FileText size={18} />}
-                          </div>
-
-                          {/* Content */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <div style={{ fontWeight: 500 }}>
-                              {activity.type} - {activity.related_type} #{activity.related_id}
+                            {/* Icon */}
+                            <div
+                              style={{
+                                height: 36,
+                                width: 36,
+                                borderRadius: 10,
+                                background: backgrounds[activity.type] || '#f3f4f6',
+                                display: "flex",
+                                alignItems: "center",
+                                flexShrink: "0",
+                                justifyContent: "center",
+                                fontSize: 18,
+                              }}
+                            >
+                              {icons[activity.type] || <FileText size={18} />}
                             </div>
 
-                            <div style={{ fontSize: 12, color: "gray" }}>
-                              {dayjs(activity.activity_date).format("DD MMM, hh:mm A")}
-                            </div>
-                            </div>
+                            {/* Content */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <div style={{ fontWeight: 500 }}>
+                                  {activity.type} - {activity.related_type} #{activity.related_id}
+                                </div>
 
-                            {activity.notes && (
-                              <div style={{ fontSize: 12, color: "#6b7280" }}>
-                                {activity.notes}
+                                <div style={{ fontSize: 12, color: "gray" }}>
+                                  {dayjs(activity.activity_date).format("DD MMM, hh:mm A")}
+                                </div>
                               </div>
-                            )}
+
+                              {activity.notes && (
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                                  {activity.notes.length > 60
+                                    ? activity.notes.slice(0, 60) + "..."
+                                    : activity.notes}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "end",
+                        marginTop: 12,
+                      }}
+                    >
+                      <Pagination
+                        current={activityPage}
+                        pageSize={activityPageSize}
+                        total={todayActivities.length}
+                        onChange={(page) => setActivityPage(page)}
+                        size="small"
+                        showSizeChanger={false}
+                        style={{
+                          background: "#fff",
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                        }}
+                      />
+                    </div>
+                  </>
+
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c' }}>
                     No activities for today, Call Leads
@@ -945,7 +978,7 @@ export default function Dashboard() {
                       <RechartsTooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
-                  
+
                   {/* Center Text */}
                   <div style={{
                     position: 'absolute',
@@ -982,10 +1015,10 @@ export default function Dashboard() {
 
                     return (
                       <div key={lead.status} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ 
-                          width: 12, 
-                          height: 12, 
-                          borderRadius: '50%', 
+                        <div style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
                           background: colors[index % colors.length],
                           boxShadow: `0 0 10px ${colors[index % colors.length]}40`
                         }} />
@@ -1025,7 +1058,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>
-                       Overdue Follow-ups
+                      Overdue Follow-ups
                       <span style={{
                         marginLeft: 10, background: '#ef4444', color: '#fff',
                         borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700
