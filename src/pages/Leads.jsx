@@ -442,9 +442,12 @@ export default function Leads() {
   const filteredLeads = useMemo(() => {
     return baseFilteredLeads
       .filter(lead => {
-        const searchMatch = (lead.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-          lead.email?.toLowerCase().includes(searchText.toLowerCase()) ||
-          lead.company?.toLowerCase().includes(searchText.toLowerCase()));
+        const searchMatch = (
+          (lead.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+          (lead.email || "").toLowerCase().includes(searchText.toLowerCase()) ||
+          (lead.company || "").toLowerCase().includes(searchText.toLowerCase()) ||
+          (lead.phone || "").toLowerCase().includes(searchText.toLowerCase())
+        );
         const tabMatch = activeTab === "All" || lead.status === activeTab;
         return searchMatch && tabMatch;
       })
@@ -825,7 +828,7 @@ export default function Leads() {
           <Card style={{ borderRadius: 12, marginBottom: 20 }}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <Input
-                placeholder="Search leads by name, email, or company..."
+                placeholder="Search leads by name, email, phone or company..."
                 prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
                 style={{ height: 40, borderRadius: 8, maxWidth: "250px" }}
                 value={searchText}
