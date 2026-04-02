@@ -493,7 +493,22 @@ export default function Leads() {
           </Avatar>
 
           <div>
-            <div style={{ fontWeight: 600, color: "#111827" }} className="cursor-pointer" onClick={() => handleView(record)} >{text}</div>
+            <Tooltip title={text}>
+              <div 
+                style={{ 
+                  fontWeight: 600, 
+                  color: "#111827",
+                  maxWidth: 100,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }} 
+                className="cursor-pointer" 
+                onClick={() => handleView(record)} 
+              >
+                {text}
+              </div>
+            </Tooltip>
             <div style={{ fontSize: 12, color: "#9ca3af" }} className="cursor-pointer" onClick={() => handleView(record)} >{record.lead_code}</div>
           </div>
         </div>
