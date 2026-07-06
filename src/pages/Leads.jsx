@@ -69,7 +69,6 @@ export default function Leads() {
     setLoading(true);
     try {
       const response = await leadService.getAll();
-      console.log(response)
       if (response.success) {
         setLeads((response.data || []).reverse());
       }
