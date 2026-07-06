@@ -329,11 +329,11 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
                   children: (
                     <div className="mt-4 px-2 h-[400px] overflow-y-auto">
                       {localLead.interestedServices && localLead.interestedServices.length > 0 ? (
-                        <Collapse accordion expandIconPosition="end" ghost className="service-accordion">
+                        <div className="">
                           {localLead.interestedServices.map(service => (
                             <Collapse.Panel 
                               header={
-                                <div className="flex justify-between items-center w-full pr-4">
+                                <div className="flex justify-between items-center w-full pr-4 p-5">
                                   <div className="flex items-center gap-2">
                                     <Briefcase size={16} className="text-blue-500" />
                                     <span className="font-bold text-gray-800">{service.name}</span>
@@ -344,42 +344,9 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
                               key={service.id}
                               className="mb-3 bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm"
                             >
-                              <div className="p-2">
-                                <p className="text-gray-600 text-sm mb-4 italic px-2">
-                                  {service.description || "No description available."}
-                                </p>
-                                <Table
-                                  dataSource={service.lineItems || []}
-                                  pagination={false}
-                                  size="small"
-                                  rowKey="id"
-                                  className="border border-gray-50 rounded-lg overflow-hidden"
-                                  columns={[
-                                    { title: 'Item', dataIndex: 'item_name', key: 'item', className: 'text-[12px] font-semibold' },
-                                    { title: 'Qty', dataIndex: 'qty', key: 'qty', width: 60, align: 'center', className: 'text-[12px]' },
-                                    { 
-                                      title: 'Price', 
-                                      dataIndex: 'unit_price', 
-                                      key: 'price',
-                                      align: 'right',
-                                      className: 'text-[12px]',
-                                      render: (val) => `₹${val.toLocaleString()}`
-                                    },
-                                    { 
-                                      title: 'Tax', 
-                                      dataIndex: 'tax_percent', 
-                                      key: 'tax',
-                                      width: 60,
-                                      align: 'center',
-                                      className: 'text-[12px]',
-                                      render: (val) => `${val}%`
-                                    }
-                                  ]}
-                                />
-                              </div>
                             </Collapse.Panel>
                           ))}
-                        </Collapse>
+                        </div>
                       ) : (
                         <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
                           <Briefcase size={40} className="text-gray-200 mb-3" />
