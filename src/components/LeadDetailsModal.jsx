@@ -325,7 +325,7 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
                 },
                 {
                   key: 'services',
-                  label: <span className="font-semibold text-[14px]">Interested Services</span>,
+                  label: <span className="font-semibold text-[14px]">Course Interested</span>,
                   children: (
                     <div className="mt-4 px-2 h-[400px] overflow-y-auto">
                       {localLead.interestedServices && localLead.interestedServices.length > 0 ? (
@@ -383,7 +383,7 @@ export default function LeadDetailsModal({ open, lead, onClose, onLeadUpdate, on
                       ) : (
                         <div className="mt-12 text-center text-gray-400 flex flex-col items-center">
                           <Briefcase size={40} className="text-gray-200 mb-3" />
-                          <p>No interested services associated with this lead.</p>
+                          <p>No Course Interested associated with this lead.</p>
                         </div>
                       )}
                     </div>

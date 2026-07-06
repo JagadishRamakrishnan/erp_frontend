@@ -1,28 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-// Replace this with your actual CRM logo path if necessary!
-//import companyLogo from "../assets/Company_logo.png";
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-//import { useTheme } from "../../context/ThemeContext";
+
 import { Popover, Tooltip, Grid } from "antd";
-import { Megaphone, MessageSquare,BadgeIndianRupee, Waypoints, WaypointsIcon, Milestone } from "lucide-react";
-//import { MessageSquare } from "lucide-react";
-// Ant Design Icons
+import { Megaphone, MessageSquare, BadgeIndianRupee, Waypoints, WaypointsIcon, Milestone } from "lucide-react";
+
 import {
-  DashboardOutlined,
+
   AppstoreOutlined,
-  PercentageOutlined,
-  UserOutlined,
-  ShoppingCartOutlined,
-  DatabaseOutlined,
-  BarChartOutlined,
   SettingOutlined,
   RiseOutlined,
-  CalendarOutlined,
-  HistoryOutlined,
-  ThunderboltOutlined,
-  PullRequestOutlined,
-  AuditOutlined
 } from "@ant-design/icons";
 
 // Lucide Icons
@@ -87,144 +75,9 @@ const Sidebar = ({
   // Menu configuration injected from user's code
   const menuItems = [
     {
-      key: "dashboard",
-      icon: <DashboardOutlined style={{ fontSize: 18 }} />,
-      label: "Dashboard",
-    },
-    // SALES GROUP
-    {
-      key: "sales",
-      icon: <RiseOutlined style={{ fontSize: 18 }} />,
-      label: "Sales",
-      children: [
-        {
-          key: "leads",
-          icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
-          label: "Leads",
-        },
-        // {
-        //   key: "opportunities",
-        //   icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
-        //   label: "Opportunities",
-        // },
-        {
-          key: "quotes",
-          icon: <FileText size={18} />,
-          label: "Quotes",
-        },
-        {
-          key: "activities",
-          icon: <CalendarOutlined style={{ fontSize: 18 }} />,
-          label: "Activities",
-        },
-        {
-          key: "invoices",
-          icon: <BadgeIndianRupee style={{ fontSize: 16 }} />,
-          label: "Invoices",
-        },
-      ],
-    },
-    // CUSTOMER
-    {
-      key: "customer",
-      icon: <UserOutlined style={{ fontSize: 18 }} />,
-      label: "Customers",
-    },
-    {
-      key: "deals",
-      icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
-      label: "Deals",
-    },
-    // TASKS
-    // {
-    //   key: "tasks",
-    //   icon: <FileText size={18} />,
-    //   label: "Tasks",
-    // },
-    // REPORTS
-    {
-      key: "reports",
-      icon: <BarChartOutlined style={{ fontSize: 18 }} />,
-      label: "Reports",
-    },
-    // MARKETING GROUP
-    {
-      key: "marketing",
-      icon: <Megaphone size={18} />,
-      label: "Marketing",
-      children: [
-        {
-          key: "marketing-dashboard",
-          icon: <BarChartOutlined style={{ fontSize: 18 }} />,
-          label: "Overview",
-        },
-        {
-          key: "campaigns",
-          icon: <RiseOutlined style={{ fontSize: 18 }} />,
-          label: "Campaigns",
-        },
-        {
-          key: "whatsapp-campaign",
-          icon: <MessageSquare size={18} />,
-          label: "WhatsApp Campaign",
-        },
-      ],
-    },
-    // ADMINISTRATION GROUP
-    {
-      key: "admin",
-      icon: <DatabaseOutlined style={{ fontSize: 18 }} />,
-      label: "Administration",
-      children: [
-        {
-          key: "users",
-          icon: <UserOutlined style={{ fontSize: 18 }} />,
-          label: "Users",
-        },
-        {
-          key: "roles",
-          icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
-          label: "Roles & Permissions",
-        },
-        {
-          key: "lead-automation",
-          icon: <ThunderboltOutlined style={{ fontSize: 18 }} />,
-          label: "Lead Automation",
-        },
-        {
-          key: "action-plans",
-          icon: <PullRequestOutlined style={{ fontSize: 18 }} />,
-          label: "Action Plans",
-        },
-        {
-          key: "audit-logs",
-          icon: <HistoryOutlined style={{ fontSize: 18 }} />,
-          label: "Audit Logs",
-        },
-      ],
-    },
-    // SUPPORT & FINANCE GROUP
-    {
-      key: "support",
-      icon: <DatabaseOutlined style={{ fontSize: 18 }} />,
-      label: "Support & Finance",
-      children: [
-        {
-          key: "tickets",
-          icon: <FileText size={18} />,
-          label: "Tickets",
-        },
-        {
-          key: "payments",
-          icon: <BadgeIndianRupee style={{ fontSize: 18 }} />,
-          label: "Payments",
-        },
-        {
-          key: "notes",
-          icon: <FileText size={18} />,
-          label: "Notes",
-        },
-      ],
+      key: "leads",
+      icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
+      label: "Leads",
     },
   ];
 
@@ -581,9 +434,9 @@ const Sidebar = ({
 
                   {(!collapsed || isMobile) && (
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 18, color: theme === "dark" ? "#ffffff" : "#111827" }}>CRM</div>
-                      <div style={{ fontSize: 12, color: theme === "dark" ? "#9CA3AF" : "#6b7280" }}>
-                        Management
+                      <div className="text-xl font-bold">ERP</div>
+                      <div className="text-sm font-medium text-[#6b7280]">
+                        Lead Management Module
                       </div>
                     </div>
                   )}

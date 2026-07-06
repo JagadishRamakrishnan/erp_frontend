@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { leadService, userService, noteService, taskService, activityService, serviceCatalogService } from "../services";
 import authService from "../services/authService";
 import { useNavigate, useLocation } from "react-router-dom";
-import BulkUploadModal from "../components/BulkUploadModal";
+
 import ResponsiveTable from "../components/ResponsiveTable";
 import LeadKanbanBoard from "../components/LeadKanbanBoard";
 import LeadDetailsModal from "../components/LeadDetailsModal";
@@ -16,36 +16,11 @@ import {
   InstagramOutlined
 } from "@ant-design/icons";
 import { CheckCircle, FileText, Phone, Trophy, XCircle, Info } from "lucide-react";
+import LeadStatsCards from "./LeadStatsCards";
 const { Option } = Select;
 const { Text } = Typography;
+import { STAGE_OUTCOMES } from "../utils/leadStages";
 
-const STAGE_OUTCOMES = {
-  New: [
-    { label: 'RNR (Ring Not Received)', value: 'RNR', autoTask: 'Call Back: Lead was RNR', offset: 24 },
-    { label: 'Busy / Call Later', value: 'Busy', autoTask: 'Call Back: Lead was Busy', offset: 4 },
-  ],
-  Contacted: [
-    { label: 'RNR (Ring Not Received)', value: 'RNR', autoTask: 'Call Back: Lead was RNR', offset: 24 },
-    { label: 'Do Not Disturb (DND)', value: 'DND', autoTask: 'Re-engage: Lead requested DND', offset: 720 },
-    { label: 'Busy / Call Later', value: 'Busy', autoTask: 'Call Back: Lead was Busy', offset: 4 },
-    { label: 'Interested', value: 'Interested', autoTask: 'Follow-up: Interested Lead', requiresDate: true },
-  ],
-  Qualified: [
-    { label: 'Interested / Follow-up', value: 'Interested', autoTask: 'Follow-up: Discuss requirements', requiresDate: true },
-    { label: 'Decision Maker Away', value: 'DM_Away', autoTask: 'Call Back: DM was away', offset: 168 },
-    { label: 'Info Needed', value: 'Info_Needed', autoTask: 'Prep Info: Lead needs more info', offset: 48 },
-  ],
-  Proposal: [
-    { label: 'Sent - Awaiting', value: 'Sent_Awaiting', autoTask: 'Follow-up: Proposal Sent', offset: 72 },
-    { label: 'Pricing Review', value: 'Pricing_Review', autoTask: 'Follow-up: Pricing Discussion', offset: 168 },
-    { label: 'Budget Issue', value: 'Budget_Issue', autoTask: 'Re-check: Budget constraints', offset: 360 },
-  ],
-  Lost: [
-    { label: 'Budget Issue', value: 'Budget_Issue', autoTask: 'Re-engage: Re-check budget', offset: 2160 },
-    { label: 'Competition', value: 'Competition', autoTask: 'Re-engage: Check relationship', offset: 4320 },
-  ],
-  Won: []
-};
 
 
 export default function Leads() {
@@ -57,12 +32,15 @@ export default function Leads() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState();
+  const [assignedFilter, setAssignedFilter] = useState();
+  const [dateRange, setDateRange] = useState([]);
   const [users, setUsers] = useState([]);
   const [services, setServices] = useState([]);
   const [form] = Form.useForm();
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
+
   const [viewType, setViewType] = useState("list");
   const tabs = ["All", "New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
   const [activeTab, setActiveTab] = useState("All");
@@ -72,8 +50,6 @@ export default function Leads() {
   const [pendingLeadValues, setPendingLeadValues] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [stageForm] = Form.useForm();
-  const [myLeadsOnly, setMyLeadsOnly] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const handleViewTypeChange = (type) => {
     setViewTransitioning(true);
@@ -93,6 +69,7 @@ export default function Leads() {
     setLoading(true);
     try {
       const response = await leadService.getAll();
+      console.log(response)
       if (response.success) {
         setLeads((response.data || []).reverse());
       }
@@ -179,8 +156,8 @@ export default function Leads() {
             <Text type="secondary">This lead is currently unassigned. Please choose a user to manage this lead or just view the details.</Text>
             <div className="mt-4">
               <Text strong className="block mb-2">Select Team Member:</Text>
-              <Select 
-                placeholder="Choose user" 
+              <Select
+                placeholder="Choose user"
                 style={{ width: '100%' }}
                 defaultValue={currentUser.id}
                 onChange={(val) => selectedToAssignId = val}
@@ -389,17 +366,6 @@ export default function Leads() {
     }
   }, [leads, location, navigate]);
 
-  const handleBulkUpload = async (formData) => {
-    try {
-      const response = await leadService.bulkUpload(formData);
-      if (response.success) {
-        fetchLeads(); // Refresh the list
-      }
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
 
   const handleDownloadTemplate = async () => {
     try {
@@ -429,38 +395,69 @@ export default function Leads() {
   };
 
   const baseFilteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      if (currentUser?.role === 'Admin' && selectedUserId) {
-        return lead.assigned_to === selectedUserId;
-      } else if (myLeadsOnly) {
-        return lead.assigned_to === currentUser?.id || !lead.assigned_to;
-      }
-      return true;
-    });
-  }, [leads, myLeadsOnly, selectedUserId, currentUser]);
+    return leads;
+  }, [leads]);
 
   const filteredLeads = useMemo(() => {
     return baseFilteredLeads
-      .filter(lead => {
-        const searchMatch = (
+      .filter((lead) => {
+        // Search
+        const searchMatch =
           (lead.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
           (lead.email || "").toLowerCase().includes(searchText.toLowerCase()) ||
-          (lead.company || "").toLowerCase().includes(searchText.toLowerCase()) ||
-          (lead.phone || "").toLowerCase().includes(searchText.toLowerCase())
+          (lead.interestedServices || [])
+            .some(service =>
+              service.name?.toLowerCase().includes(searchText.toLowerCase())
+            ) ||
+          (lead.phone || "").toLowerCase().includes(searchText.toLowerCase());
+
+        // Tab
+        const tabMatch =
+          activeTab === "All" || lead.status === activeTab;
+
+        // Status Filter
+        const statusMatch =
+          !statusFilter || lead.status === statusFilter;
+
+        // Assigned Employee Filter
+        const assignedMatch =
+          !assignedFilter || lead.assigned_to === assignedFilter;
+
+        // Date Range Filter
+        let dateMatch = true;
+
+        if (dateRange && dateRange.length === 2) {
+          const created = new Date(lead.created_at);
+          const start = dateRange[0].startOf("day").toDate();
+          const end = dateRange[1].endOf("day").toDate();
+
+          dateMatch = created >= start && created <= end;
+        }
+
+        return (
+          searchMatch &&
+          tabMatch &&
+          statusMatch &&
+          assignedMatch &&
+          dateMatch
         );
-        const tabMatch = activeTab === "All" || lead.status === activeTab;
-        return searchMatch && tabMatch;
       })
       .sort((a, b) => {
-        // Unassigned first (null/undefined)
         const aVal = a.assigned_to ? 1 : 0;
         const bVal = b.assigned_to ? 1 : 0;
+
         if (aVal !== bVal) return aVal - bVal;
 
-        // Secondary sort by date (newest first)
         return new Date(b.created_at) - new Date(a.created_at);
       });
-  }, [baseFilteredLeads, searchText, activeTab]);
+  }, [
+    baseFilteredLeads,
+    searchText,
+    activeTab,
+    statusFilter,
+    assignedFilter,
+    dateRange,
+  ]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -476,7 +473,7 @@ export default function Leads() {
 
   const columns = [
     {
-      title: "Lead",
+      title: "Lead Name",
       dataIndex: "name",
       align: "left",   // keep left like customer avatar column
       render: (text, record) => (
@@ -497,17 +494,17 @@ export default function Leads() {
 
           <div>
             <Tooltip title={text}>
-              <div 
-                style={{ 
-                  fontWeight: 600, 
+              <div
+                style={{
+                  fontWeight: 600,
                   color: "#111827",
                   maxWidth: 100,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
-                }} 
-                className="cursor-pointer" 
-                onClick={() => handleView(record)} 
+                }}
+                className="cursor-pointer"
+                onClick={() => handleView(record)}
               >
                 {text}
               </div>
@@ -521,7 +518,7 @@ export default function Leads() {
     {
       title: "Contact",
       key: "contact",
-      align: "center",
+      align: "start",
       render: (_, record) => (
         <div>
           {record.email && (
@@ -552,82 +549,34 @@ export default function Leads() {
             </div>
           )}
 
-          {/* ✅ SOCIAL LINKS ADD HERE */}
-          {/* <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 10 }}>
 
-            
-            <a
-              href={`https://wa.me/${record.phone}`}
-              target="_blank"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "#e6f7ee",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              <WhatsAppOutlined style={{ color: "#25D366", fontSize: 16 }} />
-            </a>
-
-            
-            <a
-              href={record.facebook_url || "#"}
-              target="_blank"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "#e7f0ff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              <FacebookOutlined style={{ color: "#1877F2", fontSize: 16 }} />
-            </a>
-
-            
-            <a
-              href={record.instagram_url || "#"}
-              target="_blank"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "#fce7f3",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              <InstagramOutlined style={{ color: "#E1306C", fontSize: 16 }} />
-            </a>
-
-          </div> */}
         </div>
       ),
     },
 
     {
-      title: "Company",
-      dataIndex: "company",
-      align: "center",
-      render: (text) => (
-        <Tooltip title={text}>
-          <div style={{ 
-            maxWidth: 100, 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis', 
-            whiteSpace: 'nowrap',
-            margin: '0 auto' 
-          }}>
-            {text || "N/A"}
-          </div>
-        </Tooltip>
-      ),
+      title: "Interested Course",
+      dataIndex: "interestedServices",
+      align: "start",
+      render: (services) => {
+        const courseNames =
+          services?.map((service) => service.name).join(", ") || "N/A";
+
+        return (
+          <Tooltip title={courseNames}>
+            <div
+              style={{
+                maxWidth: 180,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {courseNames}
+            </div>
+          </Tooltip>
+        );
+      },
     },
 
     {
@@ -640,7 +589,7 @@ export default function Leads() {
     {
       title: "Status",
       dataIndex: "status",
-      align: "center",
+      align: "start",
       render: (status) => (
         <Tag variant="filled" color={getStatusColor(status)}>
           {status}
@@ -651,7 +600,7 @@ export default function Leads() {
     {
       title: "Assigned To",
       dataIndex: "assigned_to",
-      align: "center",
+      align: "start",
       sorter: (a, b) => {
         // Unassigned leads first
         const aVal = a.assignedTo ? 1 : 0;
@@ -664,6 +613,17 @@ export default function Leads() {
           {record.assignedTo?.name || "Unassigned"}
         </span>
       ),
+    },
+    {
+      title: "Created Date",
+      dataIndex: "created_at",
+      key: "created_at",
+      align: "start",
+      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+      render: (date) =>
+        date
+          ? new Date(date).toLocaleDateString("en-IN")
+          : "N/A",
     },
 
     {
@@ -759,69 +719,13 @@ export default function Leads() {
                 >
                   Add Lead
                 </Button>
-                <Button
-                  type="default"
-                  icon={<UploadOutlined />}
-                  style={{ height: 40, borderRadius: 8 }}
-                  onClick={() => setShowBulkUpload(true)}
-                >
-                  Bulk Upload
-                </Button>
               </div>
             </Col>
           </Row>
 
           {/* STATS - ONLY SHOW IN LIST VIEW */}
           {viewType === "list" && (
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              {[
-                { title: "Total Leads", count: baseFilteredLeads.length, color: "#6366f1", icon: <Users size={22} />, trend: "+12.5%", isUp: true },
-                { title: "New Leads", count: baseFilteredLeads.filter(l => l.status === 'New').length, color: "#3b82f6", icon: <UserPlus size={22} />, trend: "+5.2%", isUp: true },
-                { title: "Qualified", count: baseFilteredLeads.filter(l => l.status === 'Qualified').length, color: "#f97316", icon: <UserCheck size={22} />, trend: "-2.4%", isUp: false },
-                { title: "Deals Won", count: baseFilteredLeads.filter(l => l.status === 'Won').length, color: "#10b981", icon: <Crown size={22} />, trend: "+8.1%", isUp: true },
-              ].map((item, index) => (
-                <Col xs={24} sm={12} lg={6} key={index}>
-                  <motion.div
-                    custom={index}
-                    initial="hidden"
-                    animate="visible"
-                    variants={cardAnimation}
-                  >
-                    <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.03)", overflow: 'hidden' }}>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: '0.5px' }}>
-                            {item.title}
-                          </div>
-                          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, color: "#111827" }}>
-                            {item.count}
-                          </div>
-                          <div className="flex items-center mt-3 text-[11px] font-medium">
-                            <span className={`flex items-center gap-0.5 ${item.isUp ? 'text-green-500' : 'text-red-500'}`}>
-                              {item.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                              {item.trend}
-                            </span>
-                            <span className="text-gray-400 ml-1.5">vs last 30 days</span>
-                          </div>
-                        </div>
-                        <div style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 12,
-                          backgroundColor: `${item.color}15`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: item.color
-                        }}>
-                          {item.icon}
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                </Col>
-              ))}
-            </Row>
+            <LeadStatsCards leads={baseFilteredLeads} />
           )}
 
           {/* SEARCH & TOGGLES */}
@@ -835,71 +739,61 @@ export default function Leads() {
                 onChange={(e) => setSearchText(e.target.value)}
               />
 
-              <div className="flex items-center gap-4 flex-wrap">
-                {/* ROLE BASED FILTERS */}
-                <div className="flex items-center gap-3 bg-[#f9fafb] border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
-                  {currentUser?.role === 'Admin' ? (
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-gray-400" />
-                      <Select
-                        placeholder="All Users"
-                        style={{ width: 150 }}
-                        allowClear
-                        onChange={(val) => setSelectedUserId(val)}
-                        className="user-select-filter"
-                        variant="borderless"
-                      >
-                        {users.map(u => (
-                          <Option key={u.id} value={u.id}>{u.name}</Option>
-                        ))}
-                      </Select>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-gray-600">My Leads Only</span>
-                      <Switch
-                        size="small"
-                        checked={myLeadsOnly}
-                        onChange={(val) => setMyLeadsOnly(val)}
-                      />
-                    </div>
-                  )}
-                </div>
+              <div className="flex items-center mt-3 gap-2 overflow-x-auto whitespace-nowrap hidden lg:flex">
+                {/* Lead Status */}
+                <Select
+                  placeholder="Lead Status"
+                  allowClear
+                  style={{ width: 170 }}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                >
+                  <Option value="New">New</Option>
+                  <Option value="Contacted">Contacted</Option>
+                  <Option value="Qualified">Qualified</Option>
+                  <Option value="Proposal">Proposal</Option>
+                  <Option value="Won">Won</Option>
+                  <Option value="Lost">Lost</Option>
+                </Select>
 
-                {/* VIEW TOGGLE */}
-                <div className="flex bg-[#f3f4f6] p-1 rounded-lg">
-                  <button
-                    onClick={() => handleViewTypeChange("kanban")}
-                    className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "kanban" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
-                  >
-                    <LayoutGrid size={16} /> Kanban
-                  </button>
-                  <button
-                    onClick={() => handleViewTypeChange("list")}
-                    className={`flex items-center gap-2 px-3 h-8 rounded-md text-[13px] font-medium transition-all ${viewType === "list" ? "bg-white text-[#1677ff] shadow-sm" : "text-[#6b7280] hover:text-[#374151]"}`}
-                  >
-                    <List size={16} /> Table
-                  </button>
-                </div>
+                {/* Assigned Employee */}
+                <Select
+                  placeholder="Assigned Employee"
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  style={{ width: 220 }}
+                  value={assignedFilter}
+                  onChange={setAssignedFilter}
+                >
+                  {users.map((user) => (
+                    <Option key={user.id} value={user.id}>
+                      {user.name}
+                    </Option>
+                  ))}
+                </Select>
+
+                {/* Date Range */}
+                <DatePicker.RangePicker
+                  value={dateRange}
+                  onChange={(dates) => setDateRange(dates || [])}
+                />
+
+                {/* Reset */}
+                <Button
+                  onClick={() => {
+                    setStatusFilter(undefined);
+                    setAssignedFilter(undefined);
+                    setDateRange([]);
+                    setSearchText("");
+                    setActiveTab("All");
+                  }}
+                >
+                  Reset Filters
+                </Button>
               </div>
             </div>
-            {/* STATUS TABS - ONLY SHOW IN LIST VIEW */}
-            {viewType === "list" && (
-              <div className="flex items-center mt-3 gap-2 overflow-x-auto whitespace-nowrap hidden lg:flex">
-                {tabs.map((tab) => {
-                  const count = tab === "All" ? baseFilteredLeads.length : baseFilteredLeads.filter((d) => d.status === tab).length;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${activeTab === tab ? "bg-[#1677ff] text-white shadow-sm" : "bg-white text-gray-600 hover:bg-gray-100 border border-[#e5e7eb]"}`}
-                    >
-                      {tab} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+
           </Card>
 
           {viewTransitioning ? (
@@ -929,7 +823,7 @@ export default function Leads() {
                 pagination={{
                   defaultPageSize: 10,
                   showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50', '100'],
+                  pageSizeOptions: ['10', '25', '50'],
                   showTotal: (total) => `Total ${total} leads`
                 }}
                 renderMobileCard={(record) => {
@@ -975,12 +869,14 @@ export default function Leads() {
                             <span>{record.phone}</span>
                           </div>
                         )}
-                        {record.company && (
-                          <div className="flex items-center gap-2">
-                            <span className="bg-gray-200 w-1 h-1 rounded-full"></span>
-                            <span className="font-medium">{record.company}</span>
-                          </div>
-                        )}
+                        {record.interestedServices?.length > 0 && (
+  <div className="flex items-center gap-2">
+    <span className="bg-gray-200 w-1 h-1 rounded-full"></span>
+    <span className="font-medium">
+      {record.interestedServices.map(course => course.name).join(", ")}
+    </span>
+  </div>
+)}
                         <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
                           <UserOutlined className="text-gray-400" />
                           <span className="text-[12px]">Assigned: <span className="font-semibold">{record.assignedTo?.name || 'Unassigned'}</span></span>
@@ -1045,13 +941,22 @@ export default function Leads() {
         width={800}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            label="Name"
-            name="name"
-            rules={[{ required: true, message: 'Please enter name' }]}
-          >
-            <Input placeholder="Enter name" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Name"
+                name="name"
+                rules={[{ required: true, message: 'Please enter name' }]}
+              >
+                <Input placeholder="Enter name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Source" name="source">
+                <Input placeholder="e.g., Website, Referral" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Row gutter={16}>
             <Col span={12}>
@@ -1064,29 +969,18 @@ export default function Leads() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Phone" name="phone">
+              <Form.Item label="Phone" name="phone" rules={[{ required: true, message: 'Please enter phone number' }]}>
                 <Input placeholder="Enter phone" />
               </Form.Item>
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Company" name="company">
-                <Input placeholder="Enter company" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Source" name="source">
-                <Input placeholder="e.g., Website, Referral" />
-              </Form.Item>
-            </Col>
-          </Row>
+
 
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item label="Interested Service / Product" name="service_ids">
-                <Select placeholder="Select services of interest (optional)" mode="multiple" allowClear showSearch optionFilterProp="label"
+              <Form.Item label="Course Interested" name="service_ids" rules={[{ required: true, message: 'Need to select at least one course' }]}>
+                <Select placeholder="Select services of interest" mode="multiple" allowClear showSearch optionFilterProp="label"
                   options={services.map(s => ({ label: `${s.name}${s.category ? ` — ${s.category}` : ''}`, value: s.id }))}
                 />
               </Form.Item>
@@ -1336,15 +1230,6 @@ export default function Leads() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onConvert={handleConvert}
-      />
-
-      <BulkUploadModal
-        open={showBulkUpload}
-        onClose={() => setShowBulkUpload(false)}
-        onUpload={handleBulkUpload}
-        onDownloadTemplate={handleDownloadTemplate}
-        moduleName="Leads"
-        templateFields={['name', 'email', 'phone', 'company', 'source', 'status', 'assigned_to']}
       />
     </div>
   );
