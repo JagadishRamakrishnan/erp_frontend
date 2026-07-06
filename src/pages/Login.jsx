@@ -213,7 +213,7 @@ export default function Login() {
           </p>
 
           <a href="https://ateliertechnologysolutions.com/"  target="_blank" className="text-sm font-medium text-gray-600 mt-0">
-            Atelier Technology Solutions
+            KlickEdu
           </a>
         </div>
 
